@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | Analysis Results</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
+        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
+        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
+        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
+        .nav-item i { width: 25px; }
+        
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        
+        .results-container { max-width: 1400px; margin: 0 auto; }
+        
+        .score-card { background: var(--bg-card); padding: 40px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); margin-bottom: 30px; position: relative; overflow: hidden; }
+        .risk-score { font-size: 5rem; font-weight: bold; margin: 10px 0; line-height: 1; }
+        .classification { font-size: 1.8rem; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+        
+        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .card { background: var(--bg-card); padding: 25px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .card h3 { margin-bottom: 20px; color: var(--text-main); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 1.2rem; }
+        .card h3 i { color: var(--cyan); margin-right: 10px; }
+        
+        /* Evidence Styles */
+        .evidence-group { margin-bottom: 20px; }
+        .evidence-group-title { font-size: 0.9rem; font-weight: bold; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .evidence-item { padding: 15px; background: rgba(0,0,0,0.2); margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .evidence-left strong { display: block; margin-bottom: 5px; font-size: 1.1rem; }
+        .evidence-left p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 5px; }
+        .evidence-severity { font-size: 0.8rem; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+        .evidence-right { text-align: right; }
+        .evidence-score { font-size: 1.2rem; font-weight: bold; }
+        .evidence-conf { font-size: 0.8rem; color: var(--text-muted); }
+
+        .high-risk { color: var(--danger); border-top: 4px solid var(--danger); }
+        .med-risk { color: var(--warning); border-top: 4px solid var(--warning); }
+        .low-risk { color: var(--success); border-top: 4px solid var(--success); }
+        
+        /* Heatmap Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+        .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        
+        .heatmap-container { text-align: center; position: relative; background: #000; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); }
+        .heatmap-img { max-width: 100%; max-height: 500px; border-radius: 4px; display: none; margin: 0 auto; }
+        .heatmap-img.active { display: block; }
+
+        /* Small Panels */
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .metric-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .metric-val { font-size: 1.2rem; font-weight: bold; color: var(--cyan); margin: 5px 0; }
+        .metric-label { font-size: 0.8rem; color: var(--text-muted); }
+        
+        /* Chatbot */
+        .chat-btn { position: fixed; bottom: 30px; right: 30px; background: var(--orange); color: var(--bg-main); width: 60px; height: 60px; border-radius: 50%; font-size: 24px; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
+        .chat-panel { position: fixed; bottom: 100px; right: 30px; width: 380px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; display: none; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden; }
+        .chat-header { background: var(--orange); color: var(--bg-main); padding: 15px; font-weight: bold; display: flex; justify-content: space-between; }
+        .chat-body { padding: 15px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 8px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; }
+        .msg-user { background: var(--cyan); color: #000; align-self: flex-end; border-bottom-right-radius: 0; }
+        .msg-bot { background: rgba(255,255,255,0.05); color: var(--text-main); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid var(--border-color); }
+        
+        .chat-suggestions { padding: 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .chat-suggestion-btn { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border: 1px solid var(--cyan); border-radius: 15px; padding: 5px 10px; font-size: 0.8rem; cursor: pointer; }
+        .chat-suggestion-btn:hover { background: var(--cyan); color: #000; }
+        
+        .chat-input { display: flex; padding: 10px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2); }
+        .chat-input input { flex: 1; padding: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
+        .chat-input button { background: var(--cyan); border: none; padding: 10px 15px; margin-left: 10px; border-radius: 4px; cursor: pointer; color: #000; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="analyze.html" class="nav-item active"><i class="fa-solid fa-microscope"></i> New Analysis</a>
+            <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <div class="topbar">
+                <div>
+                    <h2 style="color:var(--orange)"><i class="fa-solid fa-file-shield"></i> Forensic Analysis Results</h2>
+                    <p id="headerInfo" class="text-muted" style="margin-top:5px;">Loading...</p>
+                </div>
+                <div>
+                    <a href="analyze.html" class="btn btn-secondary" style="background:transparent; color:var(--text-main); border:1px solid var(--border-color); padding:10px 15px; border-radius:4px; text-decoration:none;">Analyze Another</a>
+                    <button class="btn btn-primary" id="saveCaseBtn" style="background:var(--cyan); color:#000; border:none; padding:10px 15px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:10px;">
+                        <i class="fa-solid fa-folder-plus"></i> Save as Case
+                    </button>
+                </div>
+            </div>
+            
+            <div class="results-container">
+                <div class="score-card" id="scoreCard">
+                    <div class="classification" id="classification">ANALYZING...</div>
+                    <div class="risk-score" id="riskScore">-- <span style="font-size:2rem; color:var(--text-muted)">/ 100</span></div>
+                    <p class="text-muted" style="margin-top: 10px;">Forensic Risk Indicator</p>
+                </div>
+                
+                <div class="grid">
+                    <!-- Left Column: Evidence & Details -->
+                    <div>
+                        <div class="card" style="margin-bottom:30px;">
+                            <h3><i class="fa-solid fa-magnifying-glass"></i> Forensic Evidence</h3>
+                            
+                            <div class="evidence-group" id="warningSignalsGroup">
+                                <div class="evidence-group-title" style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> Warning Signals</div>
+                                <div id="warningEvidenceList"></div>
+                            </div>
+                            
+                            <div class="evidence-group" id="positiveSignalsGroup">
+                                <div class="evidence-group-title" style="color:var(--success)"><i class="fa-solid fa-check-circle"></i> Positive Signals</div>
+                                <div id="positiveEvidenceList"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:20px;">
+                            <div class="card">
+                                <h3><i class="fa-solid fa-font"></i> OCR Analysis</h3>
+                                <div id="ocrStatus" style="font-weight:bold; margin-bottom:10px;"></div>
+                                <div id="ocrConfidence" class="text-muted" style="font-size:0.9rem; margin-bottom:15px;"></div>
+                                <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:4px; font-size:0.85rem; max-height:100px; overflow-y:auto; font-family:monospace;" id="ocrText"></div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3><i class="fa-solid fa-qrcode"></i> QR Analysis</h3>
+                                <div class="metrics-grid" style="margin-bottom:15px;">
+                                    <div class="metric-item">
+                                        <div class="metric-label">Detected</div>
+                                        <div class="metric-val" id="qrDetected" style="color:var(--text-main)"></div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Decoded</div>
+                                        <div class="metric-val" id="qrDecoded" style="color:var(--text-main)"></div>
+                                    </div>
+                                </div>
+                                <p class="text-muted" style="font-size:0.8rem; border-top:1px solid var(--border-color); padding-top:10px;">
+                                    QR detection or decoding alone does not establish document authenticity.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Visuals -->
+                    <div>
+                        <div class="card" style="margin-bottom:30px;">
+                            <h3><i class="fa-solid fa-map"></i> Forensic Heatmap</h3>
+                            <div class="tabs">
+                                <button class="tab-btn active" onclick="switchHeatmapTab('heatmap')">Heatmap</button>
+                                <button class="tab-btn" onclick="switchHeatmapTab('original')">Original</button>
+                            </div>
+                            <div class="heatmap-container">
+                                <img id="heatmapView" class="heatmap-img active" src="" alt="Forensic Heatmap" onerror="this.src=''; this.alt='Preview unavailable';">
+                                <img id="originalView" class="heatmap-img" src="" alt="Original Document" onerror="this.src=''; this.alt='Preview unavailable';">
+                                <div id="heatmapFallback" style="padding:40px; color:var(--text-muted); display:none;">Image unavailable</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><i class="fa-solid fa-camera"></i> Image Quality</h3>
+                            <p class="text-muted" style="font-size:0.85rem; margin-bottom:15px;">DOCUMENT QUALITY VS AUTHENTICITY RISK. A poor-quality image is not automatically fraudulent.</p>
+                            
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">Overall Score</div>
+                                    <div class="metric-val" id="qOverall"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Resolution</div>
+                                    <div class="metric-val" id="qRes"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Blur Level</div>
+                                    <div class="metric-val" id="qBlur"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Lighting</div>
+                                    <div class="metric-val" id="qLight"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot -->
+    <button class="chat-btn" id="chatBtn"><i class="fa-solid fa-robot"></i></button>
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <span><i class="fa-solid fa-robot"></i> SENTINEL AI Assistant</span>
+            <i class="fa-solid fa-xmark" style="cursor:pointer" id="closeChat"></i>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="msg msg-bot">Hello, I'm the SENTINEL Forensic Assistant. I have analyzed the evidence for this document. Ask me anything.</div>
+        </div>
+        <div class="chat-suggestions">
+            <button class="chat-suggestion-btn">Why was this flagged?</button>
+            <button class="chat-suggestion-btn">What is the strongest evidence?</button>
+            <button class="chat-suggestion-btn">What did the QR analysis find?</button>
+            <button class="chat-suggestion-btn">What should I review manually?</button>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Ask a question...">
+            <button id="sendChat"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+    
+    <!-- Save Case Modal -->
+    <div id="saveCaseModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div style="background:var(--bg-card); padding:30px; border-radius:8px; width:500px; border:1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <h3 style="color:var(--orange); margin-bottom:20px; font-size:1.4rem;"><i class="fa-solid fa-folder-plus"></i> Save Investigation Case</h3>
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted);">Case Title</label>
+                <input type="text" id="caseTitle" style="width:100%; padding:12px; background:rgba(0,0,0,0.2); color:var(--text-main); border:1px solid var(--border-color); border-radius:4px; font-size:1rem;" required>
+            </div>
+            <div style="margin-bottom:25px;">
+                <label style="display:block; margin-bottom:8px; color:var(--text-muted);">Description (Optional)</label>
+                <textarea id="caseDesc" style="width:100%; padding:12px; background:rgba(0,0,0,0.2); color:var(--text-main); border:1px solid var(--border-color); border-radius:4px; height:100px; resize:none; font-family:inherit;"></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:15px;">
+                <button id="cancelSaveBtn" style="padding:10px 20px; background:transparent; color:var(--text-main); border:1px solid var(--border-color); border-radius:4px; cursor:pointer; font-weight:bold;">Cancel</button>
+                <button id="confirmSaveBtn" style="padding:10px 20px; background:var(--cyan); color:#000; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Save Case</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let analysisData = null;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAuth();
+            if(!user) return;
+
+            const dataStr = sessionStorage.getItem('analysisResult');
+            if(dataStr) {
+                try {
+                    analysisData = JSON.parse(dataStr);
+                    renderResults(analysisData);
+                } catch(e) {
+                    Toast.error("Data Error", "Analysis data is corrupted.");
+                }
+            } else {
+                Toast.error('No Data', 'No analysis data found.');
+                setTimeout(() => window.location.href = 'analyze.html', 1500);
+            }
+        });
+
+        function renderResults(data) {
+            document.getElementById('headerInfo').innerText = `Document Type: ${data.document_type || 'Unknown'} | Time: ${new Date().toLocaleString()}`;
+            
+            // Risk Score
+            const scoreCard = document.getElementById('scoreCard');
+            const scoreEl = document.getElementById('riskScore');
+            const classEl = document.getElementById('classification');
+            
+            scoreEl.innerHTML = `${data.risk_score} <span style="font-size:2rem; color:var(--text-muted)">/ 100</span>`;
+            classEl.innerText = data.classification;
+            
+            if(data.risk_score >= 70) {
+                scoreCard.className = 'score-card high-risk';
+                classEl.style.color = 'var(--danger)';
+                scoreEl.style.color = 'var(--danger)';
+            } else if(data.risk_score >= 35) {
+                scoreCard.className = 'score-card med-risk';
+                classEl.style.color = 'var(--warning)';
+                scoreEl.style.color = 'var(--warning)';
+            } else {
+                scoreCard.className = 'score-card low-risk';
+                classEl.style.color = 'var(--success)';
+                scoreEl.style.color = 'var(--success)';
+            }
+
+            // Quality Panel
+            if (data.quality) {
+                document.getElementById('qOverall').innerText = `${data.quality.score}/100`;
+                document.getElementById('qRes').innerText = data.quality.resolution_ok ? 'Pass' : 'Low';
+                document.getElementById('qBlur').innerText = data.quality.blur_score ? data.quality.blur_score.toFixed(1) : 'N/A';
+                document.getElementById('qLight').innerText = data.quality.brightness ? data.quality.brightness.toFixed(1) : 'N/A';
+            }
+
+            // OCR Panel
+            if (data.ocr) {
+                const statusEl = document.getElementById('ocrStatus');
+                if (data.ocr.success) {
+                    statusEl.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Extraction Successful</span>';
+                } else {
+                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> Text extraction could not be completed reliably.</span>';
+                }
+                document.getElementById('ocrConfidence').innerText = `Average Confidence: ${(data.ocr.average_confidence * 100).toFixed(1)}%`;
+                document.getElementById('ocrText').innerText = data.ocr.raw_text || 'No text extracted.';
+            }
+
+            // QR Panel
+            if (data.qr) {
+                document.getElementById('qrDetected').innerHTML = data.qr.detected ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> Yes' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> No';
+                document.getElementById('qrDecoded').innerHTML = data.qr.decoded ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> Yes' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> No';
+            }
+
+            // Heatmap
+            if (data.heatmap) {
+                document.getElementById('heatmapView').src = data.heatmap;
+                document.getElementById('originalView').src = data.heatmap; // Replace with original image if returned by API in future
+            } else {
+                document.getElementById('heatmapView').style.display = 'none';
+                document.getElementById('originalView').style.display = 'none';
+                document.getElementById('heatmapFallback').style.display = 'block';
+                document.querySelector('.tabs').style.display = 'none';
+            }
+
+            // Evidence Mapping
+            const warningList = document.getElementById('warningEvidenceList');
+            const positiveList = document.getElementById('positiveEvidenceList');
+            const warningGroup = document.getElementById('warningSignalsGroup');
+            const positiveGroup = document.getElementById('positiveSignalsGroup');
+            
+            let warnings = [];
+            let positives = [];
+
+            if (data.evidence && Array.isArray(data.evidence)) {
+                data.evidence.forEach(ev => {
+                    const html = `
+                        <div class="evidence-item" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
+                            <div class="evidence-left">
+                                <span class="evidence-severity" style="background: ${ev.severity === 'High' ? 'rgba(255,77,77,0.2)' : ev.severity === 'Warning' ? 'rgba(255,204,0,0.2)' : 'rgba(85,224,126,0.2)'}; color: ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">${ev.severity}</span>
+                                <strong style="margin-top:8px;">${ev.title}</strong>
+                                <p>${ev.finding}</p>
+                            </div>
+                            <div class="evidence-right">
+                                <div class="evidence-score ${ev.risk_contribution > 0 ? 'text-danger' : 'text-success'}">${ev.risk_contribution > 0 ? '+' : ''}${ev.risk_contribution} risk</div>
+                            </div>
+                        </div>
+                    `;
+                    if (ev.risk_contribution > 0 || ev.severity === 'Warning' || ev.severity === 'High') {
+                        warnings.push(html);
+                    } else {
+                        positives.push(html);
+                    }
+                });
+            }
+
+            if (warnings.length > 0) {
+                warningList.innerHTML = warnings.join('');
+            } else {
+                warningGroup.style.display = 'none';
+            }
+
+            if (positives.length > 0) {
+                positiveList.innerHTML = positives.join('');
+            } else {
+                positiveGroup.style.display = 'none';
+            }
+        }
+
+        function switchHeatmapTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('heatmapView').classList.remove('active');
+            document.getElementById('originalView').classList.remove('active');
+            
+            if(tab === 'heatmap') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('heatmapView').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('originalView').classList.add('active');
+            }
+        }
+
+        // Chatbot Logic
+        const chatBtn = document.getElementById('chatBtn');
+        const chatPanel = document.getElementById('chatPanel');
+        const closeChat = document.getElementById('closeChat');
+        const sendChat = document.getElementById('sendChat');
+        const chatInput = document.getElementById('chatInput');
+        const chatBody = document.getElementById('chatBody');
+
+        chatBtn.addEventListener('click', () => { chatPanel.style.display = 'flex'; });
+        closeChat.addEventListener('click', () => { chatPanel.style.display = 'none'; });
+        
+        document.querySelectorAll('.chat-suggestion-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                chatInput.value = btn.innerText;
+                sendMessage();
+            });
+        });
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if(!text) return;
+            
+            chatBody.innerHTML += `<div class="msg msg-user">${text}</div>`;
+            chatInput.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            const loadingId = 'msg-' + Date.now();
+            chatBody.innerHTML += `<div class="msg msg-bot" id="${loadingId}"><i class="fa-solid fa-ellipsis fa-fade"></i></div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            try {
+                const response = await fetch('http://localhost:8000/api/chat/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        query: text,
+                        context: analysisData
+                    })
+                });
+                const res = await response.json();
+                
+                document.getElementById(loadingId).outerHTML = `<div class="msg msg-bot">${res.answer}</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+            } catch(e) {
+                document.getElementById(loadingId).outerHTML = `<div class="msg msg-bot" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Error connecting to AI. Using local fallback.</div>`;
+            }
+        }
+
+        sendChat.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') sendMessage();
+        });
+
+        // Save Case Logic
+        const saveCaseBtn = document.getElementById('saveCaseBtn');
+        const saveCaseModal = document.getElementById('saveCaseModal');
+        const cancelSaveBtn = document.getElementById('cancelSaveBtn');
+        const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+        
+        saveCaseBtn.addEventListener('click', () => {
+            document.getElementById('caseTitle').value = `${analysisData.document_type || 'Investigation'}: ${analysisData.classification}`;
+            saveCaseModal.style.display = 'flex';
+        });
+        
+        cancelSaveBtn.addEventListener('click', () => {
+            saveCaseModal.style.display = 'none';
+        });
+        
+        confirmSaveBtn.addEventListener('click', async () => {
+            confirmSaveBtn.innerText = 'Saving...';
+            confirmSaveBtn.disabled = true;
+            
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/cases/`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title: document.getElementById('caseTitle').value,
+                        description: document.getElementById('caseDesc').value,
+                        analysis_data: analysisData
+                    })
+                });
+                
+                const data = await res.json();
+                if(res.ok) {
+                    Toast.success("Case Saved", "Redirecting to case details...");
+                    setTimeout(() => {
+                        window.location.href = `case-detail.html?id=${data.case.id}`;
+                    }, 1000);
+                } else {
+                    Toast.error('Failed to save case', data.detail);
+                    confirmSaveBtn.innerText = 'Save Case';
+                    confirmSaveBtn.disabled = false;
+                }
+            } catch(e) {
+                Toast.error('Network error', 'Could not save case.');
+                confirmSaveBtn.innerText = 'Save Case';
+                confirmSaveBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

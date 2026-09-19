@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | New Investigation</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
+        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
+        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
+        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
+        .nav-item i { width: 25px; }
+        
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        .upload-container {
+            width: 100%;
+            max-width: 700px;
+            padding: 2rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--cyan);
+            padding: 50px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .upload-area.dragover {
+            background: rgba(29, 206, 216, 0.1);
+            border-color: var(--orange);
+            transform: scale(1.02);
+        }
+        .upload-area:hover {
+            background: rgba(29, 206, 216, 0.05);
+        }
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+            transition: transform 0.3s;
+        }
+        .upload-area:hover .upload-icon {
+            transform: translateY(-5px);
+        }
+        
+        #fileInput { display: none; }
+        
+        .preview-section {
+            display: none;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        #preview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin: 0 auto 10px;
+            display: block;
+        }
+        .file-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-radius: 4px;
+        }
+        .remove-btn {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .remove-btn:hover { color: #ff6666; }
+        
+        .progress-ui {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .stage {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            opacity: 0.4;
+            transition: opacity 0.3s;
+        }
+        .stage.active { opacity: 1; color: var(--cyan); }
+        .stage.done { opacity: 1; color: var(--success); }
+        .stage-icon { width: 24px; text-align: center; }
+        .stage:last-child { margin-bottom: 0; }
+        
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="analyze.html" class="nav-item active"><i class="fa-solid fa-microscope"></i> New Analysis</a>
+            <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-container">
+                <h2 style="color:var(--orange); margin-bottom: 10px;"><i class="fa-solid fa-file-shield"></i> Start Investigation</h2>
+                <p class="text-muted" style="margin-bottom: 30px;">Upload a document image for comprehensive forensic screening.</p>
+                
+                <form id="uploadForm">
+                    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                        <h3 style="margin-bottom:10px;">Drag & Drop Document Here</h3>
+                        <p>or <strong>Click to Browse</strong></p>
+                        <p class="text-muted" style="font-size: 0.85rem; margin-top: 15px;">Supported formats: JPG, JPEG, PNG, WEBP</p>
+                    </div>
+                    
+                    <input type="file" id="fileInput" accept="image/jpeg, image/png, image/webp">
+                    
+                    <div class="preview-section" id="previewSection">
+                        <img id="preview" src="#" alt="Document Preview">
+                        <div class="file-info">
+                            <div>
+                                <strong id="fileName">document.jpg</strong>
+                                <span id="fileSize" class="text-muted" style="margin-left: 10px; font-size:0.9rem;">(2.4 MB)</span>
+                            </div>
+                            <button type="button" class="remove-btn" id="removeBtn" title="Remove image"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="analyzeBtn" disabled style="width:100%; padding: 15px; border:none; background:var(--orange); color:#000; font-weight:bold; font-size:1.1rem; cursor:pointer; border-radius:4px; display:none;">
+                        <i class="fa-solid fa-microscope"></i> Analyze Document
+                    </button>
+                    
+                    <div class="progress-ui" id="progressUI">
+                        <h4 style="margin-bottom: 20px; color:var(--text-main); border-bottom:1px solid var(--border-color); padding-bottom:10px;">Analysis Pipeline</h4>
+                        <div class="stage" id="stage1">
+                            <div class="stage-icon"><i class="fa-solid fa-file-import"></i></div>
+                            <div>01. Preparing Document</div>
+                        </div>
+                        <div class="stage" id="stage2">
+                            <div class="stage-icon"><i class="fa-solid fa-eye"></i></div>
+                            <div>02. Extracting Evidence</div>
+                        </div>
+                        <div class="stage" id="stage3">
+                            <div class="stage-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                            <div>03. Analyzing Visual Signals</div>
+                        </div>
+                        <div class="stage" id="stage4">
+                            <div class="stage-icon"><i class="fa-solid fa-calculator"></i></div>
+                            <div>04. Calculating Risk</div>
+                        </div>
+                        <div class="stage" id="stage5">
+                            <div class="stage-icon"><i class="fa-solid fa-list-check"></i></div>
+                            <div>05. Preparing Findings</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAuth();
+            if(!user) return;
+        });
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const preview = document.getElementById('preview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeBtn = document.getElementById('removeBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const progressUI = document.getElementById('progressUI');
+
+        // Drag and Drop Logic
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if(files.length > 0) {
+                fileInput.files = files;
+                handleFiles(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            if(this.files && this.files[0]) {
+                handleFiles(this.files[0]);
+            }
+        });
+
+        function handleFiles(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if(!validTypes.includes(file.type)) {
+                Toast.warning("Invalid File", "Please upload a JPG, PNG, or WEBP image.");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                fileName.innerText = file.name;
+                fileSize.innerText = `(${(file.size / (1024*1024)).toFixed(2)} MB)`;
+                
+                dropZone.style.display = 'none';
+                previewSection.style.display = 'block';
+                analyzeBtn.style.display = 'block';
+                analyzeBtn.disabled = false;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            preview.src = '#';
+            dropZone.style.display = 'block';
+            previewSection.style.display = 'none';
+            analyzeBtn.style.display = 'none';
+            analyzeBtn.disabled = true;
+        });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!fileInput.files[0]) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            analyzeBtn.style.display = 'none';
+            progressUI.style.display = 'block';
+            removeBtn.style.display = 'none'; // Lock removal during analysis
+            
+            // Fake progress animation for UX
+            const stages = [1, 2, 3, 4, 5];
+            let currentStage = 0;
+            
+            const advanceStage = () => {
+                if(currentStage > 0) {
+                    const prev = document.getElementById(`stage${stages[currentStage-1]}`);
+                    prev.classList.remove('active');
+                    prev.classList.add('done');
+                    prev.querySelector('.stage-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
+                }
+                if(currentStage < stages.length) {
+                    const curr = document.getElementById(`stage${stages[currentStage]}`);
+                    curr.classList.add('active');
+                    curr.querySelector('.stage-icon').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+                    currentStage++;
+                }
+            };
+            
+            advanceStage(); // Start stage 1
+            const progressInterval = setInterval(() => {
+                if(currentStage < 4) advanceStage(); // Will stop at stage 4 until API returns
+            }, 1200);
+
+            try {
+                // Point to backend API with Auth
+                const token = getToken();
+                const headers = {};
+                if(token) headers['Authorization'] = `Bearer ${token}`;
+                
+                const response = await fetch(`${API_BASE}/analyze`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                clearInterval(progressInterval);
+                advanceStage(); // Complete stage 4
+                setTimeout(() => advanceStage(), 500); // Complete stage 5 (done)
+                
+                if(response.ok) {
+                    Toast.success("Analysis Complete", "Redirecting to results...");
+                    sessionStorage.setItem('analysisResult', JSON.stringify(result.data));
+                    
+                    setTimeout(() => {
+                        window.location.href = 'results.html';
+                    }, 1000);
+                } else {
+                    progressUI.style.display = 'none';
+                    analyzeBtn.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                    removeBtn.style.display = 'block';
+                    Toast.error('Analysis failed', result.detail || 'Internal processing error.');
+                }
+            } catch (error) {
+                clearInterval(progressInterval);
+                progressUI.style.display = 'none';
+                analyzeBtn.style.display = 'block';
+                analyzeBtn.disabled = false;
+                removeBtn.style.display = 'block';
+                Toast.error('Network error', 'Unable to reach backend services.');
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

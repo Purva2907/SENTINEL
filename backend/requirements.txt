@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic
+python-multipart
+opencv-python-headless
+Pillow
+numpy
+easyocr
+pyzbar
+reportlab
+python-jose[cryptography]
+bcrypt==3.2.2
+passlib[bcrypt]
+motor
+python-dotenv

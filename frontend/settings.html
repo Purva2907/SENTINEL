@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | Settings</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
+        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
+        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
+        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
+        .nav-item i { width: 25px; }
+        
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .settings-container { max-width: 800px; }
+        .settings-section { background: var(--bg-card); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; }
+        .settings-section h3 { margin-bottom: 20px; color: var(--cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .setting-item:last-child { border-bottom: none; }
+        
+        .setting-info h4 { margin-bottom: 5px; }
+        .setting-info p { color: var(--text-muted); font-size: 0.9rem; }
+        
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--cyan); }
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="analyze.html" class="nav-item"><i class="fa-solid fa-microscope"></i> New Analysis</a>
+            <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <div class="topbar">
+                <h2>System Settings</h2>
+            </div>
+            
+            <div class="settings-container">
+                <div class="settings-section">
+                    <h3><i class="fa-solid fa-desktop"></i> Appearance</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Dark Theme</h4>
+                            <p>Enable dark mode for the interface.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="themeToggle" checked disabled>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3><i class="fa-solid fa-microchip"></i> Engine Configuration</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Deep OCR Engine</h4>
+                            <p>Use advanced OCR extraction (Slower but more accurate).</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked disabled>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Local Chatbot Fallback</h4>
+                            <p>Use local LLM if API connection drops.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked disabled>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3><i class="fa-solid fa-bell"></i> Notifications</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Alert on High Risk</h4>
+                            <p>Notify when a document scores above 70 risk.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked disabled>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAuth();
+            if(!user) return;
+        });
+    </script>
+</body>
+</html>

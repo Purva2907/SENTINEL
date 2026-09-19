@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | Cases</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
+        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
+        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
+        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
+        .nav-item i { width: 25px; }
+        
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .cases-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .filters { display: flex; gap: 15px; margin-bottom: 20px; }
+        .filters input, .filters select { padding: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
+        
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .table th { color: var(--text-muted); font-size: 0.9rem; }
+        
+        .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+        .badge-high { background: rgba(255, 77, 77, 0.2); color: var(--danger); }
+        .badge-med { background: rgba(255, 204, 0, 0.2); color: var(--warning); }
+        .badge-low { background: rgba(85, 224, 126, 0.2); color: var(--success); }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="analyze.html" class="nav-item"><i class="fa-solid fa-microscope"></i> New Analysis</a>
+            <a href="cases.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <div class="topbar">
+                <h2>Investigation Cases</h2>
+                <a href="analyze.html" class="btn btn-primary" style="background:var(--orange); color:var(--bg-main); padding: 10px 20px; border-radius:4px; text-decoration:none; font-weight:bold;">
+                    <i class="fa-solid fa-plus"></i> New Case
+                </a>
+            </div>
+            
+            <div class="cases-container">
+                <div class="filters">
+                    <input type="text" id="searchFilter" placeholder="Search ID or Title..." style="flex:1;">
+                    <select id="classFilter">
+                        <option value="All">All Classifications</option>
+                        <option value="Likely Authentic">Likely Authentic</option>
+                        <option value="Review Required">Review Required</option>
+                        <option value="High Suspicion">High Suspicion</option>
+                    </select>
+                    <select id="statusFilter">
+                        <option value="All">All Statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Closed">Closed</option>
+                        <option value="Archived">Archived</option>
+                    </select>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Case ID</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Score</th>
+                            <th>Classification</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="casesList">
+                        <tr><td colspan="8" style="text-align:center; padding:20px;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let allCases = [];
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAuth();
+            if(!user) return;
+            
+            loadCases();
+            
+            document.getElementById('searchFilter').addEventListener('input', renderTable);
+            document.getElementById('classFilter').addEventListener('change', renderTable);
+            document.getElementById('statusFilter').addEventListener('change', renderTable);
+        });
+        
+        async function loadCases() {
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/cases`);
+                if(!res.ok) throw new Error("API Error");
+                const data = await res.json();
+                allCases = data.cases || [];
+                renderTable();
+            } catch(e) {
+                console.error("Failed to load cases");
+                Toast.error("Error", "Failed to load investigations");
+                document.getElementById('casesList').innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--danger)">Error loading data.</td></tr>';
+            }
+        }
+        
+        function renderTable() {
+            const search = document.getElementById('searchFilter').value.toLowerCase();
+            const cls = document.getElementById('classFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            
+            let filtered = allCases.filter(c => {
+                const matchesSearch = c.case_id.toLowerCase().includes(search) || c.title.toLowerCase().includes(search);
+                const matchesCls = cls === 'All' || c.classification === cls;
+                const matchesStatus = status === 'All' || c.status === status;
+                return matchesSearch && matchesCls && matchesStatus;
+            });
+            
+            const tbody = document.getElementById('casesList');
+            
+            if(filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px;">No investigations found.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(c => `
+                <tr>
+                    <td><strong>${c.case_id}</strong></td>
+                    <td>${c.title}</td>
+                    <td>${c.document_type}</td>
+                    <td>${c.risk_score}</td>
+                    <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${c.classification}</span></td>
+                    <td>${c.status}</td>
+                    <td>${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <a href="case-detail.html?id=${c.id}" style="color:var(--cyan); text-decoration:none; margin-right:10px;"><i class="fa-solid fa-eye"></i> View</a>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

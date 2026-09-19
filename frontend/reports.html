@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | Reports</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
+        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
+        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
+        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
+        .nav-item i { width: 25px; }
+        
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .reports-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .table th { color: var(--text-muted); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="analyze.html" class="nav-item"><i class="fa-solid fa-microscope"></i> New Analysis</a>
+            <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="reports.html" class="nav-item active"><i class="fa-solid fa-file-pdf"></i> Reports</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <div class="topbar">
+                <h2>Generated PDF Reports</h2>
+            </div>
+            
+            <div class="reports-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Report ID</th>
+                            <th>Case ID</th>
+                            <th>Generated Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsList">
+                        <tr><td colspan="4" style="text-align:center; padding:20px;">Loading reports...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAuth();
+            if(!user) return;
+            
+            loadReports();
+        });
+        
+        async function loadReports() {
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/reports`);
+                const data = await res.json();
+                const reports = data.reports || [];
+                
+                const tbody = document.getElementById('reportsList');
+                
+                if(reports.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">No reports generated yet. Go to a Case Detail page to generate a PDF.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = reports.map(r => `
+                    <tr>
+                        <td><strong>${r.report_id}</strong></td>
+                        <td>${r.case_id}</td>
+                        <td>${new Date(r.created_at).toLocaleString()}</td>
+                        <td>
+                            <a href="#" onclick="downloadReport('${r.id}', '${r.report_id}')" style="color:var(--orange); text-decoration:none; font-weight:bold;">
+                                <i class="fa-solid fa-download"></i> Download
+                            </a>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch(e) {
+                console.error("Failed to load reports");
+                Toast.error("Error", "Failed to load reports");
+                document.getElementById('reportsList').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--danger)">Error loading data.</td></tr>';
+            }
+        }
+        
+        async function downloadReport(reportId, reportName) {
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/reports/${reportId}/download`);
+                if(!res.ok) throw new Error('Download failed');
+                
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${reportName}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch(e) {
+                Toast.error('Download Error', 'Could not download the report');
+            }
+        }
+    </script>
+</body>
+</html>

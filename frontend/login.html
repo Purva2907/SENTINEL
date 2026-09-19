@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | Login</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 100px auto; padding: 30px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); text-align: center; }
+        .auth-container h1 { color: var(--orange); margin-bottom: 5px; }
+        .auth-container p { color: var(--text-muted); margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
+        .btn-auth { width: 100%; padding: 12px; background: var(--cyan); color: #000; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        .auth-links { margin-top: 20px; font-size: 0.9rem; }
+        .auth-links a { color: var(--cyan); text-decoration: none; margin: 0 10px; }
+        .error-msg { display: none; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1><i class="fa-solid fa-shield-halved"></i> SENTINEL</h1>
+        <p>AI-Powered Document Forensics</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn-auth" id="loginBtn">Sign In</button>
+        </form>
+
+        <div class="auth-links">
+            <a href="register.html">Create Account</a> | 
+            <a href="#" onclick="Toast.info('Demo Mode', 'Password recovery is disabled in this demo.')">Forgot Password</a>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Redirect if already logged in
+        if(getToken()) window.location.href = 'dashboard.html';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            
+            btn.disabled = true;
+            btn.innerText = 'Signing In...';
+            const loadingToast = Toast.loading("Authenticating...");
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                const data = await response.json();
+                loadingToast.dismiss();
+                
+                if(response.ok) {
+                    setToken(data.access_token);
+                    Toast.success("Login successful", "Redirecting to dashboard...", 2000);
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+                } else {
+                    Toast.error("Authentication failed", data.detail || 'Incorrect credentials');
+                }
+            } catch(e) {
+                loadingToast.dismiss();
+                Toast.error("Network Error", "Unable to reach SENTINEL backend.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Sign In';
+            }
+        });
+    </script>
+</body>
+</html>
