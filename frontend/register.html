@@ -17,6 +17,10 @@
         .btn-auth { width: 100%; padding: 12px; background: var(--cyan); color: #000; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         .auth-links { margin-top: 20px; font-size: 0.9rem; }
         .auth-links a { color: var(--cyan); text-decoration: none; margin: 0 10px; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { padding-right: 40px; }
+        .password-wrapper .toggle-password { position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0; display: flex; align-items: center; justify-content: center; }
+        .password-wrapper .toggle-password:hover { color: var(--cyan); }
     </style>
 </head>
 <body>
@@ -35,11 +39,21 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="password" required minlength="6">
+                <div class="password-wrapper">
+                    <input type="password" id="password" required minlength="6">
+                    <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePasswordVisibility('password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Confirm Password</label>
-                <input type="password" id="confirmPassword" required minlength="6">
+                <div class="password-wrapper">
+                    <input type="password" id="confirmPassword" required minlength="6">
+                    <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePasswordVisibility('confirmPassword', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn-auth" id="registerBtn">Create Account</button>
         </form>
@@ -55,8 +69,15 @@
     <script>
         if(getToken()) window.location.href = 'dashboard.html';
 
+        let isSubmitting = false;
+
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            // Clear existing error toasts to prevent stacking
+            document.querySelectorAll('.toast-error').forEach(t => t.remove());
+
+            if (isSubmitting) return;
+
             const btn = document.getElementById('registerBtn');
             const pwd = document.getElementById('password').value;
             const confirm = document.getElementById('confirmPassword').value;
@@ -66,6 +87,7 @@
                 return;
             }
 
+            isSubmitting = true;
             btn.disabled = true;
             btn.innerText = 'Creating Account...';
             const loadingToast = Toast.loading("Registering...");
@@ -75,7 +97,7 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        full_name: document.getElementById('fullName').value,
+                        name: document.getElementById('fullName').value,
                         email: document.getElementById('email').value,
                         password: pwd
                     })
@@ -88,12 +110,13 @@
                     Toast.success('Registration successful', 'Please sign in to continue.');
                     setTimeout(() => { window.location.href = 'login.html'; }, 1500);
                 } else {
-                    Toast.error('Registration failed', data.detail || 'Failed to create account');
+                    Toast.error('Registration failed', getErrorMessage(data));
                 }
             } catch(e) {
                 loadingToast.dismiss();
-                Toast.error('Network error', 'Unable to reach backend services.');
+                Toast.error('Network error', 'Unable to connect to the SENTINEL server. Please check that the backend is running.');
             } finally {
+                isSubmitting = false;
                 btn.disabled = false;
                 btn.innerText = 'Create Account';
             }

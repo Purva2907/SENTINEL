@@ -63,3 +63,48 @@ function logout() {
     removeToken();
     window.location.href = 'login.html';
 }
+
+function getErrorMessage(errorData) {
+    if (!errorData) return "Unknown error occurred";
+    if (typeof errorData === 'string') return errorData;
+    
+    if (typeof errorData === 'object') {
+        if (errorData.detail) {
+            if (typeof errorData.detail === 'string') return errorData.detail;
+            if (Array.isArray(errorData.detail)) {
+                return errorData.detail.map(err => {
+                    return (err && err.msg) ? err.msg : JSON.stringify(err);
+                }).join(', ');
+            }
+            return JSON.stringify(errorData.detail);
+        }
+        if (errorData.message) {
+            return typeof errorData.message === 'string' ? errorData.message : JSON.stringify(errorData.message);
+        }
+        if (errorData.error) {
+            return typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error);
+        }
+        try {
+            return JSON.stringify(errorData);
+        } catch(e) {
+            return "Unknown error occurred";
+        }
+    }
+    return String(errorData);
+}
+
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+        button.setAttribute('aria-label', 'Hide password');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+        button.setAttribute('aria-label', 'Show password');
+    }
+}

@@ -18,6 +18,10 @@
         .auth-links { margin-top: 20px; font-size: 0.9rem; }
         .auth-links a { color: var(--cyan); text-decoration: none; margin: 0 10px; }
         .error-msg { display: none; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { padding-right: 40px; }
+        .password-wrapper .toggle-password { position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0; display: flex; align-items: center; justify-content: center; }
+        .password-wrapper .toggle-password:hover { color: var(--cyan); }
     </style>
 </head>
 <body>
@@ -32,7 +36,12 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="password" required>
+                <div class="password-wrapper">
+                    <input type="password" id="password" required>
+                    <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePasswordVisibility('password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn-auth" id="loginBtn">Sign In</button>
         </form>
@@ -50,8 +59,14 @@
         // Redirect if already logged in
         if(getToken()) window.location.href = 'dashboard.html';
 
+        let isSubmitting = false;
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            document.querySelectorAll('.toast-error').forEach(t => t.remove());
+            if (isSubmitting) return;
+            isSubmitting = true;
+
             const btn = document.getElementById('loginBtn');
             
             btn.disabled = true;
@@ -76,12 +91,13 @@
                     Toast.success("Login successful", "Redirecting to dashboard...", 2000);
                     setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
                 } else {
-                    Toast.error("Authentication failed", data.detail || 'Incorrect credentials');
+                    Toast.error("Authentication failed", getErrorMessage(data));
                 }
             } catch(e) {
                 loadingToast.dismiss();
-                Toast.error("Network Error", "Unable to reach SENTINEL backend.");
+                Toast.error("Network Error", "Unable to connect to the SENTINEL server. Please check that the backend is running.");
             } finally {
+                isSubmitting = false;
                 btn.disabled = false;
                 btn.innerText = 'Sign In';
             }
