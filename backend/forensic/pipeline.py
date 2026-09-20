@@ -26,13 +26,13 @@ def process_document(file_path: str, case_id: str = None) -> dict:
         risk_score += 10
         evidence.append({
             "id": "EV-001", "category": "Quality", "title": "Low Image Quality",
-            "severity": "Warning", "score": 10, "finding": "Image quality is suboptimal.",
+            "severity": "Warning", "risk_contribution": 10, "finding": "Image quality is suboptimal.",
             "explanation": "This may affect OCR and other forensic signals."
         })
     else:
         evidence.append({
             "id": "EV-001", "category": "Quality", "title": "Acceptable Image Quality",
-            "severity": "Info", "score": 0, "finding": "Image quality is acceptable.",
+            "severity": "Info", "risk_contribution": 0, "finding": "Image quality is acceptable.",
             "explanation": "Resolution and clarity are sufficient."
         })
         
@@ -40,7 +40,7 @@ def process_document(file_path: str, case_id: str = None) -> dict:
         risk_score += 20
         evidence.append({
             "id": "EV-002", "category": "QR", "title": "QR Not Detected",
-            "severity": "High", "score": 20, "finding": "No QR code found.",
+            "severity": "High", "risk_contribution": 20, "finding": "No QR code found.",
             "explanation": "Official documents usually contain a QR code."
         })
         

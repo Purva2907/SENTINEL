@@ -11,7 +11,7 @@ class CaseRequest(BaseModel):
     status: str = "Active"
     analysis_data: dict
 
-@router.post("/")
+@router.post("")
 async def save_case(req: CaseRequest, current_user: dict = Depends(get_current_user)):
     user_id = current_user["id"]
     analysis_data = req.analysis_data
@@ -29,7 +29,7 @@ async def save_case(req: CaseRequest, current_user: dict = Depends(get_current_u
     case = await create_case(case_data, analysis_data)
     return {"message": "Case saved successfully", "case": case}
 
-@router.get("/")
+@router.get("")
 async def get_cases(current_user: dict = Depends(get_current_user)):
     cases = await list_cases(current_user["id"])
     return {"cases": cases}

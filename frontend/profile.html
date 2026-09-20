@@ -110,7 +110,7 @@
                         <form id="profileForm">
                             <div class="form-group">
                                 <label>Full Name</label>
-                                <input type="text" id="inputName" value="" disabled>
+                                <input type="text" id="inputName" value="">
                             </div>
                             <div class="form-group">
                                 <label>Secure Email</label>
@@ -124,8 +124,8 @@
                             <div style="margin-top: 35px; padding-top: 25px; border-top: 1px solid var(--shell-border);">
                                 <h4 style="color:var(--text-main); margin-bottom:15px; font-size:1rem;"><i class="fa-solid fa-lock" style="color:var(--cyan); margin-right:8px;"></i> Security Actions</h4>
                                 <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Identity details are managed by central command. Profile updates are currently restricted.</p>
-                                <button type="button" class="btn-primary" onclick="Toast.warning('Access Denied', 'Profile updates restricted by central command.')" style="background:var(--shell-border); color:var(--text-muted);">
-                                    Request Identity Update
+                                <button type="button" class="btn-primary" id="updateProfileBtn">
+                                    Update Identity
                                 </button>
                             </div>
                         </form>
@@ -163,6 +163,44 @@
             document.getElementById('inputName').value = name;
             document.getElementById('inputEmail').value = user.email || user.username || 'Not available';
             document.getElementById('inputRole').value = user.role || 'Investigator';
+            
+            document.getElementById('updateProfileBtn').addEventListener('click', async () => {
+                const newName = document.getElementById('inputName').value.trim();
+                if(!newName) {
+                    Toast.error("Error", "Name cannot be empty.");
+                    return;
+                }
+                
+                const btn = document.getElementById('updateProfileBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Updating...';
+                
+                try {
+                    const res = await fetchWithAuth(`${API_BASE}/auth/me`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ name: newName })
+                    });
+                    
+                    if(res.ok) {
+                        const updatedUser = await res.json();
+                        Toast.success("Success", "Identity updated successfully.");
+                        
+                        // Update UI
+                        document.getElementById('topName').innerText = updatedUser.name;
+                        document.getElementById('topAvatar').innerText = updatedUser.name.charAt(0).toUpperCase();
+                        document.getElementById('profName').innerText = updatedUser.name;
+                        document.getElementById('avatarInitials').innerText = updatedUser.name.substring(0, 2).toUpperCase();
+                    } else {
+                        const err = await res.json();
+                        Toast.error("Update Failed", err.detail || "Could not update profile.");
+                    }
+                } catch(e) {
+                    Toast.error("Network Error", "Could not reach server.");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Update Identity';
+                }
+            });
         });
     </script>
 </body>

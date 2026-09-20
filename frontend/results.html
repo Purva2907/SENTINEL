@@ -427,7 +427,7 @@
             confirmSaveBtn.disabled = true;
             
             try {
-                const res = await fetchWithAuth(`${API_BASE}/cases/`, {
+                const res = await fetchWithAuth(`${API_BASE}/cases`, {
                     method: 'POST',
                     body: JSON.stringify({
                         title: document.getElementById('caseTitle').value,

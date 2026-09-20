@@ -46,7 +46,7 @@ NEVER claim:
 Use terms such as "forensic screening", "risk indicator", "evidence", "signal", "manual review", and "analysis result".
 Be concise, professional, and analytical."""
 
-@router.post("/")
+@router.post("")
 async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends(get_current_user)):
     ctx = request.context
     

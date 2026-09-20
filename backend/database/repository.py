@@ -77,6 +77,16 @@ async def get_user_by_id(user_id: str):
         conn.close()
         return dict(row) if row else None
 
+async def update_user_profile(user_id: str, name: str):
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        await db.users.update_one({"id": user_id}, {"$set": {"name": name}})
+    else:
+        conn = get_sqlite_db()
+        conn.execute('UPDATE users SET name = ? WHERE id = ?', (name, user_id))
+        conn.commit()
+        conn.close()
+
 # --- CASES ---
 async def create_case(case_data: dict, analysis_data: dict):
     case_id_val = f"SC-{datetime.datetime.now().year}-{str(uuid.uuid4().hex)[:4].upper()}"
