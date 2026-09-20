@@ -1,0 +1,92 @@
+[
+    {
+        "filename": "SYN-TEST-0001.jpg",
+        "synthetic_id": "SYN-TEST-0001",
+        "label": "LIKELY_AUTHENTIC",
+        "generation_parameters": {
+            "condition": "clean"
+        },
+        "description": "Clean synthetic document"
+    },
+    {
+        "filename": "SYN-TEST-0002.jpg",
+        "synthetic_id": "SYN-TEST-0002",
+        "label": "LIKELY_AUTHENTIC",
+        "generation_parameters": {
+            "condition": "clean"
+        },
+        "description": "Clean synthetic document"
+    },
+    {
+        "filename": "SYN-TEST-0003.jpg",
+        "synthetic_id": "SYN-TEST-0003",
+        "label": "LIKELY_AUTHENTIC",
+        "generation_parameters": {
+            "condition": "clean"
+        },
+        "description": "Clean synthetic document"
+    },
+    {
+        "filename": "SYN-TEST-0004.jpg",
+        "synthetic_id": "SYN-TEST-0004",
+        "label": "LIKELY_AUTHENTIC",
+        "generation_parameters": {
+            "condition": "clean"
+        },
+        "description": "Clean synthetic document"
+    },
+    {
+        "filename": "SYN-TEST-0005.jpg",
+        "synthetic_id": "SYN-TEST-0005",
+        "label": "LIKELY_AUTHENTIC",
+        "generation_parameters": {
+            "condition": "clean"
+        },
+        "description": "Clean synthetic document"
+    },
+    {
+        "filename": "SYN-TEST-0006.jpg",
+        "synthetic_id": "SYN-TEST-0006",
+        "label": "REVIEW_REQUIRED",
+        "generation_parameters": {
+            "condition": "blur"
+        },
+        "description": "Moderate blur and jpeg compression"
+    },
+    {
+        "filename": "SYN-TEST-0007.jpg",
+        "synthetic_id": "SYN-TEST-0007",
+        "label": "REVIEW_REQUIRED",
+        "generation_parameters": {
+            "condition": "spacing"
+        },
+        "description": "Small spacing inconsistencies"
+    },
+    {
+        "filename": "SYN-TEST-0008.jpg",
+        "synthetic_id": "SYN-TEST-0008",
+        "label": "REVIEW_REQUIRED",
+        "generation_parameters": {
+            "condition": "brightness"
+        },
+        "description": "Overexposed brightness variation"
+    },
+    {
+        "filename": "SYN-TEST-0009.jpg",
+        "synthetic_id": "SYN-TEST-0009",
+        "label": "HIGH_SUSPICION",
+        "generation_parameters": {
+            "condition": "manipulated"
+        },
+        "description": "Obvious spacing and visual region manipulation"
+    },
+    {
+        "filename": "SYN-TEST-0010.jpg",
+        "synthetic_id": "SYN-TEST-0010",
+        "label": "HIGH_SUSPICION",
+        "generation_parameters": {
+            "condition": "heavy_artifacts"
+        },
+        "description": "Inconsistent typography and strong compression"
+    }
+]

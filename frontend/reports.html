@@ -1,30 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Reports</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
-        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
-        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
-        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
-        .nav-item i { width: 25px; }
-        
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .reports-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .table { width: 100%; border-collapse: collapse; }
-        .table th, .table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .table th { color: var(--text-muted); font-size: 0.9rem; }
-    </style>
 </head>
 <body>
+    <div class="forensic-bg"></div>
+    <div class="forensic-grid"></div>
+
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
@@ -33,30 +27,58 @@
             <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
             <a href="reports.html" class="nav-item active"><i class="fa-solid fa-file-pdf"></i> Reports</a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
+            <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <div style="flex:1"></div>
             <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
         
         <div class="main-content">
             <div class="topbar">
-                <h2>Generated PDF Reports</h2>
+                <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-left">
+                    <h2>Forensic Reports</h2>
+                    <p>Access generated PDF evidence dossiers.</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-profile">
+                        <div class="user-avatar" id="topAvatar">I</div>
+                        <div class="user-info">
+                            <span class="user-name" id="topName">Investigator</span>
+                            <span class="user-role">Investigator</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="reports-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Report ID</th>
-                            <th>Case ID</th>
-                            <th>Generated Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsList">
-                        <tr><td colspan="4" style="text-align:center; padding:20px;">Loading reports...</td></tr>
-                    </tbody>
-                </table>
+            <div class="content-area">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-file-pdf"></i> Generated Reports Archive</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Report ID</th>
+                                    <th>Case ID</th>
+                                    <th>Generated Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsList">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; padding:40px;">
+                                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--cyan); margin-bottom:15px; display:block;"></i>
+                                        Loading reports...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -64,10 +86,16 @@
     <script src="js/theme.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/chatbot.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if(!user) return;
+            
+            if(user.name) {
+                document.getElementById('topName').innerText = user.name;
+                document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
             
             loadReports();
         });
@@ -81,18 +109,28 @@
                 const tbody = document.getElementById('reportsList');
                 
                 if(reports.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">No reports generated yet. Go to a Case Detail page to generate a PDF.</td></tr>';
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="padding:0; border:none;">
+                                <div class="empty-state" style="margin: 20px 0; border: none; background: transparent;">
+                                    <i class="fa-solid fa-file-pdf empty-icon" style="font-size:3rem; opacity:0.5;"></i>
+                                    <h4>No reports generated yet</h4>
+                                    <p>Generate a forensic PDF report from a Case Detail page.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                     return;
                 }
                 
                 tbody.innerHTML = reports.map(r => `
                     <tr>
-                        <td><strong>${r.report_id}</strong></td>
-                        <td>${r.case_id}</td>
-                        <td>${new Date(r.created_at).toLocaleString()}</td>
+                        <td><strong style="color:var(--orange)">${r.report_id}</strong></td>
+                        <td style="color:var(--cyan); font-weight:500;">${r.case_id}</td>
+                        <td style="color:var(--text-muted)">${new Date(r.created_at).toLocaleString()}</td>
                         <td>
-                            <a href="#" onclick="downloadReport('${r.id}', '${r.report_id}')" style="color:var(--orange); text-decoration:none; font-weight:bold;">
-                                <i class="fa-solid fa-download"></i> Download
+                            <a href="#" onclick="downloadReport('${r.id}', '${r.report_id}')" class="btn-action" style="color:var(--orange); border-color:rgba(255,157,80,0.3);">
+                                <i class="fa-solid fa-download" style="margin-right:5px;"></i> Download PDF
                             </a>
                         </td>
                     </tr>
@@ -100,7 +138,7 @@
             } catch(e) {
                 console.error("Failed to load reports");
                 Toast.error("Error", "Failed to load reports");
-                document.getElementById('reportsList').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--danger)">Error loading data.</td></tr>';
+                document.getElementById('reportsList').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--danger)">Unable to load reports data.</td></tr>';
             }
         }
         
@@ -117,8 +155,9 @@
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
+                Toast.success("Success", "Report downloaded successfully.");
             } catch(e) {
-                Toast.error('Download Error', 'Could not download the report');
+                Toast.error('Download Error', 'Could not download the report. The file may no longer exist on the server.');
             }
         }
     </script>

@@ -1,38 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Cases</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
-        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
-        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
-        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
-        .nav-item i { width: 25px; }
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.2);
+            color: var(--text-main);
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .filter-input:focus {
+            border-color: var(--cyan);
+        }
+        select.filter-input {
+            appearance: none;
+            padding-right: 30px;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231DCED8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px top 50%;
+            background-size: 10px auto;
+        }
         
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .cases-container { background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .filters { display: flex; gap: 15px; margin-bottom: 20px; }
-        .filters input, .filters select { padding: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
-        
-        .table { width: 100%; border-collapse: collapse; }
-        .table th, .table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .table th { color: var(--text-muted); font-size: 0.9rem; }
-        
-        .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
-        .badge-high { background: rgba(255, 77, 77, 0.2); color: var(--danger); }
-        .badge-med { background: rgba(255, 204, 0, 0.2); color: var(--warning); }
-        .badge-low { background: rgba(85, 224, 126, 0.2); color: var(--success); }
+        @media (max-width: 768px) {
+            .filters { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
+    <div class="forensic-bg"></div>
+    <div class="forensic-grid"></div>
+
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
@@ -41,54 +59,82 @@
             <a href="cases.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i> Cases</a>
             <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
+            <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <div style="flex:1"></div>
             <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
         
         <div class="main-content">
             <div class="topbar">
-                <h2>Investigation Cases</h2>
-                <a href="analyze.html" class="btn btn-primary" style="background:var(--orange); color:var(--bg-main); padding: 10px 20px; border-radius:4px; text-decoration:none; font-weight:bold;">
-                    <i class="fa-solid fa-plus"></i> New Case
-                </a>
+                <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-left">
+                    <h2>Investigation Cases</h2>
+                    <p>Manage and review document forensic investigations.</p>
+                </div>
+                <div class="topbar-right">
+                    <a href="analyze.html" class="btn-primary" style="margin-right: 15px;">
+                        <i class="fa-solid fa-plus"></i> New Case
+                    </a>
+                    <div class="user-profile">
+                        <div class="user-avatar" id="topAvatar">I</div>
+                        <div class="user-info">
+                            <span class="user-name" id="topName">Investigator</span>
+                            <span class="user-role">Investigator</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="cases-container">
-                <div class="filters">
-                    <input type="text" id="searchFilter" placeholder="Search ID or Title..." style="flex:1;">
-                    <select id="classFilter">
-                        <option value="All">All Classifications</option>
-                        <option value="Likely Authentic">Likely Authentic</option>
-                        <option value="Review Required">Review Required</option>
-                        <option value="High Suspicion">High Suspicion</option>
-                    </select>
-                    <select id="statusFilter">
-                        <option value="All">All Statuses</option>
-                        <option value="Active">Active</option>
-                        <option value="Under Review">Under Review</option>
-                        <option value="Closed">Closed</option>
-                        <option value="Archived">Archived</option>
-                    </select>
+            <div class="content-area">
+                <div class="card">
+                    <div class="filters">
+                        <div style="flex:1; position:relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
+                            <input type="text" class="filter-input" id="searchFilter" placeholder="Search Case ID or Title..." style="width:100%; padding-left:35px; box-sizing:border-box;">
+                        </div>
+                        <select class="filter-input" id="classFilter">
+                            <option value="All">All Classifications</option>
+                            <option value="Likely Authentic">Likely Authentic</option>
+                            <option value="Review Required">Review Required</option>
+                            <option value="High Suspicion">High Suspicion</option>
+                        </select>
+                        <select class="filter-input" id="statusFilter">
+                            <option value="All">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Under Review">Under Review</option>
+                            <option value="Closed">Closed</option>
+                            <option value="Archived">Archived</option>
+                        </select>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Case ID</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Score</th>
+                                    <th>Classification</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="casesList">
+                                <tr>
+                                    <td colspan="8" style="text-align:center; padding:40px;">
+                                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--cyan); margin-bottom:15px; display:block;"></i>
+                                        Loading cases...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Case ID</th>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Score</th>
-                            <th>Classification</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="casesList">
-                        <tr><td colspan="8" style="text-align:center; padding:20px;">Loading...</td></tr>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -96,12 +142,18 @@
     <script src="js/theme.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/chatbot.js"></script>
     <script>
         let allCases = [];
         
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if(!user) return;
+            
+            if(user.name) {
+                document.getElementById('topName').innerText = user.name;
+                document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
             
             loadCases();
             
@@ -120,7 +172,7 @@
             } catch(e) {
                 console.error("Failed to load cases");
                 Toast.error("Error", "Failed to load investigations");
-                document.getElementById('casesList').innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--danger)">Error loading data.</td></tr>';
+                document.getElementById('casesList').innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--danger)">Unable to load investigation data.</td></tr>';
             }
         }
         
@@ -138,22 +190,52 @@
             
             const tbody = document.getElementById('casesList');
             
-            if(filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px;">No investigations found.</td></tr>';
+            if(filtered.length === 0 && allCases.length === 0) {
+                // Completely empty database
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="padding:0; border:none;">
+                            <div class="empty-state" style="margin: 20px 0; border: none; background: transparent;">
+                                <i class="fa-solid fa-folder-open empty-icon" style="font-size:3rem; opacity:0.5;"></i>
+                                <h4>No investigation cases yet</h4>
+                                <p>Start your first document analysis to create a case.</p>
+                                <a href="analyze.html" class="btn-primary" style="margin-top:10px;">New Analysis</a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            } else if (filtered.length === 0) {
+                // Filtering yielded no results
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="padding:0; border:none;">
+                            <div class="empty-state" style="margin: 20px 0; border: none; background: transparent;">
+                                <i class="fa-solid fa-filter-circle-xmark empty-icon" style="font-size:3rem; opacity:0.5;"></i>
+                                <h4>No matching cases</h4>
+                                <p>Try adjusting your search filters.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
                 return;
             }
             
             tbody.innerHTML = filtered.map(c => `
                 <tr>
-                    <td><strong>${c.case_id}</strong></td>
-                    <td>${c.title}</td>
+                    <td><strong style="color:var(--cyan)">${c.case_id}</strong></td>
+                    <td style="font-weight:500;">${c.title}</td>
                     <td>${c.document_type}</td>
-                    <td>${c.risk_score}</td>
+                    <td style="font-weight:bold;">${c.risk_score}</td>
                     <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${c.classification}</span></td>
-                    <td>${c.status}</td>
-                    <td>${new Date(c.created_at).toLocaleDateString()}</td>
                     <td>
-                        <a href="case-detail.html?id=${c.id}" style="color:var(--cyan); text-decoration:none; margin-right:10px;"><i class="fa-solid fa-eye"></i> View</a>
+                        <span style="font-size:0.85rem; padding:4px 8px; border-radius:4px; border:1px solid var(--shell-border); background:rgba(0,0,0,0.2);">
+                            ${c.status}
+                        </span>
+                    </td>
+                    <td style="color:var(--text-muted)">${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <a href="case-detail.html?id=${c.id}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a>
                     </td>
                 </tr>
             `).join('');

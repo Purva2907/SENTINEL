@@ -1,0 +1,224 @@
+/* chatbot.css - Global SENTINEL AI Assistant */
+
+.sentinel-ai-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--bg-card);
+    color: var(--cyan);
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    font-size: 26px;
+    border: 1px solid var(--cyan);
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(29, 206, 216, 0.4);
+    z-index: 1000;
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.sentinel-ai-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(29, 206, 216, 0.6);
+    background: rgba(29, 206, 216, 0.1);
+}
+
+.sentinel-ai-panel {
+    position: fixed;
+    bottom: 110px;
+    right: 30px;
+    width: 400px;
+    max-width: calc(100vw - 40px);
+    background: var(--bg-card);
+    border: 1px solid var(--cyan);
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideUpChat 0.3s ease forwards;
+}
+
+@keyframes slideUpChat {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-header {
+    background: rgba(29, 206, 216, 0.1);
+    color: var(--cyan);
+    padding: 15px 20px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--cyan);
+}
+
+.ai-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ai-status-indicator {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px var(--success);
+}
+
+.ai-header-right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.ai-header-right i {
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.ai-header-right i:hover {
+    opacity: 1;
+    color: var(--orange);
+}
+
+.ai-body {
+    padding: 20px;
+    height: 400px;
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ai-msg {
+    padding: 12px 18px;
+    border-radius: 8px;
+    max-width: 85%;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.ai-msg-user {
+    background: var(--cyan);
+    color: #000;
+    align-self: flex-end;
+    border-bottom-right-radius: 0;
+    font-weight: 500;
+}
+
+.ai-msg-bot {
+    background: rgba(0,0,0,0.4);
+    color: var(--text-main);
+    align-self: flex-start;
+    border-bottom-left-radius: 0;
+    border: 1px solid var(--shell-border);
+}
+
+.ai-suggestions {
+    padding: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-top: 1px solid var(--shell-border);
+    background: rgba(0,0,0,0.2);
+}
+
+.ai-suggestion-btn {
+    background: rgba(29, 206, 216, 0.05);
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.ai-suggestion-btn:hover {
+    background: var(--cyan);
+    color: #000;
+}
+
+.ai-input-area {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid var(--shell-border);
+    background: var(--bg-card);
+}
+
+.ai-input-area textarea {
+    flex: 1;
+    padding: 12px 15px;
+    background: rgba(0,0,0,0.4);
+    color: var(--text-main);
+    border: 1px solid var(--shell-border);
+    border-radius: 4px;
+    outline: none;
+    resize: none;
+    height: 44px;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.ai-input-area textarea:focus {
+    border-color: var(--cyan);
+}
+
+.ai-input-area button {
+    background: var(--cyan);
+    border: none;
+    padding: 0 20px;
+    margin-left: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #000;
+    font-weight: bold;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-input-area button:hover {
+    opacity: 0.9;
+}
+
+.ai-loading-dots i {
+    color: var(--cyan);
+    font-size: 1.2rem;
+}
+
+@media (max-width: 480px) {
+    .sentinel-ai-panel {
+        bottom: 0;
+        right: 0;
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    .ai-body {
+        height: calc(100vh - 140px);
+        max-height: none;
+    }
+    .sentinel-ai-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 55px;
+        height: 55px;
+    }
+}

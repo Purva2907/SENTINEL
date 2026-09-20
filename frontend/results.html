@@ -1,84 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Analysis Results</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
-        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
-        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
-        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
-        .nav-item i { width: 25px; }
-        
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
-        
-        .results-container { max-width: 1400px; margin: 0 auto; }
-        
-        .score-card { background: var(--bg-card); padding: 40px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); margin-bottom: 30px; position: relative; overflow: hidden; }
-        .risk-score { font-size: 5rem; font-weight: bold; margin: 10px 0; line-height: 1; }
-        .classification { font-size: 1.8rem; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
-        
-        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-        .card { background: var(--bg-card); padding: 25px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .card h3 { margin-bottom: 20px; color: var(--text-main); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 1.2rem; }
-        .card h3 i { color: var(--cyan); margin-right: 10px; }
-        
-        /* Evidence Styles */
-        .evidence-group { margin-bottom: 20px; }
-        .evidence-group-title { font-size: 0.9rem; font-weight: bold; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .evidence-item { padding: 15px; background: rgba(0,0,0,0.2); margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .evidence-left strong { display: block; margin-bottom: 5px; font-size: 1.1rem; }
-        .evidence-left p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 5px; }
-        .evidence-severity { font-size: 0.8rem; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
-        .evidence-right { text-align: right; }
-        .evidence-score { font-size: 1.2rem; font-weight: bold; }
-        .evidence-conf { font-size: 0.8rem; color: var(--text-muted); }
+        .score-card { 
+            background: var(--bg-card); 
+            padding: 50px 40px; 
+            border-radius: 8px; 
+            text-align: center; 
+            border: 1px solid var(--shell-border); 
+            margin-bottom: 30px; 
+            position: relative; 
+            overflow: hidden; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+        }
+        .score-card.high-risk::before { background: var(--danger); box-shadow: 0 0 20px var(--danger); }
+        .score-card.med-risk::before { background: var(--warning); box-shadow: 0 0 20px var(--warning); }
+        .score-card.low-risk::before { background: var(--success); box-shadow: 0 0 20px var(--success); }
 
-        .high-risk { color: var(--danger); border-top: 4px solid var(--danger); }
-        .med-risk { color: var(--warning); border-top: 4px solid var(--warning); }
-        .low-risk { color: var(--success); border-top: 4px solid var(--success); }
+        .risk-score { font-size: 6rem; font-weight: 800; margin: 10px 0; line-height: 1; letter-spacing: -2px; }
+        .classification { font-size: 1.5rem; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 10px; }
+        
+        .results-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        @media (max-width: 1200px) {
+            .results-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Evidence Styles */
+        .evidence-group { margin-bottom: 25px; }
+        .evidence-group-title { font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .evidence-item { 
+            padding: 20px; 
+            background: rgba(0,0,0,0.3); 
+            margin-bottom: 15px; 
+            border-radius: 6px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+            border-right: 1px solid var(--shell-border);
+            border-top: 1px solid var(--shell-border);
+            border-bottom: 1px solid var(--shell-border);
+        }
+        .evidence-left strong { display: block; margin-bottom: 8px; font-size: 1.1rem; color: var(--text-main); }
+        .evidence-left p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 5px; line-height: 1.5; }
+        .evidence-severity { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .evidence-right { text-align: right; min-width: 80px; }
+        .evidence-score { font-size: 1.3rem; font-weight: bold; }
         
         /* Heatmap Tabs */
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: 0.3s; }
-        .tab-btn.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--shell-border); padding-bottom: 15px; }
+        .tab-btn { background: transparent; border: 1px solid var(--shell-border); color: var(--text-muted); padding: 8px 20px; border-radius: 4px; cursor: pointer; transition: 0.3s; font-weight: 500; }
+        .tab-btn:hover { color: var(--text-main); border-color: rgba(255,255,255,0.2); }
+        .tab-btn.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-color: var(--cyan); }
         
-        .heatmap-container { text-align: center; position: relative; background: #000; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); }
-        .heatmap-img { max-width: 100%; max-height: 500px; border-radius: 4px; display: none; margin: 0 auto; }
+        .heatmap-container { text-align: center; position: relative; background: #000; padding: 15px; border-radius: 6px; border: 1px solid var(--shell-border); }
+        .heatmap-img { max-width: 100%; max-height: 500px; border-radius: 4px; display: none; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .heatmap-img.active { display: block; }
 
-        /* Small Panels */
+        /* Metric Grid */
         .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .metric-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .metric-val { font-size: 1.2rem; font-weight: bold; color: var(--cyan); margin: 5px 0; }
-        .metric-label { font-size: 0.8rem; color: var(--text-muted); }
+        .metric-item { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; text-align: center; border: 1px solid var(--shell-border); }
+        .metric-val { font-size: 1.3rem; font-weight: bold; margin: 5px 0; }
+        .metric-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--bg-card); padding: 40px; border-radius: 8px; width: 550px; border: 1px solid var(--cyan); box-shadow: 0 0 50px rgba(29, 206, 216, 0.2); }
+        .modal-content h3 { color: var(--cyan); margin-bottom: 25px; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
         
-        /* Chatbot */
-        .chat-btn { position: fixed; bottom: 30px; right: 30px; background: var(--orange); color: var(--bg-main); width: 60px; height: 60px; border-radius: 50%; font-size: 24px; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
-        .chat-panel { position: fixed; bottom: 100px; right: 30px; width: 380px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; display: none; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden; }
-        .chat-header { background: var(--orange); color: var(--bg-main); padding: 15px; font-weight: bold; display: flex; justify-content: space-between; }
-        .chat-body { padding: 15px; height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 8px; max-width: 85%; font-size: 0.95rem; line-height: 1.4; }
-        .msg-user { background: var(--cyan); color: #000; align-self: flex-end; border-bottom-right-radius: 0; }
-        .msg-bot { background: rgba(255,255,255,0.05); color: var(--text-main); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid var(--border-color); }
-        
-        .chat-suggestions { padding: 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .chat-suggestion-btn { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border: 1px solid var(--cyan); border-radius: 15px; padding: 5px 10px; font-size: 0.8rem; cursor: pointer; }
-        .chat-suggestion-btn:hover { background: var(--cyan); color: #000; }
-        
-        .chat-input { display: flex; padding: 10px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2); }
-        .chat-input input { flex: 1; padding: 10px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
-        .chat-input button { background: var(--cyan); border: none; padding: 10px 15px; margin-left: 10px; border-radius: 4px; cursor: pointer; color: #000; font-weight: bold; }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 15px; background: rgba(0,0,0,0.3); color: var(--text-main); border: 1px solid var(--shell-border); border-radius: 6px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--cyan); }
+        .form-group textarea { height: 120px; resize: none; font-family: inherit; }
     </style>
 </head>
 <body>
+    <div class="forensic-bg"></div>
+    <div class="forensic-grid"></div>
+
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
@@ -87,60 +105,73 @@
             <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
             <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
-            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
             <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <div style="flex:1"></div>
             <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
         
         <div class="main-content">
             <div class="topbar">
-                <div>
-                    <h2 style="color:var(--orange)"><i class="fa-solid fa-file-shield"></i> Forensic Analysis Results</h2>
-                    <p id="headerInfo" class="text-muted" style="margin-top:5px;">Loading...</p>
+                <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-left">
+                    <h2>Analysis Results</h2>
+                    <p id="headerInfo" class="text-muted" style="margin-top:5px; font-family:monospace;">Loading...</p>
                 </div>
-                <div>
-                    <a href="analyze.html" class="btn btn-secondary" style="background:transparent; color:var(--text-main); border:1px solid var(--border-color); padding:10px 15px; border-radius:4px; text-decoration:none;">Analyze Another</a>
-                    <button class="btn btn-primary" id="saveCaseBtn" style="background:var(--cyan); color:#000; border:none; padding:10px 15px; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:10px;">
-                        <i class="fa-solid fa-folder-plus"></i> Save as Case
+                <div class="topbar-right">
+                    <a href="analyze.html" class="btn-action" style="margin-right: 15px;">Analyze Another</a>
+                    <button class="btn-primary" id="saveCaseBtn">
+                        <i class="fa-solid fa-folder-plus"></i> Save Case
                     </button>
+                    <div class="user-profile" style="margin-left:20px; border-left:1px solid var(--shell-border); padding-left:20px;">
+                        <div class="user-avatar" id="topAvatar">I</div>
+                    </div>
                 </div>
             </div>
             
-            <div class="results-container">
+            <div class="content-area">
                 <div class="score-card" id="scoreCard">
                     <div class="classification" id="classification">ANALYZING...</div>
-                    <div class="risk-score" id="riskScore">-- <span style="font-size:2rem; color:var(--text-muted)">/ 100</span></div>
-                    <p class="text-muted" style="margin-top: 10px;">Forensic Risk Indicator</p>
+                    <div class="risk-score" id="riskScore">-- <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span></div>
+                    <p style="color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; font-size:0.85rem; margin-top:20px;">Deterministic Risk Indicator</p>
                 </div>
                 
-                <div class="grid">
+                <div class="results-grid">
                     <!-- Left Column: Evidence & Details -->
                     <div>
                         <div class="card" style="margin-bottom:30px;">
-                            <h3><i class="fa-solid fa-magnifying-glass"></i> Forensic Evidence</h3>
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-magnifying-glass"></i> Forensic Evidence Log</h3>
+                            </div>
                             
                             <div class="evidence-group" id="warningSignalsGroup">
-                                <div class="evidence-group-title" style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> Warning Signals</div>
+                                <div class="evidence-group-title" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Suspicious Signals</div>
                                 <div id="warningEvidenceList"></div>
                             </div>
                             
                             <div class="evidence-group" id="positiveSignalsGroup">
-                                <div class="evidence-group-title" style="color:var(--success)"><i class="fa-solid fa-check-circle"></i> Positive Signals</div>
+                                <div class="evidence-group-title" style="color:var(--success)"><i class="fa-solid fa-check-circle"></i> Authenticity Signals</div>
                                 <div id="positiveEvidenceList"></div>
                             </div>
                         </div>
                         
-                        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:20px;">
+                        <div class="results-grid" style="grid-template-columns: 1fr 1fr; gap:30px;">
                             <div class="card">
-                                <h3><i class="fa-solid fa-font"></i> OCR Analysis</h3>
-                                <div id="ocrStatus" style="font-weight:bold; margin-bottom:10px;"></div>
-                                <div id="ocrConfidence" class="text-muted" style="font-size:0.9rem; margin-bottom:15px;"></div>
-                                <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:4px; font-size:0.85rem; max-height:100px; overflow-y:auto; font-family:monospace;" id="ocrText"></div>
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-font"></i> OCR Engine</h3>
+                                </div>
+                                <div id="ocrStatus" style="font-weight:bold; margin-bottom:10px; font-size:0.9rem; text-transform:uppercase;"></div>
+                                <div id="ocrConfidence" class="text-muted" style="font-size:0.85rem; margin-bottom:20px;"></div>
+                                <div style="background:rgba(0,0,0,0.4); padding:15px; border-radius:6px; font-size:0.85rem; max-height:150px; overflow-y:auto; font-family:monospace; border:1px solid var(--shell-border); color:var(--cyan);" id="ocrText"></div>
                             </div>
                             
                             <div class="card">
-                                <h3><i class="fa-solid fa-qrcode"></i> QR Analysis</h3>
-                                <div class="metrics-grid" style="margin-bottom:15px;">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-qrcode"></i> QR Decoder</h3>
+                                </div>
+                                <div class="metrics-grid" style="margin-bottom:20px;">
                                     <div class="metric-item">
                                         <div class="metric-label">Detected</div>
                                         <div class="metric-val" id="qrDetected" style="color:var(--text-main)"></div>
@@ -150,8 +181,8 @@
                                         <div class="metric-val" id="qrDecoded" style="color:var(--text-main)"></div>
                                     </div>
                                 </div>
-                                <p class="text-muted" style="font-size:0.8rem; border-top:1px solid var(--border-color); padding-top:10px;">
-                                    QR detection or decoding alone does not establish document authenticity.
+                                <p class="text-muted" style="font-size:0.8rem; line-height:1.5;">
+                                    Presence of a QR code does not independently establish document authenticity.
                                 </p>
                             </div>
                         </div>
@@ -160,38 +191,45 @@
                     <!-- Right Column: Visuals -->
                     <div>
                         <div class="card" style="margin-bottom:30px;">
-                            <h3><i class="fa-solid fa-map"></i> Forensic Heatmap</h3>
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-map"></i> Forensic Visuals</h3>
+                            </div>
                             <div class="tabs">
-                                <button class="tab-btn active" onclick="switchHeatmapTab('heatmap')">Heatmap</button>
-                                <button class="tab-btn" onclick="switchHeatmapTab('original')">Original</button>
+                                <button class="tab-btn active" onclick="switchHeatmapTab('heatmap')">ELA Heatmap</button>
+                                <button class="tab-btn" onclick="switchHeatmapTab('original')">Source Image</button>
                             </div>
                             <div class="heatmap-container">
                                 <img id="heatmapView" class="heatmap-img active" src="" alt="Forensic Heatmap" onerror="this.src=''; this.alt='Preview unavailable';">
                                 <img id="originalView" class="heatmap-img" src="" alt="Original Document" onerror="this.src=''; this.alt='Preview unavailable';">
-                                <div id="heatmapFallback" style="padding:40px; color:var(--text-muted); display:none;">Image unavailable</div>
+                                <div id="heatmapFallback" style="padding:60px 20px; color:var(--text-muted); display:none;">
+                                    <i class="fa-solid fa-image-slash" style="font-size:3rem; margin-bottom:15px; opacity:0.3;"></i>
+                                    <p>Visual data unavailable</p>
+                                </div>
                             </div>
                         </div>
                         
                         <div class="card">
-                            <h3><i class="fa-solid fa-camera"></i> Image Quality</h3>
-                            <p class="text-muted" style="font-size:0.85rem; margin-bottom:15px;">DOCUMENT QUALITY VS AUTHENTICITY RISK. A poor-quality image is not automatically fraudulent.</p>
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-camera"></i> Quality Metrics</h3>
+                            </div>
+                            <p class="text-muted" style="font-size:0.85rem; margin-bottom:20px; line-height:1.5;">Poor quality inherently reduces forensic certainty but does not automatically flag as fraudulent.</p>
                             
                             <div class="metrics-grid">
                                 <div class="metric-item">
-                                    <div class="metric-label">Overall Score</div>
-                                    <div class="metric-val" id="qOverall"></div>
+                                    <div class="metric-label">Total Score</div>
+                                    <div class="metric-val" id="qOverall" style="color:var(--cyan)"></div>
                                 </div>
                                 <div class="metric-item">
                                     <div class="metric-label">Resolution</div>
-                                    <div class="metric-val" id="qRes"></div>
+                                    <div class="metric-val" id="qRes" style="color:var(--text-main)"></div>
                                 </div>
                                 <div class="metric-item">
                                     <div class="metric-label">Blur Level</div>
-                                    <div class="metric-val" id="qBlur"></div>
+                                    <div class="metric-val" id="qBlur" style="color:var(--text-main)"></div>
                                 </div>
                                 <div class="metric-item">
                                     <div class="metric-label">Lighting</div>
-                                    <div class="metric-val" id="qLight"></div>
+                                    <div class="metric-val" id="qLight" style="color:var(--text-main)"></div>
                                 </div>
                             </div>
                         </div>
@@ -200,44 +238,22 @@
             </div>
         </div>
     </div>
-
-    <!-- Chatbot -->
-    <button class="chat-btn" id="chatBtn"><i class="fa-solid fa-robot"></i></button>
-    <div class="chat-panel" id="chatPanel">
-        <div class="chat-header">
-            <span><i class="fa-solid fa-robot"></i> SENTINEL AI Assistant</span>
-            <i class="fa-solid fa-xmark" style="cursor:pointer" id="closeChat"></i>
-        </div>
-        <div class="chat-body" id="chatBody">
-            <div class="msg msg-bot">Hello, I'm the SENTINEL Forensic Assistant. I have analyzed the evidence for this document. Ask me anything.</div>
-        </div>
-        <div class="chat-suggestions">
-            <button class="chat-suggestion-btn">Why was this flagged?</button>
-            <button class="chat-suggestion-btn">What is the strongest evidence?</button>
-            <button class="chat-suggestion-btn">What did the QR analysis find?</button>
-            <button class="chat-suggestion-btn">What should I review manually?</button>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="chatInput" placeholder="Ask a question...">
-            <button id="sendChat"><i class="fa-solid fa-paper-plane"></i></button>
-        </div>
-    </div>
     
     <!-- Save Case Modal -->
-    <div id="saveCaseModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
-        <div style="background:var(--bg-card); padding:30px; border-radius:8px; width:500px; border:1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-            <h3 style="color:var(--orange); margin-bottom:20px; font-size:1.4rem;"><i class="fa-solid fa-folder-plus"></i> Save Investigation Case</h3>
-            <div style="margin-bottom:15px;">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted);">Case Title</label>
-                <input type="text" id="caseTitle" style="width:100%; padding:12px; background:rgba(0,0,0,0.2); color:var(--text-main); border:1px solid var(--border-color); border-radius:4px; font-size:1rem;" required>
+    <div class="modal-overlay" id="saveCaseModal">
+        <div class="modal-content">
+            <h3><i class="fa-solid fa-folder-plus"></i> Save Case</h3>
+            <div class="form-group">
+                <label>Case Title</label>
+                <input type="text" id="caseTitle" required>
             </div>
-            <div style="margin-bottom:25px;">
-                <label style="display:block; margin-bottom:8px; color:var(--text-muted);">Description (Optional)</label>
-                <textarea id="caseDesc" style="width:100%; padding:12px; background:rgba(0,0,0,0.2); color:var(--text-main); border:1px solid var(--border-color); border-radius:4px; height:100px; resize:none; font-family:inherit;"></textarea>
+            <div class="form-group">
+                <label>Investigator Notes (Optional)</label>
+                <textarea id="caseDesc" placeholder="Enter context or preliminary findings..."></textarea>
             </div>
-            <div style="display:flex; justify-content:flex-end; gap:15px;">
-                <button id="cancelSaveBtn" style="padding:10px 20px; background:transparent; color:var(--text-main); border:1px solid var(--border-color); border-radius:4px; cursor:pointer; font-weight:bold;">Cancel</button>
-                <button id="confirmSaveBtn" style="padding:10px 20px; background:var(--cyan); color:#000; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Save Case</button>
+            <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:35px;">
+                <button id="cancelSaveBtn" class="btn-action">Cancel</button>
+                <button id="confirmSaveBtn" class="btn-primary">Save Case</button>
             </div>
         </div>
     </div>
@@ -245,12 +261,17 @@
     <script src="js/theme.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/chatbot.js"></script>
     <script>
         let analysisData = null;
         
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if(!user) return;
+            
+            if(user.name) {
+                document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
 
             const dataStr = sessionStorage.getItem('analysisResult');
             if(dataStr) {
@@ -267,14 +288,14 @@
         });
 
         function renderResults(data) {
-            document.getElementById('headerInfo').innerText = `Document Type: ${data.document_type || 'Unknown'} | Time: ${new Date().toLocaleString()}`;
+            document.getElementById('headerInfo').innerText = `DOC_TYPE: ${data.document_type ? data.document_type.toUpperCase() : 'UNKNOWN'} | TIMESTAMP: ${new Date().toISOString()}`;
             
             // Risk Score
             const scoreCard = document.getElementById('scoreCard');
             const scoreEl = document.getElementById('riskScore');
             const classEl = document.getElementById('classification');
             
-            scoreEl.innerHTML = `${data.risk_score} <span style="font-size:2rem; color:var(--text-muted)">/ 100</span>`;
+            scoreEl.innerHTML = `${data.risk_score} <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span>`;
             classEl.innerText = data.classification;
             
             if(data.risk_score >= 70) {
@@ -294,7 +315,7 @@
             // Quality Panel
             if (data.quality) {
                 document.getElementById('qOverall').innerText = `${data.quality.score}/100`;
-                document.getElementById('qRes').innerText = data.quality.resolution_ok ? 'Pass' : 'Low';
+                document.getElementById('qRes').innerHTML = data.quality.resolution_ok ? '<span style="color:var(--success)">PASS</span>' : '<span style="color:var(--danger)">LOW</span>';
                 document.getElementById('qBlur').innerText = data.quality.blur_score ? data.quality.blur_score.toFixed(1) : 'N/A';
                 document.getElementById('qLight').innerText = data.quality.brightness ? data.quality.brightness.toFixed(1) : 'N/A';
             }
@@ -303,24 +324,24 @@
             if (data.ocr) {
                 const statusEl = document.getElementById('ocrStatus');
                 if (data.ocr.success) {
-                    statusEl.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Extraction Successful</span>';
+                    statusEl.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Active</span>';
                 } else {
-                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> Text extraction could not be completed reliably.</span>';
+                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> Extraction Failed</span>';
                 }
-                document.getElementById('ocrConfidence').innerText = `Average Confidence: ${(data.ocr.average_confidence * 100).toFixed(1)}%`;
-                document.getElementById('ocrText').innerText = data.ocr.raw_text || 'No text extracted.';
+                document.getElementById('ocrConfidence').innerText = `Avg. Confidence: ${(data.ocr.average_confidence * 100).toFixed(1)}%`;
+                document.getElementById('ocrText').innerText = data.ocr.raw_text || 'NO_TEXT_RECOVERED';
             }
 
             // QR Panel
             if (data.qr) {
-                document.getElementById('qrDetected').innerHTML = data.qr.detected ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> Yes' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> No';
-                document.getElementById('qrDecoded').innerHTML = data.qr.decoded ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> Yes' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> No';
+                document.getElementById('qrDetected').innerHTML = data.qr.detected ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> YES' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> NO';
+                document.getElementById('qrDecoded').innerHTML = data.qr.decoded ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> YES' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> NO';
             }
 
             // Heatmap
             if (data.heatmap) {
                 document.getElementById('heatmapView').src = data.heatmap;
-                document.getElementById('originalView').src = data.heatmap; // Replace with original image if returned by API in future
+                document.getElementById('originalView').src = data.heatmap;
             } else {
                 document.getElementById('heatmapView').style.display = 'none';
                 document.getElementById('originalView').style.display = 'none';
@@ -342,12 +363,12 @@
                     const html = `
                         <div class="evidence-item" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
                             <div class="evidence-left">
-                                <span class="evidence-severity" style="background: ${ev.severity === 'High' ? 'rgba(255,77,77,0.2)' : ev.severity === 'Warning' ? 'rgba(255,204,0,0.2)' : 'rgba(85,224,126,0.2)'}; color: ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">${ev.severity}</span>
-                                <strong style="margin-top:8px;">${ev.title}</strong>
+                                <span class="evidence-severity" style="background: ${ev.severity === 'High' ? 'rgba(255,77,77,0.1)' : ev.severity === 'Warning' ? 'rgba(255,204,0,0.1)' : 'rgba(85,224,126,0.1)'}; color: ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">${ev.severity}</span>
+                                <strong style="margin-top:10px;">${ev.title}</strong>
                                 <p>${ev.finding}</p>
                             </div>
                             <div class="evidence-right">
-                                <div class="evidence-score ${ev.risk_contribution > 0 ? 'text-danger' : 'text-success'}">${ev.risk_contribution > 0 ? '+' : ''}${ev.risk_contribution} risk</div>
+                                <div class="evidence-score" style="color: ${ev.risk_contribution > 0 ? 'var(--danger)' : 'var(--success)'}">${ev.risk_contribution > 0 ? '+' : ''}${ev.risk_contribution} risk</div>
                             </div>
                         </div>
                     `;
@@ -386,59 +407,6 @@
             }
         }
 
-        // Chatbot Logic
-        const chatBtn = document.getElementById('chatBtn');
-        const chatPanel = document.getElementById('chatPanel');
-        const closeChat = document.getElementById('closeChat');
-        const sendChat = document.getElementById('sendChat');
-        const chatInput = document.getElementById('chatInput');
-        const chatBody = document.getElementById('chatBody');
-
-        chatBtn.addEventListener('click', () => { chatPanel.style.display = 'flex'; });
-        closeChat.addEventListener('click', () => { chatPanel.style.display = 'none'; });
-        
-        document.querySelectorAll('.chat-suggestion-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                chatInput.value = btn.innerText;
-                sendMessage();
-            });
-        });
-
-        async function sendMessage() {
-            const text = chatInput.value.trim();
-            if(!text) return;
-            
-            chatBody.innerHTML += `<div class="msg msg-user">${text}</div>`;
-            chatInput.value = '';
-            chatBody.scrollTop = chatBody.scrollHeight;
-
-            const loadingId = 'msg-' + Date.now();
-            chatBody.innerHTML += `<div class="msg msg-bot" id="${loadingId}"><i class="fa-solid fa-ellipsis fa-fade"></i></div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
-
-            try {
-                const response = await fetch('http://localhost:8000/api/chat/', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        query: text,
-                        context: analysisData
-                    })
-                });
-                const res = await response.json();
-                
-                document.getElementById(loadingId).outerHTML = `<div class="msg msg-bot">${res.answer}</div>`;
-                chatBody.scrollTop = chatBody.scrollHeight;
-            } catch(e) {
-                document.getElementById(loadingId).outerHTML = `<div class="msg msg-bot" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Error connecting to AI. Using local fallback.</div>`;
-            }
-        }
-
-        sendChat.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') sendMessage();
-        });
-
         // Save Case Logic
         const saveCaseBtn = document.getElementById('saveCaseBtn');
         const saveCaseModal = document.getElementById('saveCaseModal');
@@ -464,7 +432,11 @@
                     body: JSON.stringify({
                         title: document.getElementById('caseTitle').value,
                         description: document.getElementById('caseDesc').value,
-                        analysis_data: analysisData
+                        analysis_data: analysisData,
+                        document_type: analysisData.document_type,
+                        status: 'Active',
+                        risk_score: analysisData.risk_score,
+                        classification: analysisData.classification
                     })
                 });
                 

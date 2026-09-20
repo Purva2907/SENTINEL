@@ -1,43 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Settings</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
-        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
-        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
-        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
-        .nav-item i { width: 25px; }
+        .settings-container { max-width: 800px; margin: 0 auto; }
         
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .settings-container { max-width: 800px; }
-        .settings-section { background: var(--bg-card); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 30px; }
-        .settings-section h3 { margin-bottom: 20px; color: var(--cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-        
-        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .setting-item:last-child { border-bottom: none; }
-        
-        .setting-info h4 { margin-bottom: 5px; }
-        .setting-info p { color: var(--text-muted); font-size: 0.9rem; }
-        
-        /* Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--cyan); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        .theme-options { display: flex; gap: 20px; margin-top: 20px; }
+        .theme-btn { 
+            flex: 1; 
+            background: rgba(0,0,0,0.2); 
+            border: 2px solid var(--shell-border); 
+            padding: 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            text-align: center; 
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+        [data-theme="light"] .theme-btn { background: rgba(0,0,0,0.03); }
+        .theme-btn:hover { border-color: rgba(29, 206, 216, 0.5); background: rgba(29, 206, 216, 0.05); }
+        .theme-btn.active { border-color: var(--cyan); background: rgba(29, 206, 216, 0.1); }
+        .theme-btn i { font-size: 2rem; margin-bottom: 10px; display: block; }
+        .theme-btn.active i { color: var(--cyan); }
     </style>
 </head>
 <body>
+    <div class="forensic-bg"></div>
+    <div class="forensic-grid"></div>
+
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
@@ -46,79 +48,125 @@
             <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
             <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
-            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
             <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear"></i> Settings</a>
+            <div style="flex:1"></div>
             <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
         
         <div class="main-content">
             <div class="topbar">
-                <h2>System Settings</h2>
+                <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-left">
+                    <h2>System Settings</h2>
+                    <p>Configure interface preferences and application settings.</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-profile">
+                        <div class="user-avatar" id="topAvatar">I</div>
+                        <div class="user-info">
+                            <span class="user-name" id="topName">Investigator</span>
+                            <span class="user-role">Investigator</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="settings-container">
-                <div class="settings-section">
-                    <h3><i class="fa-solid fa-desktop"></i> Appearance</h3>
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Dark Theme</h4>
-                            <p>Enable dark mode for the interface.</p>
+            <div class="content-area">
+                <div class="settings-container">
+                    
+                    <div class="card" style="margin-bottom: 30px;">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-palette"></i> Appearance</h3>
                         </div>
-                        <label class="switch">
-                            <input type="checkbox" id="themeToggle" checked disabled>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h3><i class="fa-solid fa-microchip"></i> Engine Configuration</h3>
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Deep OCR Engine</h4>
-                            <p>Use advanced OCR extraction (Slower but more accurate).</p>
+                        <p style="color:var(--text-muted); margin-bottom:20px;">Choose your preferred working environment.</p>
+                        
+                        <div class="theme-options">
+                            <div class="theme-btn" id="theme-dark" onclick="setTheme('dark')">
+                                <i class="fa-solid fa-moon"></i>
+                                <strong>Forensic Dark</strong>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin:5px 0 0 0;">Cinematic command center</p>
+                            </div>
+                            <div class="theme-btn" id="theme-light" onclick="setTheme('light')">
+                                <i class="fa-solid fa-sun"></i>
+                                <strong>Clean Light</strong>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin:5px 0 0 0;">Professional investigation</p>
+                            </div>
                         </div>
-                        <label class="switch">
-                            <input type="checkbox" checked disabled>
-                            <span class="slider"></span>
-                        </label>
                     </div>
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Local Chatbot Fallback</h4>
-                            <p>Use local LLM if API connection drops.</p>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-lock"></i> Security & Session</h3>
                         </div>
-                        <label class="switch">
-                            <input type="checkbox" checked disabled>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h3><i class="fa-solid fa-bell"></i> Notifications</h3>
-                    <div class="setting-item">
-                        <div class="setting-info">
-                            <h4>Alert on High Risk</h4>
-                            <p>Notify when a document scores above 70 risk.</p>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0; border-bottom:1px solid var(--shell-border);">
+                            <div>
+                                <h4 style="margin:0 0 5px 0; color:var(--text-main);">Terminate Session</h4>
+                                <p style="margin:0; font-size:0.9rem; color:var(--text-muted);">Securely sign out of your investigator account.</p>
+                            </div>
+                            <button class="btn-action" onclick="logout()" style="color:var(--danger); border-color:rgba(255,77,77,0.3);">
+                                <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                            </button>
                         </div>
-                        <label class="switch">
-                            <input type="checkbox" checked disabled>
-                            <span class="slider"></span>
-                        </label>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 0;">
+                            <div>
+                                <h4 style="margin:0 0 5px 0; color:var(--text-main);">Advanced Settings</h4>
+                                <p style="margin:0; font-size:0.9rem; color:var(--text-muted);">Not available in current deployment.</p>
+                            </div>
+                            <span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid var(--shell-border);">Unavailable</span>
+                        </div>
                     </div>
+                    
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- We must include theme.js manually if it handles initial load, but we'll override the toggle logic here -->
     <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/chatbot.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if(!user) return;
+            
+            if(user.name) {
+                document.getElementById('topName').innerText = user.name;
+                document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
+            
+            // Initialize theme UI with current theme
+            const savedTheme = localStorage.getItem(window.ThemeManager.STORAGE_KEY) || 'dark';
+            updateThemeUI(savedTheme);
+            
+            // Listen for global theme changes to keep settings UI in sync
+            window.addEventListener('sentinel-theme-change', (e) => {
+                updateThemeUI(e.detail.theme);
+            });
         });
+        
+        function setTheme(theme) {
+            if (window.ThemeManager) {
+                window.ThemeManager.setTheme(theme);
+            }
+        }
+        
+        function updateThemeUI(theme) {
+            document.getElementById('theme-dark').classList.remove('active');
+            document.getElementById('theme-light').classList.remove('active');
+            
+            if(theme === 'dark' || theme === 'forensic-dark') {
+                document.getElementById('theme-dark').classList.add('active');
+            } else {
+                document.getElementById('theme-light').classList.add('active');
+            }
+        }
     </script>
 </body>
 </html>

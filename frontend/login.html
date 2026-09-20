@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Login</title>
@@ -8,47 +14,313 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .auth-container { max-width: 400px; margin: 100px auto; padding: 30px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); text-align: center; }
-        .auth-container h1 { color: var(--orange); margin-bottom: 5px; }
-        .auth-container p { color: var(--text-muted); margin-bottom: 25px; }
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 12px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; }
-        .btn-auth { width: 100%; padding: 12px; background: var(--cyan); color: #000; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        .auth-links { margin-top: 20px; font-size: 0.9rem; }
-        .auth-links a { color: var(--cyan); text-decoration: none; margin: 0 10px; }
-        .error-msg { display: none; }
-        .password-wrapper { position: relative; display: flex; align-items: center; }
-        .password-wrapper input { padding-right: 40px; }
-        .password-wrapper .toggle-password { position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0; display: flex; align-items: center; justify-content: center; }
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            background-image: radial-gradient(circle at 10% 80%, rgba(29, 206, 216, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 20%, rgba(255, 157, 80, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .grid-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        [data-theme="light"] .grid-bg {
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+        }
+
+        .auth-page-wrapper {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        /* Left Side */
+        .auth-info-section {
+            flex: 1.2;
+            padding: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-theme="light"] .auth-info-section {
+            background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 100%);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 60px;
+        }
+        
+        .auth-brand i { font-size: 3rem; color: var(--orange); }
+        .auth-brand-text h2 { margin: 0; font-size: 2rem; letter-spacing: 2px; color: var(--text-main); }
+        .auth-brand-text p { margin: 0; font-size: 0.9rem; color: var(--text-muted); letter-spacing: 1px; }
+
+        .auth-hero-text { margin-bottom: 50px; }
+        .auth-hero-text h1 { font-size: 4rem; line-height: 1.1; margin: 0 0 20px 0; color: var(--text-main); font-weight: 800; }
+        .auth-hero-text h1 span.stay-ahead { color: var(--orange); }
+        .auth-hero-text p { font-size: 1.1rem; color: var(--text-muted); max-width: 450px; line-height: 1.6; }
+
+        .auth-features { display: flex; flex-direction: column; gap: 30px; }
+        .feature-item { display: flex; align-items: flex-start; gap: 20px; }
+        .feature-icon {
+            width: 45px; height: 45px; border-radius: 12px;
+            background: rgba(29, 206, 216, 0.1); color: var(--cyan);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; flex-shrink: 0;
+            border: 1px solid rgba(29, 206, 216, 0.2);
+        }
+        .feature-text h3 { margin: 0 0 5px 0; font-size: 1.05rem; color: var(--text-main); }
+        .feature-text p { margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; max-width: 350px; }
+
+        /* Right Side */
+        .auth-form-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 450px;
+            background: rgba(30, 30, 30, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        [data-theme="light"] .auth-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            opacity: 0.4;
+        }
+        .auth-card::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 1px; height: 100%;
+            background: linear-gradient(180deg, transparent, var(--orange), transparent);
+            opacity: 0.4;
+        }
+
+        @keyframes cardEntrance {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-brand-mobile { display: none; }
+        
+        .card-header { text-align: center; margin-bottom: 35px; }
+        .card-header h2 { margin: 0 0 8px 0; font-size: 1.8rem; color: var(--text-main); }
+        .card-header p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: var(--text-main); }
+        
+        .input-wrapper, .password-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+        .input-wrapper i.field-icon, .password-wrapper i.field-icon {
+            position: absolute; left: 15px; color: var(--text-muted); transition: color 0.3s; z-index: 2;
+        }
+        
+        .form-group input, .password-wrapper input {
+            width: 100%; padding: 14px 15px 14px 45px;
+            background: rgba(18, 18, 18, 0.6); color: var(--text-main);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            font-size: 1rem; transition: all 0.3s ease;
+        }
+        
+        [data-theme="light"] .form-group input, [data-theme="light"] .password-wrapper input {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-group input:focus, .password-wrapper input:focus {
+            outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(29, 206, 216, 0.15);
+        }
+        .form-group input:focus ~ i.field-icon, .password-wrapper input:focus ~ i.field-icon { color: var(--cyan); }
+        
+        .password-wrapper input { padding-right: 45px; }
+        .password-wrapper .toggle-password {
+            position: absolute; right: 15px; background: none; border: none;
+            color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0;
+            display: flex; align-items: center; justify-content: center; transition: color 0.3s; z-index: 2;
+        }
         .password-wrapper .toggle-password:hover { color: var(--cyan); }
+
+        .auth-actions { display: flex; justify-content: flex-end; margin-top: 10px; margin-bottom: 25px; }
+        .auth-actions a { color: var(--cyan); text-decoration: none; font-size: 0.85rem; transition: color 0.3s; }
+        .auth-actions a:hover { color: var(--orange); }
+
+        .btn-auth {
+            width: 100%; padding: 14px; background: var(--cyan); color: #000;
+            border: none; font-weight: 700; font-size: 1.05rem; border-radius: 8px; cursor: pointer;
+            transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -8px var(--cyan); }
+        .btn-auth:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-auth i { transition: transform 0.3s; }
+        .btn-auth:hover i { transform: translateX(4px); }
+
+        .auth-footer { margin-top: 30px; text-align: center; font-size: 0.95rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px; }
+        [data-theme="light"] .auth-footer { border-top-color: rgba(0,0,0,0.1); }
+        .auth-footer a { color: var(--cyan); text-decoration: none; font-weight: 600; margin-left: 5px; transition: color 0.3s; }
+        .auth-footer a:hover { color: var(--orange); }
+
+        /* Responsive */
+        @media (max-width: 1100px) {
+            .auth-info-section { padding: 50px; }
+            .auth-hero-text h1 { font-size: 3rem; }
+        }
+
+        @media (max-width: 850px) {
+            .auth-page-wrapper { flex-direction: column; }
+            .auth-info-section { display: none; }
+            .auth-form-section { padding: 20px; align-items: flex-start; padding-top: 50px; }
+            .auth-card { padding: 40px 30px; }
+            .auth-brand-mobile {
+                display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 25px;
+            }
+            .auth-brand-mobile i { font-size: 2.2rem; color: var(--orange); }
+            .auth-brand-mobile h2 { margin: 0; font-size: 1.6rem; letter-spacing: 1px; color: var(--text-main); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-card { animation: none; }
+            .btn-auth, .btn-auth i { transition: none; }
+            .btn-auth:hover { transform: none; }
+        }
     </style>
 </head>
 <body>
-    <div class="auth-container">
-        <h1><i class="fa-solid fa-shield-halved"></i> SENTINEL</h1>
-        <p>AI-Powered Document Forensics</p>
-
-        <form id="loginForm">
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <div class="password-wrapper">
-                    <input type="password" id="password" required>
-                    <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePasswordVisibility('password', this)">
-                        <i class="fa-solid fa-eye"></i>
-                    </button>
+    <div class="grid-bg"></div>
+    <div class="auth-page-wrapper">
+        
+        <!-- Left Information Area -->
+        <div class="auth-info-section">
+            <div class="auth-brand">
+                <i class="fa-solid fa-shield-halved"></i>
+                <div class="auth-brand-text">
+                    <h2>SENTINEL</h2>
+                    <p>AI-Powered Document Forensics</p>
                 </div>
             </div>
-            <button type="submit" class="btn-auth" id="loginBtn">Sign In</button>
-        </form>
 
-        <div class="auth-links">
-            <a href="register.html">Create Account</a> | 
-            <a href="#" onclick="Toast.info('Demo Mode', 'Password recovery is disabled in this demo.')">Forgot Password</a>
+            <div class="auth-hero-text">
+                <h1>VERIFY.<br>ANALYZE.<br><span class="stay-ahead">STAY AHEAD.</span></h1>
+                <p>Advanced document forensics to identify suspicious manipulation, inconsistencies, and risk indicators.</p>
+            </div>
+
+            <div class="auth-features">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fa-solid fa-microchip"></i></div>
+                    <div class="feature-text">
+                        <h3>AI-Powered Analysis</h3>
+                        <p>Detect suspicious document indicators through multiple forensic signals.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="feature-text">
+                        <h3>Evidence-Based Screening</h3>
+                        <p>Review OCR, QR, image quality, layout and forensic evidence together.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div class="feature-text">
+                        <h3>Explainable Risk</h3>
+                        <p>Understand why a document receives a particular risk classification.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fa-solid fa-folder-open"></i></div>
+                    <div class="feature-text">
+                        <h3>Investigator Ready</h3>
+                        <p>Save cases, review evidence, add notes and generate reports.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Authentication Area -->
+        <div class="auth-form-section">
+            <div class="auth-card">
+                
+                <div class="auth-brand-mobile">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h2>SENTINEL</h2>
+                </div>
+
+                <div class="card-header">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to continue your investigation</p>
+                </div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope field-icon"></i>
+                            <input type="email" id="email" required placeholder="Enter your email">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="password-wrapper">
+                            <i class="fa-solid fa-lock field-icon"></i>
+                            <input type="password" id="password" required placeholder="Enter your password">
+                            <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePasswordVisibility('password', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="auth-actions">
+                        <a href="#" onclick="Toast.info('Demo Mode', 'Password recovery is disabled in this demo.')">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-auth" id="loginBtn">
+                        Sign In <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    Don't have an account? <a href="register.html">Create Account</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -68,9 +340,10 @@
             isSubmitting = true;
 
             const btn = document.getElementById('loginBtn');
+            const originalBtnContent = btn.innerHTML;
             
             btn.disabled = true;
-            btn.innerText = 'Signing In...';
+            btn.innerHTML = 'Signing In... <i class="fa-solid fa-spinner fa-spin"></i>';
             const loadingToast = Toast.loading("Authenticating...");
 
             try {
@@ -99,7 +372,7 @@
             } finally {
                 isSubmitting = false;
                 btn.disabled = false;
-                btn.innerText = 'Sign In';
+                btn.innerHTML = originalBtnContent;
             }
         });
     </script>

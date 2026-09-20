@@ -1,30 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Analytics</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 250px; background: var(--bg-card); border-right: 1px solid var(--border-color); padding: 20px 0; }
-        .sidebar-brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-align: center; margin-bottom: 30px; }
-        .nav-item { display: block; padding: 15px 20px; color: var(--text-main); text-decoration: none; transition: background 0.3s; }
-        .nav-item:hover, .nav-item.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-left: 4px solid var(--cyan); }
-        .nav-item i { width: 25px; }
-        
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
-        .chart-card { background: var(--bg-card); padding: 25px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .chart-card h3 { color: var(--text-muted); margin-bottom: 20px; }
+        .charts-container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 30px; 
+            margin-bottom: 30px; 
+        }
+        .chart-card { 
+            display: flex;
+            flex-direction: column;
+            height: 350px;
+        }
+        .chart-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        @media (max-width: 1024px) {
+            .charts-container { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
+    <div class="forensic-bg"></div>
+    <div class="forensic-grid"></div>
+
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
@@ -33,34 +51,37 @@
             <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
             <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
             <a href="analytics.html" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
+            <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <div style="flex:1"></div>
             <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
         
         <div class="main-content">
             <div class="topbar">
-                <h2>Forensic Analytics</h2>
-                <a href="#" class="btn btn-primary" style="background:var(--cyan); color:#000; padding: 10px 20px; border-radius:4px; text-decoration:none; font-weight:bold;">
-                    <i class="fa-solid fa-download"></i> Export Data
-                </a>
+                <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-left">
+                    <h2>Forensic Analytics</h2>
+                    <p>Aggregate insights across all completed investigations.</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-profile">
+                        <div class="user-avatar" id="topAvatar">I</div>
+                        <div class="user-info">
+                            <span class="user-name" id="topName">Investigator</span>
+                            <span class="user-role">Investigator</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div class="charts-container">
-                <div class="chart-card">
-                    <h3>Risk Classification Distribution</h3>
-                    <canvas id="classChart"></canvas>
+            <div class="content-area" id="analyticsArea">
+                <div style="text-align:center; padding:50px;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--cyan); margin-bottom:15px; display:block;"></i>
+                    <p style="color:var(--text-muted)">Aggregating analytical data...</p>
                 </div>
-                
-                <div class="chart-card">
-                    <h3>Document Types Analyzed</h3>
-                    <canvas id="docTypeChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="chart-card" style="margin-bottom:30px;">
-                <h3>Average Risk Score by Document Type</h3>
-                <canvas id="riskScoreChart" style="height:250px;"></canvas>
             </div>
         </div>
     </div>
@@ -68,13 +89,24 @@
     <script src="js/theme.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/chatbot.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if(!user) return;
             
+            if(user.name) {
+                document.getElementById('topName').innerText = user.name;
+                document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
+            
+            // Chart global defaults
             Chart.defaults.color = '#a0a0a0';
-            Chart.defaults.borderColor = '#333';
+            Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+            Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+            if (document.documentElement.getAttribute('data-theme') === 'light') {
+                Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
+            }
             
             loadAnalytics();
         });
@@ -83,24 +115,82 @@
             try {
                 const res = await fetchWithAuth(`${API_BASE}/analytics`);
                 const stats = await res.json();
+                const analyticsArea = document.getElementById('analyticsArea');
+                
+                if(stats.total_investigations === 0) {
+                    analyticsArea.innerHTML = `
+                        <div class="card" style="display:flex; justify-content:center; align-items:center; min-height:400px;">
+                            <div class="empty-state" style="border:none; background:transparent;">
+                                <i class="fa-solid fa-chart-pie empty-icon" style="font-size:4rem; opacity:0.3;"></i>
+                                <h4>No analysis data available yet</h4>
+                                <p>Analytics will appear after investigations are completed.</p>
+                                <a href="analyze.html" class="btn-primary" style="margin-top:15px;">Start New Analysis</a>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Build layout
+                analyticsArea.innerHTML = `
+                    <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                        <div class="stat-card">
+                            <i class="fa-solid fa-layer-group stat-icon"></i>
+                            <div class="stat-title">Total Processed</div>
+                            <div class="stat-value">${stats.total_investigations}</div>
+                        </div>
+                        <div class="stat-card stat-warning">
+                            <i class="fa-solid fa-scale-balanced stat-icon"></i>
+                            <div class="stat-title">Average Risk Score</div>
+                            <div class="stat-value">${stats.average_risk} <span style="font-size:1rem; color:var(--text-muted); font-weight:normal; margin-left:5px;">/ 100</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="charts-container">
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-chart-pie"></i> Risk Classification Distribution</h3>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="classChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-chart-bar"></i> Document Types Analyzed</h3>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="docTypeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 
                 // Class Chart
                 new Chart(document.getElementById('classChart'), {
-                    type: 'pie',
+                    type: 'doughnut',
                     data: {
                         labels: ['Likely Authentic', 'Review Required', 'High Suspicion'],
                         datasets: [{
                             data: [
-                                stats.classification.likely_authentic,
-                                stats.classification.review_required,
-                                stats.classification.high_suspicion
+                                stats.classification.likely_authentic || 0,
+                                stats.classification.review_required || 0,
+                                stats.classification.high_suspicion || 0
                             ],
                             backgroundColor: ['#55E07E', '#ffcc00', '#ff4d4d'],
-                            borderWidth: 1,
-                            borderColor: '#1a1a1a'
+                            borderWidth: 0,
+                            hoverOffset: 4
                         }]
                     },
-                    options: { responsive: true }
+                    options: { 
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: { 
+                            legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, padding: 20 } } 
+                        }
+                    }
                 });
                 
                 // Doc Types Chart
@@ -113,36 +203,34 @@
                         datasets: [{
                             label: 'Volume',
                             data: docData.length ? docData : [0],
-                            backgroundColor: '#FF9D50'
-                        }]
-                    },
-                    options: { responsive: true, plugins: { legend: { display: false } } }
-                });
-                
-                // Mocking risk by doc type for the detailed chart
-                new Chart(document.getElementById('riskScoreChart'), {
-                    type: 'line',
-                    data: {
-                        labels: docLabels.length ? docLabels : ['Aadhaar', 'PAN', 'Passport'],
-                        datasets: [{
-                            label: 'Avg Risk Score',
-                            data: docLabels.length ? docLabels.map(l => Math.random() * 50 + 20) : [45, 65, 30],
-                            borderColor: '#1DCED8',
-                            backgroundColor: 'rgba(29, 206, 216, 0.2)',
-                            fill: true,
-                            tension: 0.4
+                            backgroundColor: '#1DCED8',
+                            borderRadius: 4,
+                            barPercentage: 0.6
                         }]
                     },
                     options: { 
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: { y: { min: 0, max: 100 } }
+                        scales: { 
+                            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { drawBorder: false } },
+                            x: { grid: { display: false, drawBorder: false } }
+                        },
+                        plugins: { legend: { display: false } } 
                     }
                 });
                 
             } catch(e) {
                 console.error("Failed to load analytics", e);
-                Toast.error("Error", "Failed to load analytics data.");
+                const analyticsArea = document.getElementById('analyticsArea');
+                analyticsArea.innerHTML = `
+                    <div class="card" style="display:flex; justify-content:center; align-items:center; min-height:400px; color:var(--danger);">
+                        <div style="text-align:center;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size:3rem; margin-bottom:15px;"></i>
+                            <h4>Unable to retrieve analytics</h4>
+                        </div>
+                    </div>
+                `;
+                Toast.error("Error", "Unable to retrieve analytics.");
             }
         }
     </script>

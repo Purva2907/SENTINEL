@@ -13,3 +13,4 @@ bcrypt==3.2.2
 passlib[bcrypt]
 motor
 python-dotenv
+openai
