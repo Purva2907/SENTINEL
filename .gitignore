@@ -10,5 +10,3 @@ __pycache__/
 *.log
 test_credentials.json
 data/uploads/
-data/reports/  
- 

@@ -163,7 +163,7 @@ function attachChatEvents() {
         if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
         try {
-            const response = await fetchWithAuth(`${API_BASE}/chat`, {
+            const response = await fetchWithAuth(`${API_BASE}/chat/`, {
                 method: 'POST',
                 body: JSON.stringify({
                     message: text,
