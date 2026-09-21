@@ -65,7 +65,7 @@ function getForensicContext() {
             title: currentCaseData.title,
             ...currentCaseData.analysis
         };
-        caseId = currentCaseData.case_id || currentCaseData.id;
+        caseId = currentCaseData.id || currentCaseData.case_id;
     } 
     // From results.html
     else if (typeof analysisData !== 'undefined' && analysisData) {
@@ -163,7 +163,7 @@ function attachChatEvents() {
         if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
         try {
-            const response = await fetchWithAuth(`${API_BASE}/chat/`, {
+            const response = await fetchWithAuth(`${API_BASE}/chat`, {
                 method: 'POST',
                 body: JSON.stringify({
                     message: text,

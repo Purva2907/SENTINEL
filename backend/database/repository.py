@@ -80,6 +80,11 @@ async def get_user_by_id(user_id: str):
 # --- CASES ---
 async def create_case(case_data: dict, analysis_data: dict):
     case_id_val = f"SC-{datetime.datetime.now().year}-{str(uuid.uuid4().hex)[:4].upper()}"
+    try:
+        risk_score_val = int(case_data.get('risk_score', 0))
+    except (ValueError, TypeError):
+        risk_score_val = 0
+
     case_record = {
         "id": str(uuid.uuid4()),
         "case_id": case_id_val,
@@ -88,12 +93,13 @@ async def create_case(case_data: dict, analysis_data: dict):
         "description": case_data.get('description', ''),
         "document_type": case_data.get('document_type', 'Unknown'),
         "status": case_data.get('status', 'Active'),
-        "risk_score": case_data.get('risk_score', 0),
+        "risk_score": risk_score_val,
         "classification": case_data.get('classification', 'Unknown'),
         "created_at": get_iso_time(),
         "updated_at": get_iso_time(),
     }
     
+    analysis_json_str = json.dumps(analysis_data) if not isinstance(analysis_data, str) else analysis_data
     analysis_record = {
         "id": str(uuid.uuid4()),
         "case_id": case_record['id'],
@@ -101,7 +107,7 @@ async def create_case(case_data: dict, analysis_data: dict):
         "document_type": case_record['document_type'],
         "risk_score": case_record['risk_score'],
         "classification": case_record['classification'],
-        "analysis_json": json.dumps(analysis_data) if backend == 'sqlite' else analysis_data,
+        "analysis_json": analysis_data if backend == 'mongodb' else analysis_json_str,
         "created_at": get_iso_time()
     }
     case_record['analysis_id'] = analysis_record['id']
@@ -122,7 +128,7 @@ async def create_case(case_data: dict, analysis_data: dict):
         conn.execute('''
             INSERT INTO analyses (id, case_id, user_id, document_type, risk_score, classification, analysis_json, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (analysis_record['id'], analysis_record['case_id'], analysis_record['user_id'], analysis_record['document_type'], analysis_record['risk_score'], analysis_record['classification'], analysis_record['analysis_json'], analysis_record['created_at']))
+        ''', (analysis_record['id'], analysis_record['case_id'], analysis_record['user_id'], analysis_record['document_type'], analysis_record['risk_score'], analysis_record['classification'], analysis_json_str, analysis_record['created_at']))
         conn.commit()
         conn.close()
         
@@ -143,15 +149,27 @@ async def list_cases(user_id: str):
 async def get_case(user_id: str, case_id: str):
     if backend == 'mongodb':
         db = get_mongo_db()
-        case = await db.cases.find_one({"user_id": user_id, "id": case_id})
+        case = await db.cases.find_one({"user_id": user_id, "$or": [{"id": case_id}, {"case_id": case_id}]})
         if not case: return None
         analysis = await db.analyses.find_one({"id": case.get("analysis_id")})
-        case["analysis"] = fix_id(analysis)
+        if analysis:
+            fix_id(analysis)
+            parsed = analysis.get("analysis_json")
+            if isinstance(parsed, str):
+                try:
+                    parsed = json.loads(parsed)
+                except Exception:
+                    pass
+            if isinstance(parsed, dict):
+                for k, v in parsed.items():
+                    if k not in analysis:
+                        analysis[k] = v
+            case["analysis"] = analysis
         case["notes"] = await get_case_notes(user_id, case['id'])
         return fix_id(case)
     else:
         conn = get_sqlite_db()
-        cursor = conn.execute('SELECT * FROM cases WHERE user_id = ? AND id = ?', (user_id, case_id))
+        cursor = conn.execute('SELECT * FROM cases WHERE user_id = ? AND (id = ? OR case_id = ?)', (user_id, case_id, case_id))
         case_row = cursor.fetchone()
         if not case_row:
             conn.close()
@@ -162,7 +180,15 @@ async def get_case(user_id: str, case_id: str):
         a_row = a_cursor.fetchone()
         if a_row:
             analysis = dict(a_row)
-            analysis['analysis_json'] = json.loads(analysis['analysis_json'])
+            try:
+                parsed = json.loads(analysis['analysis_json'])
+            except Exception:
+                parsed = analysis['analysis_json']
+            analysis['analysis_json'] = parsed
+            if isinstance(parsed, dict):
+                for k, v in parsed.items():
+                    if k not in analysis:
+                        analysis[k] = v
             case['analysis'] = analysis
             
         case['notes'] = await get_case_notes(user_id, case['id'])
@@ -269,16 +295,30 @@ async def get_analytics(user_id: str):
     cases = await list_cases(user_id)
     total = len(cases)
     if total == 0:
-        return {"total_investigations": 0}
+        return {
+            "total_investigations": 0,
+            "average_risk": 0.0,
+            "classification": {
+                "likely_authentic": 0,
+                "review_required": 0,
+                "high_suspicion": 0
+            },
+            "document_types": {}
+        }
         
-    avg_risk = sum([c.get('risk_score', 0) for c in cases]) / total
+    avg_risk = sum([int(c.get('risk_score') or 0) for c in cases]) / total
     
     classes = {"Likely Authentic": 0, "Review Required": 0, "High Suspicion": 0}
     docs = {}
     
     for c in cases:
         cls = c.get('classification', 'Unknown')
-        if cls in classes: classes[cls] += 1
+        if cls in classes:
+            classes[cls] += 1
+        elif cls.title() in classes:
+            classes[cls.title()] += 1
+        else:
+            classes["Review Required"] += 1
         
         dtype = c.get('document_type', 'Unknown')
         docs[dtype] = docs.get(dtype, 0) + 1

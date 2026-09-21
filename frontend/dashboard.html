@@ -16,9 +16,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Specific dashboard overrides if any */
-        .chart-container { height: 300px; display: flex; flex-direction: column; }
-        .chart-container canvas { flex: 1; max-height: 250px; }
+        /* Specific dashboard overrides */
+        .chart-wrapper-bounded { 
+            position: relative; 
+            width: 100%; 
+            height: 220px; 
+            overflow: hidden; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+        .chart-wrapper-bounded canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
     </style>
 </head>
 <body>
@@ -87,19 +100,19 @@
                 </div>
                 
                 <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 30px;">
-                    <div class="card chart-container">
+                    <div class="card">
                         <div class="card-header">
                             <h3><i class="fa-solid fa-chart-pie"></i> Risk Distribution</h3>
                         </div>
-                        <div id="riskChartContainer" style="flex:1; display:flex; justify-content:center; align-items:center;">
+                        <div id="riskChartContainer" class="chart-wrapper-bounded">
                             <canvas id="riskChart"></canvas>
                         </div>
                     </div>
-                    <div class="card chart-container">
+                    <div class="card">
                         <div class="card-header">
                             <h3><i class="fa-solid fa-chart-bar"></i> Document Types</h3>
                         </div>
-                        <div id="docChartContainer" style="flex:1; display:flex; justify-content:center; align-items:center;">
+                        <div id="docChartContainer" class="chart-wrapper-bounded">
                             <canvas id="docChart"></canvas>
                         </div>
                     </div>
@@ -166,21 +179,21 @@
                 const stats = await statsRes.json();
                 const casesData = await casesRes.json();
                 
-                // Update stats
-                document.getElementById('stat-total').innerText = stats.total_investigations;
-                document.getElementById('stat-high').innerText = stats.classification.high_suspicion || 0;
-                document.getElementById('stat-med').innerText = stats.classification.review_required || 0;
-                document.getElementById('stat-low').innerText = stats.classification.likely_authentic || 0;
+                // Update stats safely
+                document.getElementById('stat-total').innerText = stats.total_investigations || 0;
+                document.getElementById('stat-high').innerText = (stats.classification && stats.classification.high_suspicion) || 0;
+                document.getElementById('stat-med').innerText = (stats.classification && stats.classification.review_required) || 0;
+                document.getElementById('stat-low').innerText = (stats.classification && stats.classification.likely_authentic) || 0;
                 
                 // Render charts
-                if (stats.total_investigations === 0) {
+                if (!stats.total_investigations || stats.total_investigations === 0) {
                     renderEmptyCharts();
                 } else {
                     renderCharts(stats);
                 }
                 
                 // Render table
-                const cases = casesData.cases.slice(0, 5);
+                const cases = (casesData.cases || []).slice(0, 5);
                 const tbody = document.getElementById('recentCasesList');
                 
                 if(cases.length === 0) {
@@ -202,9 +215,9 @@
                 tbody.innerHTML = cases.map(c => `
                     <tr>
                         <td><strong style="color:var(--cyan)">${c.case_id}</strong></td>
-                        <td>${c.document_type}</td>
-                        <td style="font-weight:bold">${c.risk_score}</td>
-                        <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${c.classification}</span></td>
+                        <td>${c.document_type || 'Unknown'}</td>
+                        <td style="font-weight:bold">${typeof c.risk_score === 'number' ? c.risk_score : (c.score !== undefined ? c.score : 0)}</td>
+                        <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${c.classification || 'Unknown'}</span></td>
                         <td style="color:var(--text-muted)">${new Date(c.created_at).toLocaleDateString()}</td>
                         <td><a href="case-detail.html?id=${c.id}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a></td>
                     </tr>
@@ -217,7 +230,13 @@
             }
         }
         
+        let riskChartInstance = null;
+        let docChartInstance = null;
+
         function renderEmptyCharts() {
+            if (riskChartInstance) { riskChartInstance.destroy(); riskChartInstance = null; }
+            if (docChartInstance) { docChartInstance.destroy(); docChartInstance = null; }
+
             const riskContainer = document.getElementById('riskChartContainer');
             riskContainer.innerHTML = `
                 <div class="empty-state" style="padding: 20px; border:none; background:transparent;">
@@ -236,6 +255,26 @@
         }
 
         function renderCharts(stats) {
+            // Destroy existing chart instances before re-rendering to prevent canvas leaks/overflow
+            if (riskChartInstance) {
+                riskChartInstance.destroy();
+                riskChartInstance = null;
+            }
+            if (docChartInstance) {
+                docChartInstance.destroy();
+                docChartInstance = null;
+            }
+
+            // Ensure container has canvas
+            const riskContainer = document.getElementById('riskChartContainer');
+            if (!document.getElementById('riskChart')) {
+                riskContainer.innerHTML = '<canvas id="riskChart"></canvas>';
+            }
+            const docContainer = document.getElementById('docChartContainer');
+            if (!document.getElementById('docChart')) {
+                docContainer.innerHTML = '<canvas id="docChart"></canvas>';
+            }
+
             // Chart.js global defaults for dark theme compatibility
             Chart.defaults.color = '#a0a0a0';
             Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
@@ -245,17 +284,20 @@
                 Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
             }
             
-            // Risk Chart
-            const riskCtx = document.getElementById('riskChart').getContext('2d');
-            new Chart(riskCtx, {
+            const isMobile = window.innerWidth < 768;
+
+            // Risk Doughnut Chart
+            const riskCanvas = document.getElementById('riskChart');
+            const riskCtx = riskCanvas.getContext('2d');
+            riskChartInstance = new Chart(riskCtx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Likely Authentic', 'Review Required', 'High Suspicion'],
                     datasets: [{
                         data: [
-                            stats.classification.likely_authentic || 0,
-                            stats.classification.review_required || 0,
-                            stats.classification.high_suspicion || 0
+                            (stats.classification && stats.classification.likely_authentic) || 0,
+                            (stats.classification && stats.classification.review_required) || 0,
+                            (stats.classification && stats.classification.high_suspicion) || 0
                         ],
                         backgroundColor: ['#55E07E', '#ffcc00', '#ff4d4d'],
                         borderWidth: 0,
@@ -265,19 +307,31 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '75%',
+                    cutout: '70%',
+                    layout: {
+                        padding: { top: 5, bottom: 5, left: 5, right: 5 }
+                    },
                     plugins: { 
-                        legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, padding: 20 } } 
+                        legend: { 
+                            position: isMobile ? 'bottom' : 'right', 
+                            labels: { 
+                                boxWidth: 10, 
+                                usePointStyle: true, 
+                                padding: isMobile ? 8 : 12,
+                                font: { size: 11 }
+                            } 
+                        } 
                     }
                 }
             });
             
-            // Doc Chart
-            const docCtx = document.getElementById('docChart').getContext('2d');
+            // Document Types Bar Chart
+            const docCanvas = document.getElementById('docChart');
+            const docCtx = docCanvas.getContext('2d');
             const docLabels = Object.keys(stats.document_types || {});
             const docData = Object.values(stats.document_types || {});
             
-            new Chart(docCtx, {
+            docChartInstance = new Chart(docCtx, {
                 type: 'bar',
                 data: {
                     labels: docLabels.length ? docLabels : ['No Data'],

@@ -71,8 +71,8 @@
         .tab-btn:hover { color: var(--text-main); border-color: rgba(255,255,255,0.2); }
         .tab-btn.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-color: var(--cyan); }
         
-        .heatmap-container { text-align: center; position: relative; background: #000; padding: 15px; border-radius: 6px; border: 1px solid var(--shell-border); }
-        .heatmap-img { max-width: 100%; max-height: 500px; border-radius: 4px; display: none; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .heatmap-container { text-align: center; position: relative; background: #0a0e17; padding: 15px; border-radius: 6px; border: 1px solid var(--shell-border); height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-sizing: border-box; }
+        .heatmap-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 4px; display: none; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .heatmap-img.active { display: block; }
 
         /* Metric Grid */
@@ -314,22 +314,28 @@
 
             // Quality Panel
             if (data.quality) {
-                document.getElementById('qOverall').innerText = `${data.quality.score}/100`;
+                document.getElementById('qOverall').innerText = (typeof data.quality.score === 'number' && !isNaN(data.quality.score)) ? `${data.quality.score}/100` : 'N/A';
                 document.getElementById('qRes').innerHTML = data.quality.resolution_ok ? '<span style="color:var(--success)">PASS</span>' : '<span style="color:var(--danger)">LOW</span>';
-                document.getElementById('qBlur').innerText = data.quality.blur_score ? data.quality.blur_score.toFixed(1) : 'N/A';
-                document.getElementById('qLight').innerText = data.quality.brightness ? data.quality.brightness.toFixed(1) : 'N/A';
+                document.getElementById('qBlur').innerText = (typeof data.quality.blur_score === 'number' && !isNaN(data.quality.blur_score)) ? data.quality.blur_score.toFixed(1) : 'N/A';
+                document.getElementById('qLight').innerText = (typeof data.quality.brightness === 'number' && !isNaN(data.quality.brightness)) ? data.quality.brightness.toFixed(1) : 'N/A';
             }
 
             // OCR Panel
             if (data.ocr) {
                 const statusEl = document.getElementById('ocrStatus');
-                if (data.ocr.success) {
+                const isNoText = data.ocr.status === 'NO_TEXT_RECOVERED' || !data.ocr.raw_text || !data.ocr.raw_text.trim();
+                if (data.ocr.success && !isNoText) {
                     statusEl.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Active</span>';
                 } else {
-                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> Extraction Failed</span>';
+                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> No Text Recovered</span>';
                 }
-                document.getElementById('ocrConfidence').innerText = `Avg. Confidence: ${(data.ocr.average_confidence * 100).toFixed(1)}%`;
-                document.getElementById('ocrText').innerText = data.ocr.raw_text || 'NO_TEXT_RECOVERED';
+                
+                const avgConf = (typeof data.ocr.average_confidence === 'number' && !isNaN(data.ocr.average_confidence))
+                    ? (data.ocr.average_confidence * 100).toFixed(1) + '%'
+                    : (typeof data.ocr.confidence === 'number' && !isNaN(data.ocr.confidence) ? (data.ocr.confidence * 100).toFixed(1) + '%' : 'N/A');
+                
+                document.getElementById('ocrConfidence').innerText = isNoText ? 'No text recovered' : `Avg. Confidence: ${avgConf}`;
+                document.getElementById('ocrText').innerText = (data.ocr.raw_text && data.ocr.raw_text.trim()) ? data.ocr.raw_text : 'No text recovered';
             }
 
             // QR Panel
@@ -338,15 +344,29 @@
                 document.getElementById('qrDecoded').innerHTML = data.qr.decoded ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> YES' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> NO';
             }
 
-            // Heatmap
+            // Heatmap vs Source Image
+            const hm = document.getElementById('heatmapView');
+            const orig = document.getElementById('originalView');
+            const fallback = document.getElementById('heatmapFallback');
+            const tabs = document.querySelector('.tabs');
+            
             if (data.heatmap) {
-                document.getElementById('heatmapView').src = data.heatmap;
-                document.getElementById('originalView').src = data.heatmap;
+                hm.src = data.heatmap;
+            }
+            if (data.original_image) {
+                orig.src = data.original_image;
+            } else if (data.heatmap) {
+                orig.src = data.heatmap;
+            }
+
+            if (!data.heatmap && !data.original_image) {
+                hm.style.display = 'none';
+                orig.style.display = 'none';
+                fallback.style.display = 'block';
+                if (tabs) tabs.style.display = 'none';
             } else {
-                document.getElementById('heatmapView').style.display = 'none';
-                document.getElementById('originalView').style.display = 'none';
-                document.getElementById('heatmapFallback').style.display = 'block';
-                document.querySelector('.tabs').style.display = 'none';
+                fallback.style.display = 'none';
+                if (tabs) tabs.style.display = 'flex';
             }
 
             // Evidence Mapping
@@ -360,6 +380,14 @@
 
             if (data.evidence && Array.isArray(data.evidence)) {
                 data.evidence.forEach(ev => {
+                    const contrib = (ev.risk_contribution !== undefined && ev.risk_contribution !== null) 
+                        ? ev.risk_contribution 
+                        : (ev.score !== undefined && ev.score !== null ? ev.score : null);
+                        
+                    const contribHtml = contrib !== null 
+                        ? `<div class="evidence-score" style="color: ${contrib > 0 ? 'var(--danger)' : 'var(--success)'}">${contrib > 0 ? '+' : ''}${contrib} risk</div>` 
+                        : '';
+                        
                     const html = `
                         <div class="evidence-item" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
                             <div class="evidence-left">
@@ -368,11 +396,11 @@
                                 <p>${ev.finding}</p>
                             </div>
                             <div class="evidence-right">
-                                <div class="evidence-score" style="color: ${ev.risk_contribution > 0 ? 'var(--danger)' : 'var(--success)'}">${ev.risk_contribution > 0 ? '+' : ''}${ev.risk_contribution} risk</div>
+                                ${contribHtml}
                             </div>
                         </div>
                     `;
-                    if (ev.risk_contribution > 0 || ev.severity === 'Warning' || ev.severity === 'High') {
+                    if ((contrib !== null && contrib > 0) || ev.severity === 'Warning' || ev.severity === 'High') {
                         warnings.push(html);
                     } else {
                         positives.push(html);
@@ -433,10 +461,10 @@
                         title: document.getElementById('caseTitle').value,
                         description: document.getElementById('caseDesc').value,
                         analysis_data: analysisData,
-                        document_type: analysisData.document_type,
+                        document_type: analysisData.document_type || 'Aadhaar-like',
                         status: 'Active',
-                        risk_score: analysisData.risk_score,
-                        classification: analysisData.classification
+                        risk_score: (typeof analysisData.risk_score === 'number') ? analysisData.risk_score : 0,
+                        classification: analysisData.classification || 'Likely Authentic'
                     })
                 });
                 

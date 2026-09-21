@@ -51,7 +51,7 @@
         "generation_parameters": {
             "condition": "blur"
         },
-        "description": "Moderate blur and jpeg compression"
+        "description": "Moderate optical blur"
     },
     {
         "filename": "SYN-TEST-0007.jpg",
@@ -60,7 +60,7 @@
         "generation_parameters": {
             "condition": "spacing"
         },
-        "description": "Small spacing inconsistencies"
+        "description": "Layout spacing and vertical margin irregularities"
     },
     {
         "filename": "SYN-TEST-0008.jpg",
@@ -69,7 +69,7 @@
         "generation_parameters": {
             "condition": "brightness"
         },
-        "description": "Overexposed brightness variation"
+        "description": "Overexposed illumination variation"
     },
     {
         "filename": "SYN-TEST-0009.jpg",
@@ -78,7 +78,7 @@
         "generation_parameters": {
             "condition": "manipulated"
         },
-        "description": "Obvious spacing and visual region manipulation"
+        "description": "Pasted ID, font/color mismatch, and splice boundaries"
     },
     {
         "filename": "SYN-TEST-0010.jpg",
@@ -87,6 +87,6 @@
         "generation_parameters": {
             "condition": "heavy_artifacts"
         },
-        "description": "Inconsistent typography and strong compression"
+        "description": "Inconsistent typography, splice artifacts, and heavy compression"
     }
 ]

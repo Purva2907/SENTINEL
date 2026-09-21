@@ -4,6 +4,7 @@ import csv
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 import cv2
 import numpy as np
+import qrcode
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
 METADATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "metadata.json")
@@ -20,111 +21,120 @@ DATASET_CONFIG = [
     {"id": "SYN-TEST-0004", "name": "TEST USER 04", "label": "LIKELY_AUTHENTIC", "condition": "clean", "desc": "Clean synthetic document"},
     {"id": "SYN-TEST-0005", "name": "TEST USER 05", "label": "LIKELY_AUTHENTIC", "condition": "clean", "desc": "Clean synthetic document"},
     
-    {"id": "SYN-TEST-0006", "name": "TEST USER 06", "label": "REVIEW_REQUIRED", "condition": "blur", "desc": "Moderate blur and jpeg compression"},
-    {"id": "SYN-TEST-0007", "name": "TEST USER 07", "label": "REVIEW_REQUIRED", "condition": "spacing", "desc": "Small spacing inconsistencies"},
-    {"id": "SYN-TEST-0008", "name": "TEST USER 08", "label": "REVIEW_REQUIRED", "condition": "brightness", "desc": "Overexposed brightness variation"},
+    {"id": "SYN-TEST-0006", "name": "TEST USER 06", "label": "REVIEW_REQUIRED", "condition": "blur", "desc": "Moderate optical blur"},
+    {"id": "SYN-TEST-0007", "name": "TEST USER 07", "label": "REVIEW_REQUIRED", "condition": "spacing", "desc": "Layout spacing and vertical margin irregularities"},
+    {"id": "SYN-TEST-0008", "name": "TEST USER 08", "label": "REVIEW_REQUIRED", "condition": "brightness", "desc": "Overexposed illumination variation"},
     
-    {"id": "SYN-TEST-0009", "name": "TEST USER 09", "label": "HIGH_SUSPICION", "condition": "manipulated", "desc": "Obvious spacing and visual region manipulation"},
-    {"id": "SYN-TEST-0010", "name": "TEST USER 10", "label": "HIGH_SUSPICION", "condition": "heavy_artifacts", "desc": "Inconsistent typography and strong compression"},
+    {"id": "SYN-TEST-0009", "name": "TEST USER 09", "label": "HIGH_SUSPICION", "condition": "manipulated", "desc": "Pasted ID, font/color mismatch, and splice boundaries"},
+    {"id": "SYN-TEST-0010", "name": "TEST USER 10", "label": "HIGH_SUSPICION", "condition": "heavy_artifacts", "desc": "Inconsistent typography, splice artifacts, and heavy compression"},
 ]
 
 def generate_base_id_card():
     # Create a generic white card background
-    img = Image.new('RGB', (800, 500), color=(240, 245, 250))
+    img = Image.new('RGB', (800, 500), color=(242, 245, 249))
     draw = ImageDraw.Draw(img)
     
     # Add a blue header banner
     draw.rectangle([0, 0, 800, 80], fill=(41, 128, 185))
     
-    # Header Text
+    # Fonts
     try:
-        font_large = ImageFont.truetype("arial.ttf", 36)
-        font_med = ImageFont.truetype("arial.ttf", 24)
-        font_small = ImageFont.truetype("arial.ttf", 18)
+        font_large = ImageFont.truetype("arial.ttf", 32)
+        font_huge = ImageFont.truetype("arial.ttf", 42)
+        font_med = ImageFont.truetype("arial.ttf", 20)
+        font_small = ImageFont.truetype("arial.ttf", 15)
     except IOError:
         font_large = ImageFont.load_default()
+        font_huge = ImageFont.load_default()
         font_med = ImageFont.load_default()
         font_small = ImageFont.load_default()
         
-    draw.text((20, 20), "SYNTHETIC TEST DOCUMENT", fill=(255, 255, 255), font=font_large)
+    draw.text((25, 22), "SYNTHETIC TEST DOCUMENT", fill=(255, 255, 255), font=font_large)
     
-    return img, draw, font_large, font_med, font_small
+    return img, draw, font_large, font_huge, font_med, font_small
 
 def add_profile_placeholder(draw):
-    draw.rectangle([50, 120, 250, 370], fill=(200, 200, 200), outline=(150,150,150), width=2)
-    # Draw simple person icon
-    draw.ellipse([110, 150, 190, 230], fill=(150, 150, 150))
-    draw.ellipse([80, 240, 220, 370], fill=(150, 150, 150))
+    draw.rectangle([50, 120, 250, 370], fill=(210, 215, 220), outline=(160, 165, 170), width=2)
+    draw.ellipse([110, 150, 190, 230], fill=(150, 155, 160))
+    draw.ellipse([80, 240, 220, 370], fill=(150, 155, 160))
 
 def generate_sample(item):
-    img, draw, font_large, font_med, font_small = generate_base_id_card()
+    img, draw, font_large, font_huge, font_med, font_small = generate_base_id_card()
     add_profile_placeholder(draw)
     
-    # Base Layout
+    # Base Layout positions
     name_x = 300
-    name_y = 150
-    id_y = 220
-    status_y = 290
-    qr_y = 360
+    name_y = 145
+    id_x = 300
+    id_y = 225
+    status_y = 305
     
-    if item['condition'] == "spacing" or item['condition'] == "manipulated":
-        name_y += 15 # inconsistent layout
-        id_y -= 10
+    # Condition: spacing variation
+    if item['condition'] in ("spacing", "manipulated"):
+        name_y += 28
+        id_y -= 25
+        id_x += 48 # intentional margin drift
         
-    # Name
-    draw.text((name_x, name_y - 25), "Name:", fill=(100, 100, 100), font=font_small)
-    draw.text((name_x, name_y), item['name'], fill=(0, 0, 0), font=font_med)
+    # Name Field
+    draw.text((name_x, name_y - 22), "Full Name:", fill=(110, 110, 110), font=font_small)
+    draw.text((name_x, name_y), item['name'], fill=(15, 15, 15), font=font_med)
     
-    # ID
-    draw.text((name_x, id_y - 25), "Document ID:", fill=(100, 100, 100), font=font_small)
-    # If manipulated, make typography inconsistent (simulate pasted ID)
-    if item['condition'] == "manipulated" or item['condition'] == "heavy_artifacts":
-        draw.text((name_x, id_y), item['id'], fill=(0, 0, 150), font=font_large) # different color and font
-        # Add visual splice line
-        draw.line((name_x-10, id_y-5, name_x+300, id_y-5), fill=(200,200,200), width=2)
+    # Document ID Field
+    draw.text((id_x, id_y - 22), "Document ID:", fill=(110, 110, 110), font=font_small)
+    if item['condition'] in ("manipulated", "heavy_artifacts"):
+        # Altered typography: distinct large font, blue ink, splice background patch
+        draw.rectangle([id_x - 8, id_y - 6, id_x + 360, id_y + 44], fill=(255, 255, 225), outline=(210, 60, 60), width=2)
+        draw.text((id_x, id_y), item['id'], fill=(0, 20, 190), font=font_huge)
     else:
-        draw.text((name_x, id_y), item['id'], fill=(0, 0, 0), font=font_med)
+        draw.text((id_x, id_y), item['id'], fill=(15, 15, 15), font=font_med)
         
-    # Status
-    draw.text((name_x, status_y - 25), "Status:", fill=(100, 100, 100), font=font_small)
-    draw.text((name_x, status_y), "DEMO DATA", fill=(200, 50, 50), font=font_med)
+    # Status Field
+    draw.text((name_x, status_y - 22), "Screening Status:", fill=(110, 110, 110), font=font_small)
+    draw.text((name_x, status_y), "ACTIVE VERIFIED", fill=(30, 130, 60), font=font_med)
     
-    try:
-        import qrcode
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=3,
-            border=1,
-        )
-        qr.add_data(f"SENTINEL-DEMO-{item['id']}")
-        qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="black", back_color="white").resize((100, 100))
-        img.paste(qr_img, (650, 350))
-    except ImportError:
-        draw.rectangle([650, 350, 750, 450], fill=(0,0,0))
-        draw.rectangle([660, 360, 740, 440], fill=(255,255,255))
-        draw.rectangle([670, 370, 730, 430], fill=(0,0,0))
-        draw.text((name_x, qr_y), f"QR_PAYLOAD: SENTINEL-DEMO-{item['id'][-4:]}", fill=(0, 0, 0), font=font_small)
+    # Robust QR Generation
+    # box_size=4, border=4 creates sharp modules with compliant 4-module quiet zone
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=4,
+        border=4,
+    )
+    qr.add_data(f"SENTINEL-DEMO-{item['id']}")
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
+    
+    # Paste QR code directly without destructive anti-aliasing
+    img.paste(qr_img, (650, 350))
 
-    # Post processing for variations
+    # Condition-Specific Observable Image Modifications
     if item['condition'] == "blur":
-        img = img.filter(ImageFilter.GaussianBlur(radius=2))
+        # Realistic optical blur that lowers Laplacian variance without wiping text
+        img = img.filter(ImageFilter.GaussianBlur(radius=2.2))
         
-    if item['condition'] == "brightness":
+    elif item['condition'] == "brightness":
+        # Overexposed illumination
         enhancer = ImageEnhance.Brightness(img)
-        img = enhancer.enhance(1.6)
+        img = enhancer.enhance(1.85)
         
-    if item['condition'] == "heavy_artifacts":
-        # Save low quality jpeg then reload
+    elif item['condition'] == "manipulated":
+        # Draw subtle digital splice boundary rectangle around the ID field
+        draw_manip = ImageDraw.Draw(img)
+        draw_manip.rectangle([id_x - 12, id_y - 10, id_x + 370, id_y + 48], outline=(230, 40, 40), width=2)
+        
+    elif item['condition'] == "heavy_artifacts":
+        # Draw finder pattern tamper mark on QR code corner so it damages decode
+        draw_tamper = ImageDraw.Draw(img)
+        draw_tamper.rectangle([650, 350, 695, 395], fill=(242, 245, 249))
+        
+        # Re-save with low JPEG quality to create genuine compression blocks, then reload
         temp_path = os.path.join(OUTPUT_DIR, "temp.jpg")
-        img.save(temp_path, "JPEG", quality=10)
-        img = Image.open(temp_path)
-        
-    if item['condition'] == "manipulated":
-        # Add random noise block
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([300, 200, 600, 250], outline=(255,0,0), width=1) # ELA will pick up sharp edges here
+        img.save(temp_path, "JPEG", quality=15)
+        img = Image.open(temp_path).copy()
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
 
     filename = f"{item['id']}.jpg"
     filepath = os.path.join(OUTPUT_DIR, filename)
@@ -139,7 +149,7 @@ def main():
         writer.writerow(['filename', 'synthetic_id', 'label'])
         
         for item in DATASET_CONFIG:
-            print(f"Generating {item['id']}...")
+            print(f"Generating {item['id']} ({item['condition']})...")
             filename = generate_sample(item)
             
             writer.writerow([filename, item['id'], item['label']])
@@ -157,11 +167,7 @@ def main():
     with open(METADATA_FILE, 'w') as f:
         json.dump(metadata, f, indent=4)
         
-    # Clean up temp file if exists
-    if os.path.exists(os.path.join(OUTPUT_DIR, "temp.jpg")):
-        os.remove(os.path.join(OUTPUT_DIR, "temp.jpg"))
-        
-    print("Dataset generation complete. 10 files created in documents/")
+    print(f"Dataset generation complete. 10 files created in {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()

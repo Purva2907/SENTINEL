@@ -55,23 +55,33 @@ def generate_pdf(case: dict, user: dict) -> str:
     story.append(Paragraph("FORENSIC EVIDENCE", heading2_style))
     
     analysis = case.get('analysis', {})
-    evidence_list = analysis.get('evidence', [])
+    if isinstance(analysis, dict) and 'analysis_json' in analysis and isinstance(analysis['analysis_json'], dict):
+        # Fallback if nested
+        for k, v in analysis['analysis_json'].items():
+            if k not in analysis:
+                analysis[k] = v
+                
+    evidence_list = analysis.get('evidence', []) if isinstance(analysis, dict) else []
     
     if evidence_list:
-        table_data = [["ID", "Category", "Finding", "Severity"]]
+        table_data = [["ID", "Category", "Finding", "Severity", "Contribution"]]
         for ev in evidence_list:
+            contrib = ev.get('risk_contribution', ev.get('score', 0))
+            contrib_str = f"+{contrib}" if contrib > 0 else "0"
             table_data.append([
                 ev.get('id', 'N/A'),
                 ev.get('category', 'N/A'),
-                ev.get('finding', 'N/A'),
-                ev.get('severity', 'N/A')
+                Paragraph(ev.get('finding', 'N/A'), normal_style),
+                ev.get('severity', 'N/A'),
+                contrib_str
             ])
             
-        t = Table(table_data)
+        t = Table(table_data, colWidths=[60, 90, 240, 70, 70])
         t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#FF9D50")),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1DCED8")),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor("#FFF9D8")),

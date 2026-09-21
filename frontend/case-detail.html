@@ -74,8 +74,8 @@
         .tab-btn:hover { color: var(--text-main); border-color: rgba(255,255,255,0.2); }
         .tab-btn.active { background: rgba(29, 206, 216, 0.1); color: var(--cyan); border-color: var(--cyan); }
         
-        .heatmap-container { text-align: center; position: relative; background: #000; padding: 15px; border-radius: 6px; border: 1px solid var(--shell-border); }
-        .heatmap-img { max-width: 100%; max-height: 500px; border-radius: 4px; display: none; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .heatmap-container { text-align: center; position: relative; background: #0a0e17; padding: 15px; border-radius: 6px; border: 1px solid var(--shell-border); height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-sizing: border-box; }
+        .heatmap-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 4px; display: none; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .heatmap-img.active { display: block; }
 
         /* Metric Grid */
@@ -210,8 +210,8 @@
                                 <button class="tab-btn" onclick="switchHeatmapTab('original')">Source Image</button>
                             </div>
                             <div class="heatmap-container">
-                                <img id="cHeatmap" class="heatmap-img active" src="" alt="Heatmap" onerror="this.src=''; this.alt='Image unavailable';">
-                                <img id="cOriginal" class="heatmap-img" src="" alt="Original" onerror="this.src=''; this.alt='Image unavailable';">
+                                <img id="cHeatmap" class="heatmap-img active" alt="ELA Heatmap">
+                                <img id="cOriginal" class="heatmap-img" alt="Source Document">
                                 <div id="cHeatmapFallback" style="padding:60px 20px; color:var(--text-muted); display:none;">
                                     <i class="fa-solid fa-image-slash" style="font-size:3rem; margin-bottom:15px; opacity:0.3;"></i>
                                     <p>Visual data unavailable</p>
@@ -324,35 +324,71 @@
                     scoreEl.style.color = 'var(--success)';
                 }
                 
-                const analysis = data.analysis || {};
+                let rawAnalysis = data.analysis || {};
+                if (typeof rawAnalysis === 'string') {
+                    try { rawAnalysis = JSON.parse(rawAnalysis); } catch(e) {}
+                }
+                let analysis = rawAnalysis;
+                if (rawAnalysis.analysis_json) {
+                    let parsed = rawAnalysis.analysis_json;
+                    if (typeof parsed === 'string') {
+                        try { parsed = JSON.parse(parsed); } catch(e) {}
+                    }
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        analysis = { ...parsed, ...rawAnalysis };
+                    }
+                }
+
                 document.getElementById('cRec').innerText = analysis.recommendation || 'No manual recommendation available.';
                 
                 const hm = document.getElementById('cHeatmap');
                 const orig = document.getElementById('cOriginal');
-                if(analysis.heatmap) {
+                const fallback = document.getElementById('cHeatmapFallback');
+                const tabs = document.querySelector('.tabs');
+                
+                if (analysis.heatmap) {
                     hm.src = analysis.heatmap;
+                }
+                if (analysis.original_image) {
+                    orig.src = analysis.original_image;
+                } else if (analysis.heatmap) {
                     orig.src = analysis.heatmap;
-                    hm.style.display = 'block';
-                } else {
+                }
+                
+                if (!analysis.heatmap && !analysis.original_image) {
                     hm.style.display = 'none';
                     orig.style.display = 'none';
-                    document.getElementById('cHeatmapFallback').style.display = 'block';
-                    document.querySelector('.tabs').style.display = 'none';
+                    fallback.style.display = 'block';
+                    if (tabs) tabs.style.display = 'none';
+                } else {
+                    fallback.style.display = 'none';
+                    if (tabs) tabs.style.display = 'flex';
+                    switchHeatmapTab('heatmap');
                 }
                 
                 const evList = analysis.evidence || [];
-                document.getElementById('cEvidence').innerHTML = evList.length ? evList.map(ev => `
-                    <div class="evidence-item" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
-                        <div class="evidence-left">
-                            <span class="evidence-severity" style="background: ${ev.severity === 'High' ? 'rgba(255,77,77,0.1)' : ev.severity === 'Warning' ? 'rgba(255,204,0,0.1)' : 'rgba(85,224,126,0.1)'}; color: ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">${ev.severity}</span>
-                            <strong style="margin-top:10px;">${ev.title}</strong>
-                            <p>${ev.finding}</p>
+                document.getElementById('cEvidence').innerHTML = evList.length ? evList.map(ev => {
+                    const contrib = (ev.risk_contribution !== undefined && ev.risk_contribution !== null) 
+                        ? ev.risk_contribution 
+                        : (ev.score !== undefined && ev.score !== null ? ev.score : null);
+                        
+                    const contribHtml = contrib !== null 
+                        ? `<div class="evidence-score" style="color: ${contrib > 0 ? 'var(--danger)' : 'var(--success)'}">${contrib > 0 ? '+' : ''}${contrib} risk</div>` 
+                        : '';
+                        
+                    return `
+                        <div class="evidence-item" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
+                            <div class="evidence-left">
+                                <span class="evidence-severity" style="background: ${ev.severity === 'High' ? 'rgba(255,77,77,0.1)' : ev.severity === 'Warning' ? 'rgba(255,204,0,0.1)' : 'rgba(85,224,126,0.1)'}; color: ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">${ev.severity}</span>
+                                <strong style="margin-top:10px;">${ev.title}</strong>
+                                <p>${ev.finding}</p>
+                            </div>
+                            <div class="evidence-right">
+                                ${contribHtml}
+                            </div>
                         </div>
-                        <div class="evidence-right">
-                            <div class="evidence-score" style="color: ${ev.risk_contribution > 0 ? 'var(--danger)' : 'var(--success)'}">${ev.risk_contribution > 0 ? '+' : ''}${ev.risk_contribution} risk</div>
-                        </div>
-                    </div>
-                `).join('') : `
+                    `;
+                }).join('') : `
                     <div class="empty-state" style="border:none; background:transparent;">
                         <i class="fa-solid fa-shield-blank empty-icon" style="font-size:3rem; opacity:0.3;"></i>
                         <h4 style="margin:10px 0;">No Specific Evidence</h4>
@@ -361,7 +397,8 @@
                 `;
                 
                 if(analysis.quality) {
-                    document.getElementById('mQualScore').innerText = `${analysis.quality.score}/100`;
+                    const qScore = (typeof analysis.quality.score === 'number') ? `${analysis.quality.score}/100` : 'N/A';
+                    document.getElementById('mQualScore').innerText = qScore;
                     document.getElementById('mQualFind').innerText = (analysis.quality.findings || []).join(', ') || 'No significant quality issues.';
                 } else {
                     document.getElementById('mQualScore').innerText = 'N/A';
@@ -369,7 +406,7 @@
                 }
                 
                 if(analysis.ocr) {
-                    document.getElementById('mOcr').innerHTML = analysis.ocr.success ? '<span style="color:var(--success)">ACTIVE</span>' : '<span style="color:var(--warning)">FAILED</span>';
+                    document.getElementById('mOcr').innerHTML = (analysis.ocr.success && analysis.ocr.status !== 'NO_TEXT_RECOVERED') ? '<span style="color:var(--success)">ACTIVE</span>' : '<span style="color:var(--warning)">NO TEXT / FAILED</span>';
                 } else {
                     document.getElementById('mOcr').innerText = 'N/A';
                 }
@@ -398,15 +435,23 @@
         
         function switchHeatmapTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('cHeatmap').classList.remove('active');
-            document.getElementById('cOriginal').classList.remove('active');
+            const hm = document.getElementById('cHeatmap');
+            const orig = document.getElementById('cOriginal');
             
-            if(tab === 'heatmap') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                document.getElementById('cHeatmap').classList.add('active');
+            if (tab === 'heatmap') {
+                const btn = document.querySelectorAll('.tab-btn')[0];
+                if (btn) btn.classList.add('active');
+                hm.classList.add('active');
+                orig.classList.remove('active');
+                hm.style.display = 'block';
+                orig.style.display = 'none';
             } else {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('cOriginal').classList.add('active');
+                const btn = document.querySelectorAll('.tab-btn')[1];
+                if (btn) btn.classList.add('active');
+                orig.classList.add('active');
+                hm.classList.remove('active');
+                orig.style.display = 'block';
+                hm.style.display = 'none';
             }
         }
         

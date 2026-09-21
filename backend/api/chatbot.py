@@ -46,18 +46,24 @@ NEVER claim:
 Use terms such as "forensic screening", "risk indicator", "evidence", "signal", "manual review", and "analysis result".
 Be concise, professional, and analytical."""
 
+@router.post("")
 @router.post("/")
 async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends(get_current_user)):
-    ctx = request.context
+    ctx = dict(request.context) if request.context else {}
     
     if request.case_id:
         case = await get_case(current_user["id"], request.case_id)
         if not case:
             raise HTTPException(status_code=404, detail="Case not found")
-        ctx = case.get('analysis', {})
-        # Merge case level metadata if available
+        case_analysis = case.get('analysis', {})
+        if isinstance(case_analysis, dict):
+            ctx.update(case_analysis)
+        ctx['case_id'] = case.get('case_id')
         ctx['case_title'] = case.get('title')
         ctx['status'] = case.get('status')
+        ctx['risk_score'] = case.get('risk_score', ctx.get('risk_score', 0))
+        ctx['classification'] = case.get('classification', ctx.get('classification', 'Unknown'))
+        ctx['document_type'] = case.get('document_type', ctx.get('document_type', 'Unknown'))
         
     if not ctx:
         ctx = {}
