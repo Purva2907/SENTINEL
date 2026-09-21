@@ -54,7 +54,10 @@ The project is split into a separated frontend and backend architecture:
 2. Create a virtual environment and activate it:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
    ```
 
 3. Install dependencies:
@@ -86,7 +89,7 @@ Since the frontend is built with vanilla web technologies, you can serve it usin
    ```
 
 2. Serve the files locally:
-   Using Python:
+   Using Python (recommended):
    ```bash
    python -m http.server 3000
    ```
