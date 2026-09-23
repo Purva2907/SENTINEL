@@ -545,10 +545,10 @@
         </div>
     </div>
 
-    <script src="js/theme.js"></script>
-    <script src="js/toast.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/chatbot.js"></script>
+    <script src="js/theme.js?v=2.2"></script>
+    <script src="js/toast.js?v=2.2"></script>
+    <script src="js/auth.js?v=2.2"></script>
+    <script src="js/chatbot.js?v=2.2"></script>
     <script>
         let currentMode = 'upload';
         let currentZoom = 1.0;
@@ -611,15 +611,19 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            if (specimen === 'A') {
+                selectedFileA = file;
+            } else {
+                selectedFileB = file;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 if (specimen === 'A') {
-                    selectedFileA = file;
                     document.getElementById('imgPreviewA').src = e.target.result;
                     document.getElementById('namePreviewA').innerText = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
                     document.getElementById('previewA').style.display = 'block';
                 } else {
-                    selectedFileB = file;
                     document.getElementById('imgPreviewB').src = e.target.result;
                     document.getElementById('namePreviewB').innerText = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
                     document.getElementById('previewB').style.display = 'block';
@@ -637,7 +641,10 @@
             try {
                 let res;
                 if (currentMode === 'upload') {
-                    if (!selectedFileA || !selectedFileB) {
+                    const fileA = selectedFileA || (document.getElementById('fileA') && document.getElementById('fileA').files[0]);
+                    const fileB = selectedFileB || (document.getElementById('fileB') && document.getElementById('fileB').files[0]);
+
+                    if (!fileA || !fileB) {
                         loadToast.dismiss();
                         Toast.error("Input Missing", "Please select both Specimen A and Specimen B files.");
                         btn.disabled = false;
@@ -646,11 +653,16 @@
                     }
 
                     const formData = new FormData();
-                    formData.append('file_a', selectedFileA);
-                    formData.append('file_b', selectedFileB);
+                    formData.append('file_a', fileA);
+                    formData.append('file_b', fileB);
 
-                    res = await fetchWithAuth(`${API_BASE}/compare/upload`, {
+                    const token = getToken();
+                    const uploadHeaders = {};
+                    if (token) uploadHeaders['Authorization'] = `Bearer ${token}`;
+
+                    res = await fetch(`${API_BASE}/compare/upload`, {
                         method: 'POST',
+                        headers: uploadHeaders,
                         body: formData
                     });
                 } else {
