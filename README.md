@@ -98,26 +98,30 @@ No component recalculates, re-averages, or defaults valid risk scores to zero.
 
 ---
 
-## 🔬 Forensic Scoring Model & Contract
+## 🔬 Forensic Scoring Model & Canonical Data Contract
 
-### Canonical JSON Data Contract
+The SENTINEL analysis engine maintains a strict, standardized contract across intake screening, persistent case dossiers, dashboard analytics, and forensic PDF reports.
+
+### Canonical Analysis Response Payload
 ```json
 {
-  "document_name": "sample_id.jpg",
+  "case_id": "SC-2026-849102",
   "document_type": "Identity Card",
   "risk_score": 27,
   "classification": "Review Required",
+  "confidence": 88,
+  "risk_contribution": 27,
   "quality": {
     "blur_score": 1844.2,
     "blur_metric": 1844.2,
     "brightness": 218.4,
     "resolution_ok": true,
-    "dimensions": [800, 500],
+    "dimensions": [850, 540],
     "risk_contribution": 2
   },
   "ocr": {
     "status": "TEXT_DETECTED",
-    "extracted_text": "FULL NAME: JOHN DOE\nDOCUMENT ID: SYN-0001",
+    "extracted_text": "FULL NAME: JOHN DOE | DOCUMENT ID: SYN-0001",
     "average_confidence": 0.942,
     "risk_contribution": 0
   },
@@ -126,6 +130,7 @@ No component recalculates, re-averages, or defaults valid risk scores to zero.
     "detected": true,
     "decoded": true,
     "payload": "SENTINEL-DEMO-0001",
+    "consistency": "Matching demographic payload",
     "risk_contribution": 0
   },
   "typography": {
@@ -154,23 +159,65 @@ No component recalculates, re-averages, or defaults valid risk scores to zero.
       "id": "EV-LAYOUT-01",
       "category": "Layout Consistency",
       "title": "Field Alignment Drift",
-      "severity": "LOW",
+      "severity": "Warning",
       "risk_contribution": 6,
-      "finding": "Minor field alignment drift detected relative to standard template column.",
-      "explanation": "Field alignment differs by > 32px from peer elements."
+      "confidence": 85,
+      "observed_metrics": [
+        "Inter-field baseline variance: 2.1x baseline",
+        "Horizontal margin offset: 18px"
+      ],
+      "assessment": "Minor field alignment drift detected relative to standard credential geometry.",
+      "finding": "Field alignment differs by > 18px from standard template columns.",
+      "explanation": "Field alignment differs by > 18px from peer elements."
     }
   ],
+  "fingerprint": {
+    "fingerprint_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fingerprint_vector": [0.42, 0.54, 0.63, 0.12, 0.94, 0.05, 0.18, 1.0, 0.88, 0.72, 0.0]
+  },
+  "chain_of_custody": {
+    "evidence_id": "EVID-SC-2026-849102",
+    "sha256_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0",
+    "analysis_version": "2.1.0",
+    "ingestion_timestamp": "2026-09-23T21:45:00Z",
+    "status": "TAMPER_FREE"
+  },
   "original_image": "data:image/jpeg;base64,...",
   "heatmap": "data:image/jpeg;base64,...",
-  "recommendation": "Manual Review Recommended",
-  "timestamp": "2026-09-21T17:00:00Z"
+  "recommendation": "Manual investigator review recommended. Minor structural geometry variations observed.",
+  "timestamp": "2026-09-23T21:45:00Z"
 }
 ```
 
+### Canonical Field Specifications
+
+| Canonical Field | Type | Range / Example | Description & Operational Semantics |
+| :--- | :--- | :--- | :--- |
+| `case_id` | `string` | `"SC-2026-849102"` | Unique deterministic case dossier identifier. |
+| `document_type` | `string` | Categorical | Classification of the examined document (e.g. Identity Card, Passport-like, Taxpayer Specimen). |
+| `risk_score` | `integer` | `0 – 100` | Finite aggregate forensic risk score calculated from additive component contributions. |
+| `classification` | `string` | Categorical | Qualitative triage status (`Likely Authentic`, `Review Required`, or `High Suspicion`). |
+| `confidence` | `integer` | `0 – 100` | Aggregate **Forensic Signal Confidence** (observation certainty, not probability of fraud). |
+| `risk_contribution` | `integer` | `0 – 100` | Total cumulative risk points contributed across all forensic modules. |
+| `quality` | `object` | Quality metrics | Physical image metrics: Laplacian blur variance, global luminance, resolution validation. |
+| `ocr` | `object` | OCR extraction | Optical character recognition state (`TEXT_DETECTED`, `NO_TEXT_RECOVERED`), text string, token confidence. |
+| `qr` | `object` | 2D matrix checks | Barcode verification state (`DECODED`, `DETECTED_NOT_DECODED`, `NOT_DETECTED`) and payload parity. |
+| `typography` | `object` | Typographic checks | Font height ratios across peer lines, kerning variance, and HSV ink saturation deltas. |
+| `layout` | `object` | Layout geometry | Spatial alignment, inter-field vertical line spacing variance, and margin drift. |
+| `image_forensics` | `object` | ELA & splicing | Error Level Analysis compression variance and digital splicing patch detection. |
+| `risk_breakdown` | `object` | Per-vector scores | Explicit dictionary mapping each of the 6 forensic vectors to its exact point contribution. |
+| `evidence` | `array` | Signal cards | Itemized forensic observations with `category`, `risk_contribution`, `confidence`, `observed_metrics`, `assessment`. |
+| `fingerprint` | `object` | Morphological hash | 11-dimensional normalized characteristic vector and deterministic SHA-256 hash (`risk_score` excluded). |
+| `chain_of_custody` | `object` | Cryptographic audit | Intake evidence ID, cryptographic SHA-256 file hash, version (`2.1.0`), and integrity status. |
+| `original_image` | `string` | Base64 URI | Pristine, unaltered uploaded source document bytes. |
+| `heatmap` | `string` | Base64 URI | Authentic Error Level Analysis thermal compression overlay. |
+| `recommendation` | `string` | Text assessment | Clear, defensible forensic guidance for the investigating analyst. |
+| `timestamp` | `string` | ISO 8601 UTC | Ingestion and screening completion timestamp. |
+
 ### Risk Classification Thresholds
-- **$0 - 24$ (Likely Authentic):** Minimal or zero observable anomalies. Consistent geometry, clear barcode verification, normal compression profile.
-- **$25 - 49$ (Review Required):** Moderate issues (e.g. optical blur, overexposure, uneven field spacing, or unreadable QR modules). Manual investigator verification recommended.
-- **$50 - 100$ (High Suspicion):** Severe forensic signals detected (e.g. localized ELA compression boundaries, mismatched typography/color insertions, intentional QR damage). Immediate secondary inspection recommended.
+- **`0 – 34` (Likely Authentic):** Minimal or zero observable anomalies. Consistent geometry, clear barcode verification, normal compression profile.
+- **`35 – 69` (Review Required):** Moderate issues (e.g. optical blur, overexposure, uneven field spacing, or unreadable QR modules). Manual investigator verification recommended.
+- **`70 – 100` (High Suspicion):** Severe forensic signals detected (e.g. localized ELA compression boundaries, mismatched typography/color insertions, intentional QR damage). Immediate secondary inspection recommended.
 
 ---
 
