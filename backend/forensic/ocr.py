@@ -36,7 +36,21 @@ def analyze_ocr(image_path: str) -> dict:
                 "findings": ["OCR engine unavailable for text extraction."]
             }
             
-        result = reader.readtext(image_path)
+        import cv2
+        img = cv2.imread(image_path)
+        scale = 1.0
+        if img is not None:
+            h, w = img.shape[:2]
+            max_dim = max(h, w)
+            if max_dim > 1280:
+                scale = 1280.0 / max_dim
+                new_w, new_h = max(1, int(w * scale)), max(1, int(h * scale))
+                resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+                result = reader.readtext(resized, canvas_size=1280)
+            else:
+                result = reader.readtext(img)
+        else:
+            result = reader.readtext(image_path)
         
         if not result or len(result) == 0:
             return {
@@ -69,7 +83,10 @@ def analyze_ocr(image_path: str) -> dict:
                 conf = 0.0
             conf = max(0.0, min(1.0, conf))
             
-            bbox_formatted = [[float(p[0]), float(p[1])] for p in bbox_raw] if bbox_raw else []
+            if scale != 1.0 and bbox_raw:
+                bbox_formatted = [[float(p[0] / scale), float(p[1] / scale)] for p in bbox_raw]
+            else:
+                bbox_formatted = [[float(p[0]), float(p[1])] for p in bbox_raw] if bbox_raw else []
             detections.append({
                 "text": text,
                 "confidence": round(conf, 3),

@@ -638,6 +638,18 @@
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing Comparison...';
             const loadToast = Toast.loading("Executing differential analysis...");
 
+            let elapsed = 0;
+            const stageTimer = setInterval(() => {
+                elapsed += 3;
+                if (elapsed >= 15) {
+                    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Computing Differential Matrix...';
+                } else if (elapsed >= 8) {
+                    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing Specimen B (OCR & Forensics)...';
+                } else if (elapsed >= 3) {
+                    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing Specimen A (OCR & Forensics)...';
+                }
+            }, 3000);
+
             try {
                 let res;
                 if (currentMode === 'upload') {
@@ -645,6 +657,7 @@
                     const fileB = selectedFileB || (document.getElementById('fileB') && document.getElementById('fileB').files[0]);
 
                     if (!fileA || !fileB) {
+                        clearInterval(stageTimer);
                         loadToast.dismiss();
                         Toast.error("Input Missing", "Please select both Specimen A and Specimen B files.");
                         btn.disabled = false;
@@ -670,6 +683,7 @@
                     const caseB = document.getElementById('caseSelectB').value;
 
                     if (!caseA || !caseB) {
+                        clearInterval(stageTimer);
                         loadToast.dismiss();
                         Toast.error("Cases Required", "Please select both Case A and Case B dossiers.");
                         btn.disabled = false;
@@ -677,6 +691,7 @@
                         return;
                     }
                     if (caseA === caseB) {
+                        clearInterval(stageTimer);
                         loadToast.dismiss();
                         Toast.error("Identical Cases", "Please select two distinct cases for differential analysis.");
                         btn.disabled = false;
@@ -691,6 +706,7 @@
                     });
                 }
 
+                clearInterval(stageTimer);
                 loadToast.dismiss();
                 const data = await res.json();
 
@@ -702,9 +718,11 @@
                 renderComparisonResults(data);
                 Toast.success("Analysis Complete", "Differential analysis matrix calculated successfully.");
             } catch (err) {
+                clearInterval(stageTimer);
                 loadToast.dismiss();
                 Toast.error("Comparison Error", (err && err.message) ? err.message : "Could not complete comparison.");
             } finally {
+                clearInterval(stageTimer);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-code-compare"></i> Run Differential Analysis';
             }
