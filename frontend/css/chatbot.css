@@ -102,11 +102,11 @@
 }
 
 .ai-msg {
-    padding: 12px 18px;
+    padding: 12px 16px;
     border-radius: 8px;
-    max-width: 85%;
-    font-size: 0.95rem;
-    line-height: 1.5;
+    max-width: 90%;
+    font-size: 0.88rem;
+    line-height: 1.6;
     word-wrap: break-word;
 }
 
@@ -116,14 +116,55 @@
     align-self: flex-end;
     border-bottom-right-radius: 0;
     font-weight: 500;
+    white-space: pre-wrap;
 }
 
 .ai-msg-bot {
-    background: rgba(0,0,0,0.4);
+    background: rgba(14, 18, 26, 0.88);
     color: var(--text-main);
     align-self: flex-start;
     border-bottom-left-radius: 0;
     border: 1px solid var(--shell-border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+.ai-msg-bot p {
+    margin: 0 0 6px 0;
+    line-height: 1.55;
+}
+
+.ai-msg-bot p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-msg-bot ul {
+    margin: 6px 0 8px 0;
+    padding-left: 18px;
+    list-style-type: disc;
+}
+
+.ai-msg-bot li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.ai-msg-bot li:last-child {
+    margin-bottom: 2px;
+}
+
+.ai-msg-bot strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.ai-msg-bot code {
+    background: rgba(29, 206, 216, 0.12);
+    color: var(--cyan);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    border: 1px solid rgba(29, 206, 216, 0.25);
 }
 
 .ai-suggestions {

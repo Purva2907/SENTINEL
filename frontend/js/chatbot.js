@@ -29,7 +29,17 @@ function initChatbot() {
         </div>
         
         <div class="ai-body" id="aiChatBody">
-            <div class="ai-msg ai-msg-bot">I am SENTINEL AI, your forensic investigation assistant. How can I help you today?</div>
+            <div class="ai-msg ai-msg-bot">
+                <p>Hello! I am <strong>SENTINEL AI</strong>, your digital forensic investigation assistant.</p>
+                <p style="margin-top:6px;">I can assist you with:</p>
+                <ul>
+                    <li><strong>Forensic Scoring</strong>: Explain why a document received a specific risk score.</li>
+                    <li><strong>Signal Explanations</strong>: Break down ELA heatmaps, typography disparities, and layout shifts.</li>
+                    <li><strong>Data Extraction</strong>: Retrieve registered names, DOB, address, Aadhaar/PAN numbers, and QR status.</li>
+                    <li><strong>Investigative Guidance</strong>: Recommend physical checks and verification protocols.</li>
+                </ul>
+                <p style="margin-top:8px;">What would you like to investigate?</p>
+            </div>
         </div>
         
         <div class="ai-suggestions" id="aiSuggestions">
@@ -133,7 +143,12 @@ function attachChatEvents() {
 
     clearBtn.addEventListener('click', () => {
         chatHistory = [];
-        body.innerHTML = '<div class="ai-msg ai-msg-bot">Conversation cleared. I am ready to assist you.</div>';
+        body.innerHTML = `
+            <div class="ai-msg ai-msg-bot">
+                <p>Conversation cleared. Ready for your forensic inquiries.</p>
+                <p style="margin-top:6px;">What would you like to investigate?</p>
+            </div>
+        `;
     });
 
     document.querySelectorAll('.ai-suggestion-btn').forEach(sbtn => {
@@ -177,7 +192,7 @@ function attachChatEvents() {
 
         const { context, caseId } = getForensicContext();
         
-        // Add to history (limit to last 10 msgs)
+        // Add to history (limit to last 20 msgs)
         chatHistory.push({ role: "user", content: text });
         if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
@@ -196,7 +211,7 @@ function attachChatEvents() {
             
             if (response.ok) {
                 const answer = res.response || "No response received.";
-                document.getElementById(loadingId).outerHTML = `<div class="ai-msg ai-msg-bot">${escapeHTML(answer)}</div>`;
+                document.getElementById(loadingId).outerHTML = `<div class="ai-msg ai-msg-bot">${formatAiResponse(answer)}</div>`;
                 chatHistory.push({ role: "assistant", content: answer });
             } else {
                 document.getElementById(loadingId).outerHTML = `<div class="ai-msg ai-msg-bot" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Error: ${res.detail || 'Could not connect to AI'}</div>`;
@@ -220,6 +235,66 @@ function escapeHTML(str) {
             '"': '&quot;'
         }[tag] || tag)
     );
+}
+
+function formatAiResponse(text) {
+    if (!text) return '';
+
+    // First safely escape raw HTML characters
+    let safe = escapeHTML(text);
+
+    // If bullets (• or * or -) appear inline without preceding newline, break them onto new lines
+    safe = safe.replace(/([^\n])\s*[•]\s*/g, '$1\n• ');
+    safe = safe.replace(/([^\n])\s*([0-9]+\.\s+)/g, '$1\n$2');
+
+    // If concluding questions appear right after bullet item, break to new line
+    safe = safe.replace(/([.!?])\s+(What would you like|How can I|Please let me know|Let me know|Where would you)/gi, '$1\n\n$2');
+
+    // Convert bold: **text** -> <strong>text</strong>
+    safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert inline code: `code` -> <code>$1</code>
+    safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Parse into structured paragraphs and bullet list items
+    const rawLines = safe.split('\n');
+    let html = '';
+    let inList = false;
+
+    for (let i = 0; i < rawLines.length; i++) {
+        const line = rawLines[i].trim();
+
+        // Check if line is a bullet item (•, -, *, or numbered like 1.)
+        const isBullet = line.startsWith('•') || line.startsWith('- ') || line.startsWith('* ');
+        const isNumbered = /^\d+\.\s+/.test(line);
+
+        if (isBullet || isNumbered) {
+            if (!inList) {
+                html += '<ul style="margin:6px 0 8px 0; padding-left:18px;">';
+                inList = true;
+            }
+            const itemContent = isBullet 
+                ? line.replace(/^[•*-]\s*/, '') 
+                : line.replace(/^\d+\.\s*/, '');
+            html += `<li style="margin-bottom:6px; line-height:1.5;">${itemContent}</li>`;
+        } else {
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            if (line === '') {
+                html += '<div style="height:6px;"></div>';
+            } else {
+                html += `<p style="margin:0 0 6px 0; line-height:1.55;">${line}</p>`;
+            }
+        }
+    }
+
+    if (inList) {
+        html += '</ul>';
+    }
+
+    return html;
 }
 
 // Auto-initialize when DOM is loaded
