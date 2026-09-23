@@ -40,5 +40,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
         
-    # Simplified mock for hackathon: return user dict with id
-    return {"id": user_id}
+    user = await get_user_by_id(user_id)
+    if not user:
+        return {
+            "id": user_id,
+            "name": payload.get("name", "Investigator"),
+            "email": payload.get("email", ""),
+            "role": "investigator",
+            "department": "Forensic Screening Unit",
+            "badge_number": f"SEN-{user_id[:4].upper()}"
+        }
+    return user

@@ -22,10 +22,27 @@ def init_sqlite():
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             role TEXT DEFAULT 'investigator',
+            department TEXT DEFAULT 'Forensic Screening Unit',
+            badge_number TEXT,
+            avatar TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
     ''')
+    
+    # Safe column additions if existing database doesn't have them yet
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN department TEXT DEFAULT 'Forensic Screening Unit'")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN badge_number TEXT")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN avatar TEXT")
+    except Exception:
+        pass
     
     # Cases Table
     cursor.execute('''

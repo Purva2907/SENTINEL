@@ -30,13 +30,18 @@ def fix_ids(docs):
     return [fix_id(d) for d in docs]
 
 # --- USERS ---
-async def create_user(name: str, email: str, password_hash: str, role: str = 'investigator'):
+async def create_user(name: str, email: str, password_hash: str, role: str = 'investigator', department: str = 'Forensic Screening Unit', badge_number: str = None, avatar: str = None):
+    if not badge_number:
+        badge_number = f"SEN-{str(uuid.uuid4().hex)[:4].upper()}"
     user = {
         "id": str(uuid.uuid4()),
         "name": name,
         "email": email,
         "password_hash": password_hash,
         "role": role,
+        "department": department or 'Forensic Screening Unit',
+        "badge_number": badge_number,
+        "avatar": avatar or '',
         "created_at": get_iso_time(),
         "updated_at": get_iso_time()
     }
@@ -47,9 +52,9 @@ async def create_user(name: str, email: str, password_hash: str, role: str = 'in
     else:
         conn = get_sqlite_db()
         conn.execute('''
-            INSERT INTO users (id, name, email, password_hash, role, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (user['id'], user['name'], user['email'], user['password_hash'], user['role'], user['created_at'], user['updated_at']))
+            INSERT INTO users (id, name, email, password_hash, role, department, badge_number, avatar, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user['id'], user['name'], user['email'], user['password_hash'], user['role'], user['department'], user['badge_number'], user['avatar'], user['created_at'], user['updated_at']))
         conn.commit()
         conn.close()
     
@@ -58,24 +63,78 @@ async def create_user(name: str, email: str, password_hash: str, role: str = 'in
 async def get_user_by_email(email: str):
     if backend == 'mongodb':
         db = get_mongo_db()
-        return fix_id(await db.users.find_one({"email": email}))
+        user = fix_id(await db.users.find_one({"email": email}))
     else:
         conn = get_sqlite_db()
         cursor = conn.execute('SELECT * FROM users WHERE email = ?', (email,))
         row = cursor.fetchone()
         conn.close()
-        return dict(row) if row else None
+        user = dict(row) if row else None
+        
+    if user:
+        if not user.get("department"):
+            user["department"] = "Forensic Screening Unit"
+        if not user.get("badge_number"):
+            user["badge_number"] = f"SEN-{user['id'][:4].upper()}"
+        if "avatar" not in user or user.get("avatar") is None:
+            user["avatar"] = ""
+    return user
 
 async def get_user_by_id(user_id: str):
     if backend == 'mongodb':
         db = get_mongo_db()
-        return fix_id(await db.users.find_one({"id": user_id}))
+        user = fix_id(await db.users.find_one({"id": user_id}))
     else:
         conn = get_sqlite_db()
         cursor = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,))
         row = cursor.fetchone()
         conn.close()
-        return dict(row) if row else None
+        user = dict(row) if row else None
+        
+    if user:
+        if not user.get("department"):
+            user["department"] = "Forensic Screening Unit"
+        if not user.get("badge_number"):
+            user["badge_number"] = f"SEN-{user['id'][:4].upper()}"
+        if "avatar" not in user or user.get("avatar") is None:
+            user["avatar"] = ""
+    return user
+
+async def update_user_profile(user_id: str, name: str, department: str = None, badge_number: str = None, avatar: str = None):
+    now = get_iso_time()
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        update_fields = {"name": name, "updated_at": now}
+        if department is not None:
+            update_fields["department"] = department
+        if badge_number is not None:
+            update_fields["badge_number"] = badge_number
+        if avatar is not None:
+            update_fields["avatar"] = avatar
+        await db.users.update_one({"id": user_id}, {"$set": update_fields})
+        return await get_user_by_id(user_id)
+    else:
+        conn = get_sqlite_db()
+        conn.execute('''
+            UPDATE users
+            SET name = ?, department = COALESCE(?, department), badge_number = COALESCE(?, badge_number), avatar = COALESCE(?, avatar), updated_at = ?
+            WHERE id = ?
+        ''', (name, department, badge_number, avatar, now, user_id))
+        conn.commit()
+        conn.close()
+        return await get_user_by_id(user_id)
+
+async def update_user_password(user_id: str, password_hash: str):
+    now = get_iso_time()
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        await db.users.update_one({"id": user_id}, {"$set": {"password_hash": password_hash, "updated_at": now}})
+    else:
+        conn = get_sqlite_db()
+        conn.execute('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?', (password_hash, now, user_id))
+        conn.commit()
+        conn.close()
+    return True
 
 # --- CASES ---
 async def create_case(case_data: dict, analysis_data: dict):
@@ -244,8 +303,9 @@ async def create_case_note(user_id: str, case_id: str, text: str, investigator_n
         return note
 
 # --- REPORTS ---
-async def create_report(user_id: str, case_id: str, file_path: str):
-    report_id = f"RPT-2026-{str(uuid.uuid4().hex)[:4].upper()}"
+async def create_report(user_id: str, case_id: str, file_path: str, report_id: str = None):
+    if not report_id:
+        report_id = f"RPT-2026-{str(uuid.uuid4().hex)[:4].upper()}"
     report_record = {
         "id": str(uuid.uuid4()),
         "report_id": report_id,
@@ -257,6 +317,7 @@ async def create_report(user_id: str, case_id: str, file_path: str):
     if backend == 'mongodb':
         db = get_mongo_db()
         await db.reports.insert_one(report_record)
+        fix_id(report_record)
     else:
         conn = get_sqlite_db()
         conn.execute('''
@@ -271,21 +332,47 @@ async def list_reports(user_id: str):
     if backend == 'mongodb':
         db = get_mongo_db()
         reports = await db.reports.find({"user_id": user_id}).sort("created_at", -1).to_list(1000)
-        return fix_ids(reports)
+        reports = fix_ids(reports)
+        for r in reports:
+            case = await db.cases.find_one({"user_id": user_id, "$or": [{"id": r.get("case_id")}, {"case_id": r.get("case_id")}]})
+            if case:
+                r["case_title"] = case.get("title", "Untitled Case")
+                r["readable_case_id"] = case.get("case_id", r.get("case_id"))
+                r["risk_score"] = case.get("risk_score", 0)
+                r["classification"] = case.get("classification", "Unknown")
+                r["document_type"] = case.get("document_type", "Unknown")
+            else:
+                r["case_title"] = "Forensic Case"
+                r["readable_case_id"] = r.get("case_id")
+        return reports
     else:
         conn = get_sqlite_db()
-        cursor = conn.execute('SELECT * FROM reports WHERE user_id = ? ORDER BY created_at DESC', (user_id,))
+        cursor = conn.execute('''
+            SELECT r.*, c.title as case_title, c.case_id as readable_case_id, c.risk_score, c.classification, c.document_type
+            FROM reports r
+            LEFT JOIN cases c ON (r.case_id = c.id OR r.case_id = c.case_id)
+            WHERE r.user_id = ?
+            ORDER BY r.created_at DESC
+        ''', (user_id,))
         rows = cursor.fetchall()
         conn.close()
-        return [dict(r) for r in rows]
+        res = []
+        for r in rows:
+            d = dict(r)
+            if not d.get("readable_case_id"):
+                d["readable_case_id"] = d.get("case_id")
+            if not d.get("case_title"):
+                d["case_title"] = "Forensic Case"
+            res.append(d)
+        return res
 
 async def get_report(user_id: str, report_id: str):
     if backend == 'mongodb':
         db = get_mongo_db()
-        return fix_id(await db.reports.find_one({"user_id": user_id, "id": report_id}))
+        return fix_id(await db.reports.find_one({"user_id": user_id, "$or": [{"id": report_id}, {"report_id": report_id}]}))
     else:
         conn = get_sqlite_db()
-        cursor = conn.execute('SELECT * FROM reports WHERE user_id = ? AND id = ?', (user_id, report_id))
+        cursor = conn.execute('SELECT * FROM reports WHERE user_id = ? AND (id = ? OR report_id = ?)', (user_id, report_id, report_id))
         row = cursor.fetchone()
         conn.close()
         return dict(row) if row else None

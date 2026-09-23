@@ -9,25 +9,480 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTINEL | Profile</title>
+    <title>SENTINEL | Investigator Profile</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/chatbot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .profile-container { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
-        .avatar-section { text-align: center; border-bottom: 1px solid var(--shell-border); padding-bottom: 30px; margin-bottom: 25px; }
-        .avatar { width: 130px; height: 130px; border-radius: 50%; background: var(--orange); color: #000; display: inline-flex; justify-content: center; align-items: center; font-size: 3.5rem; margin-bottom: 20px; font-weight: 800; box-shadow: 0 0 30px rgba(255, 157, 80, 0.3); }
+        .profile-container { 
+            display: grid; 
+            grid-template-columns: 1fr 2fr; 
+            gap: 30px; 
+            align-items: start;
+        }
+
+        .avatar-section { 
+            text-align: center; 
+            border-bottom: 1px solid var(--shell-border); 
+            padding-bottom: 25px; 
+            margin-bottom: 20px; 
+        }
+
+        .avatar-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .avatar { 
+            width: 125px; 
+            height: 125px; 
+            border-radius: 50%; 
+            background: linear-gradient(135deg, var(--orange), #e67e22); 
+            color: #0b0e14; 
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 3.2rem; 
+            font-weight: 800; 
+            box-shadow: 0 0 35px rgba(255, 157, 80, 0.35); 
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            letter-spacing: -1px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+        .avatar i {
+            font-size: 2.8rem;
+            color: #0b0e14;
+        }
+
+        .avatar-wrap:hover .avatar {
+            transform: scale(1.03);
+            box-shadow: 0 0 45px rgba(29, 206, 216, 0.45);
+            border-color: var(--cyan);
+        }
+
+        .avatar-edit-overlay {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 36px;
+            height: 36px;
+            background: #0f172a;
+            border: 2px solid var(--cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cyan);
+            font-size: 0.95rem;
+            box-shadow: 0 0 15px rgba(29, 206, 216, 0.6);
+            transition: all 0.25s ease;
+        }
+
+        .avatar-wrap:hover .avatar-edit-overlay {
+            background: var(--cyan);
+            color: #051419;
+            transform: scale(1.1);
+        }
+
+        .change-avatar-btn {
+            background: transparent;
+            border: 1px solid rgba(29, 206, 216, 0.35);
+            color: var(--cyan);
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .change-avatar-btn:hover {
+            background: rgba(29, 206, 216, 0.12);
+            border-color: var(--cyan);
+            transform: translateY(-1px);
+        }
         
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
-        .form-group input { width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--shell-border); color: var(--text-main); border-radius: 6px; box-sizing: border-box; }
-        .form-group input:disabled { opacity: 0.6; cursor: not-allowed; }
-        
-        .info-row { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; color: var(--text-main); }
-        .info-row i { color: var(--cyan); width: 20px; text-align: center; }
-        
-        @media (max-width: 768px) {
+        .info-row { 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 15px; 
+            margin-bottom: 16px; 
+            color: var(--text-main); 
+        }
+        .info-row i { 
+            color: var(--cyan); 
+            width: 22px; 
+            text-align: center; 
+            margin-top: 3px;
+            font-size: 1.05rem;
+        }
+        .info-row .info-label {
+            font-size: 0.72rem; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            margin-bottom: 3px;
+        }
+        .info-row .info-val {
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+
+        /* Profile Tabs */
+        .profile-tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid var(--shell-border);
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+        }
+
+        .profile-tab-btn {
+            background: transparent;
+            border: 1px solid var(--shell-border);
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-tab-btn:hover {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .profile-tab-btn.active {
+            background: rgba(29, 206, 216, 0.12);
+            color: var(--cyan);
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(29, 206, 216, 0.15);
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .form-group { 
+            margin-bottom: 22px; 
+        }
+
+        .form-group label { 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px; 
+            color: var(--text-muted); 
+            font-size: 0.8rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            font-weight: 600;
+        }
+
+        .form-group .field-wrap {
+            position: relative;
+        }
+
+        .form-group input { 
+            width: 100%; 
+            padding: 13px 16px; 
+            background: rgba(0, 0, 0, 0.35); 
+            border: 1px solid var(--shell-border); 
+            color: var(--text-main); 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .form-group input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(29, 206, 216, 0.2);
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        .form-group input:disabled { 
+            opacity: 0.7; 
+            cursor: not-allowed; 
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .input-icon-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.95rem;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .input-icon-btn:hover {
+            color: var(--cyan);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--cyan), #0099b8);
+            color: #051419;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 26px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(29, 206, 216, 0.3);
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: linear-gradient(135deg, #3ae4ed, var(--cyan));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(29, 206, 216, 0.45);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .security-notice {
+            background: rgba(29, 206, 216, 0.05);
+            border: 1px solid rgba(29, 206, 216, 0.2);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .security-notice i {
+            color: var(--cyan);
+            font-size: 1.2rem;
+            margin-top: 2px;
+        }
+
+        .security-notice-text {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Avatar Customizer Modal */
+        .avatar-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(6px);
+        }
+
+        .avatar-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            padding: 35px;
+            max-width: 580px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(29, 206, 216, 0.25);
+            position: relative;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--text-main);
+        }
+
+        .avatar-preview-center {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .avatar-preview-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.6rem;
+            font-weight: 800;
+            margin: 0 auto 10px;
+            box-shadow: 0 0 30px rgba(29, 206, 216, 0.4);
+            border: 3px solid var(--cyan);
+            overflow: hidden;
+            color: #0b0e14;
+        }
+
+        .avatar-preview-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-preview-circle i {
+            font-size: 2.3rem;
+            color: #0b0e14;
+        }
+
+        .avatar-section-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 500px) {
+            .icon-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .icon-option {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+            font-size: 1.3rem;
+        }
+
+        .icon-option:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            transform: translateY(-2px);
+        }
+
+        .icon-option.active {
+            border-color: var(--cyan);
+            background: rgba(29, 206, 216, 0.15);
+            color: var(--cyan);
+            box-shadow: 0 0 15px rgba(29, 206, 216, 0.25);
+        }
+
+        .color-grid {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.15);
+        }
+
+        .color-option.active {
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            transform: scale(1.15);
+        }
+
+        .photo-upload-zone {
+            border: 1px dashed var(--shell-border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .photo-upload-zone:hover {
+            border-color: var(--cyan);
+            background: rgba(29, 206, 216, 0.05);
+        }
+
+        @media (max-width: 900px) {
             .profile-container { grid-template-columns: 1fr; }
         }
     </style>
@@ -37,6 +492,7 @@
     <div class="forensic-grid"></div>
 
     <div class="layout">
+        <!-- Sidebar Navigation -->
         <div class="sidebar">
             <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
             <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
@@ -50,18 +506,19 @@
             <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
         
+        <!-- Main Content -->
         <div class="main-content">
             <div class="topbar">
                 <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <div class="topbar-left">
-                    <h2>Investigator Identity</h2>
-                    <p>Secure profile and authentication credentials.</p>
+                    <h2>Investigator Profile & Security</h2>
+                    <p>Manage identity credentials, avatar icon, department assignment, and authentication security.</p>
                 </div>
                 <div class="topbar-right">
                     <div class="user-profile">
-                        <div class="user-avatar" id="topAvatar">I</div>
+                        <div class="user-avatar" id="topAvatar" style="overflow:hidden;">I</div>
                         <div class="user-info">
                             <span class="user-name" id="topName">Investigator</span>
                             <span class="user-role">Investigator</span>
@@ -72,98 +529,631 @@
             
             <div class="content-area">
                 <div class="profile-container">
+                    <!-- Left: Identity Badge Card -->
                     <div class="card">
                         <div class="avatar-section">
-                            <div class="avatar" id="avatarInitials">IN</div>
-                            <h3 id="profName" style="margin:0 0 5px 0; font-size:1.4rem;">Loading...</h3>
-                            <p class="text-muted" style="margin:0; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;" id="profRole">Investigator</p>
+                            <div class="avatar-wrap" onclick="openAvatarModal()" title="Click to Change Profile Icon">
+                                <div class="avatar" id="avatarDisplay">IN</div>
+                                <div class="avatar-edit-overlay">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <button type="button" class="change-avatar-btn" onclick="openAvatarModal()">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Change Profile Icon
+                                </button>
+                            </div>
+                            <h3 id="profName" style="margin:0 0 6px 0; font-size:1.35rem; color:var(--text-main);">Loading...</h3>
+                            <div style="display:flex; justify-content:center; gap:8px; align-items:center;">
+                                <span class="badge" id="profBadgePill" style="background:rgba(255,157,80,0.15); color:var(--orange); border:1px solid rgba(255,157,80,0.4); font-family:monospace; font-size:0.75rem;">SEN-XXXX</span>
+                                <span class="badge" id="profRoleBadge" style="background:rgba(29,206,216,0.12); color:var(--cyan); border:1px solid rgba(29,206,216,0.3); font-size:0.75rem; text-transform:uppercase;">Investigator</span>
+                            </div>
                         </div>
+
                         <div>
+                            <div class="info-row">
+                                <i class="fa-solid fa-building-shield"></i>
+                                <div>
+                                    <div class="info-label">Assigned Department</div>
+                                    <div class="info-val" id="profDept" style="color:var(--cyan);">Forensic Screening Unit</div>
+                                </div>
+                            </div>
+
+                            <div class="info-row">
+                                <i class="fa-solid fa-id-card-clip"></i>
+                                <div>
+                                    <div class="info-label">Service Badge / Call Sign</div>
+                                    <div class="info-val" id="profBadge" style="font-family:monospace; color:var(--orange);">SEN-8492</div>
+                                </div>
+                            </div>
+
                             <div class="info-row">
                                 <i class="fa-solid fa-fingerprint"></i>
                                 <div>
-                                    <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">System ID</div>
-                                    <div style="font-family:monospace; font-size:0.9rem;" id="profId">Loading...</div>
+                                    <div class="info-label">System Operator UUID</div>
+                                    <div class="info-val" style="font-family:monospace; font-size:0.85rem; color:var(--text-muted);" id="profId">Loading...</div>
                                 </div>
                             </div>
+
                             <div class="info-row">
-                                <i class="fa-solid fa-shield-halved"></i>
+                                <i class="fa-solid fa-certificate"></i>
                                 <div>
-                                    <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Clearance</div>
-                                    <div>Active</div>
+                                    <div class="info-label">Clearance Status</div>
+                                    <div class="info-val" style="color:var(--success); font-weight:600; display:flex; align-items:center; gap:6px;">
+                                        <i class="fa-solid fa-circle-check"></i> Active // Level 4 Forensic Authority
+                                    </div>
                                 </div>
                             </div>
+
                             <div class="info-row">
                                 <i class="fa-solid fa-calendar-check"></i>
                                 <div>
-                                    <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Member Since</div>
-                                    <div id="profDate">Loading...</div>
+                                    <div class="info-label">Commission Date / Member Since</div>
+                                    <div class="info-val" id="profDate" style="color:var(--text-main);">Loading...</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
+                    <!-- Right: Tabbed Identity & Security Workstation -->
                     <div class="card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-user-pen"></i> Identity Details</h3>
+                        <!-- Navigation Tabs -->
+                        <div class="profile-tabs">
+                            <button type="button" class="profile-tab-btn active" data-tab="tabProfile">
+                                <i class="fa-solid fa-id-badge"></i> Investigator Credentials
+                            </button>
+                            <button type="button" class="profile-tab-btn" data-tab="tabSecurity">
+                                <i class="fa-solid fa-key"></i> Security & Password
+                            </button>
                         </div>
-                        <form id="profileForm">
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input type="text" id="inputName" value="" disabled>
+
+                        <!-- TAB 1: Profile Details Form -->
+                        <div class="tab-pane active" id="tabProfile">
+                            <form id="profileEditForm">
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="inputName">
+                                            <span>Full Legal Name</span>
+                                            <span style="color:var(--cyan); font-size:0.75rem;">Editable</span>
+                                        </label>
+                                        <input type="text" id="inputName" required placeholder="e.g. Inspector John Vance">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="inputBadge">
+                                            <span>Badge Number / Call Sign</span>
+                                            <span style="color:var(--cyan); font-size:0.75rem;">Editable</span>
+                                        </label>
+                                        <input type="text" id="inputBadge" placeholder="e.g. SEN-8492">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="inputDept">
+                                        <span>Assigned Department / Division</span>
+                                        <span style="color:var(--cyan); font-size:0.75rem;">Editable</span>
+                                    </label>
+                                    <input type="text" id="inputDept" placeholder="e.g. Document Forensics & Anti-Fraud Division">
+                                </div>
+
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="inputEmail">
+                                            <span>Secure Authentication Email</span>
+                                            <span style="color:var(--text-muted); font-size:0.72rem;"><i class="fa-solid fa-lock"></i> Locked</span>
+                                        </label>
+                                        <div class="field-wrap">
+                                            <input type="email" id="inputEmail" disabled>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="inputRole">
+                                            <span>System Role Assignment</span>
+                                            <span style="color:var(--text-muted); font-size:0.72rem;"><i class="fa-solid fa-lock"></i> Locked</span>
+                                        </label>
+                                        <input type="text" id="inputRole" disabled>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; flex-wrap:wrap; gap:10px;">
+                                    <button type="button" class="btn-action" onclick="openAvatarModal()" style="color:var(--cyan); border-color:rgba(29,206,216,0.35);">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Customize Profile Icon
+                                    </button>
+                                    <button type="submit" class="btn-submit" id="saveProfileBtn">
+                                        <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- TAB 2: Security & Password Form -->
+                        <div class="tab-pane" id="tabSecurity">
+                            <div class="security-notice">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <div class="security-notice-text">
+                                    <strong style="color:var(--text-main); display:block; margin-bottom:3px;">Credential Protection Protocol</strong>
+                                    Passwords are cryptographically hashed using standard Bcrypt rounds with dynamic salting. Changes take effect immediately across all active API sessions.
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Secure Email</label>
-                                <input type="email" id="inputEmail" value="" disabled>
-                            </div>
-                            <div class="form-group">
-                                <label>Role Assignment</label>
-                                <input type="text" id="inputRole" value="" disabled>
-                            </div>
-                            
-                            <div style="margin-top: 35px; padding-top: 25px; border-top: 1px solid var(--shell-border);">
-                                <h4 style="color:var(--text-main); margin-bottom:15px; font-size:1rem;"><i class="fa-solid fa-lock" style="color:var(--cyan); margin-right:8px;"></i> Security Actions</h4>
-                                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Identity details are managed by central command. Profile updates are currently restricted.</p>
-                                <button type="button" class="btn-primary" onclick="Toast.warning('Access Denied', 'Profile updates restricted by central command.')" style="background:var(--shell-border); color:var(--text-muted);">
-                                    Request Identity Update
-                                </button>
-                            </div>
-                        </form>
+
+                            <form id="passwordChangeForm">
+                                <div class="form-group">
+                                    <label for="inputCurrentPass">Current Active Password</label>
+                                    <div class="field-wrap">
+                                        <input type="password" id="inputCurrentPass" required placeholder="Enter current verification password">
+                                        <button type="button" class="input-icon-btn" onclick="togglePasswordVisibility('inputCurrentPass', this)" aria-label="Toggle password visibility">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="inputNewPass">
+                                            <span>New Password</span>
+                                            <span style="color:var(--text-muted); font-size:0.72rem;">Min 6 characters</span>
+                                        </label>
+                                        <div class="field-wrap">
+                                            <input type="password" id="inputNewPass" required minlength="6" placeholder="Enter new strong password">
+                                            <button type="button" class="input-icon-btn" onclick="togglePasswordVisibility('inputNewPass', this)" aria-label="Toggle password visibility">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="inputConfirmPass">Confirm New Password</label>
+                                        <div class="field-wrap">
+                                            <input type="password" id="inputConfirmPass" required minlength="6" placeholder="Re-enter new password">
+                                            <button type="button" class="input-icon-btn" onclick="togglePasswordVisibility('inputConfirmPass', this)" aria-label="Toggle password visibility">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                                    <button type="submit" class="btn-submit" id="changePasswordBtn">
+                                        <i class="fa-solid fa-key"></i> Update Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Avatar Customization Modal -->
+    <div class="avatar-modal" id="avatarModal">
+        <div class="avatar-modal-content">
+            <button type="button" class="modal-close-btn" onclick="closeAvatarModal()"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 style="margin:0 0 15px 0; color:var(--text-main); display:flex; align-items:center; gap:10px; font-size:1.25rem;">
+                <i class="fa-solid fa-id-card" style="color:var(--cyan);"></i> Customize Profile Icon
+            </h3>
+
+            <!-- Live Avatar Preview -->
+            <div class="avatar-preview-center">
+                <div class="avatar-preview-circle" id="modalAvatarPreview">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div style="font-size:0.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Active Preview</div>
+            </div>
+
+            <!-- Option 1: Preset Icons -->
+            <div class="avatar-section-title"><i class="fa-solid fa-icons" style="color:var(--cyan)"></i> Choose Cyber-Forensic Icon</div>
+            <div class="icon-grid" id="iconGrid">
+                <div class="icon-option active" data-icon="fa-user-shield" title="Shield Officer"><i class="fa-solid fa-user-shield"></i></div>
+                <div class="icon-option" data-icon="fa-fingerprint" title="Biometrics"><i class="fa-solid fa-fingerprint"></i></div>
+                <div class="icon-option" data-icon="fa-shield-halved" title="Sentinel Shield"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="icon-option" data-icon="fa-user-secret" title="Cyber Agent"><i class="fa-solid fa-user-secret"></i></div>
+                <div class="icon-option" data-icon="fa-microscope" title="Forensic Lab"><i class="fa-solid fa-microscope"></i></div>
+                <div class="icon-option" data-icon="fa-eye" title="Surveillance"><i class="fa-solid fa-eye"></i></div>
+                <div class="icon-option" data-icon="fa-robot" title="AI Sentinel"><i class="fa-solid fa-robot"></i></div>
+                <div class="icon-option" data-icon="fa-terminal" title="Cyber Console"><i class="fa-solid fa-terminal"></i></div>
+                <div class="icon-option" data-icon="fa-certificate" title="Special Agent"><i class="fa-solid fa-certificate"></i></div>
+                <div class="icon-option" data-icon="fa-lock" title="Security Protocol"><i class="fa-solid fa-lock"></i></div>
+                <div class="icon-option" data-icon="fa-mask" title="Covert Ops"><i class="fa-solid fa-mask"></i></div>
+                <div class="icon-option" data-icon="initials" title="Initials Text"><span style="font-weight:800; font-size:1rem;">IN</span></div>
+            </div>
+
+            <!-- Option 2: Color Palette -->
+            <div class="avatar-section-title"><i class="fa-solid fa-palette" style="color:var(--orange)"></i> Theme Palette</div>
+            <div class="color-grid" id="colorGrid">
+                <div class="color-option active" data-bg="linear-gradient(135deg, #FF9D50, #E67E22)" style="background:linear-gradient(135deg, #FF9D50, #E67E22);" title="Warm Sentinel"></div>
+                <div class="color-option" data-bg="linear-gradient(135deg, #1DCED8, #0099B8)" style="background:linear-gradient(135deg, #1DCED8, #0099B8);" title="Cyber Cyan"></div>
+                <div class="color-option" data-bg="linear-gradient(135deg, #55E07E, #16A34A)" style="background:linear-gradient(135deg, #55E07E, #16A34A);" title="Emerald Clearance"></div>
+                <div class="color-option" data-bg="linear-gradient(135deg, #A855F7, #6366F1)" style="background:linear-gradient(135deg, #A855F7, #6366F1);" title="Tactical Violet"></div>
+                <div class="color-option" data-bg="linear-gradient(135deg, #FF4D4D, #DC2626)" style="background:linear-gradient(135deg, #FF4D4D, #DC2626);" title="Crimson Priority"></div>
+                <div class="color-option" data-bg="linear-gradient(135deg, #FACC15, #D97706)" style="background:linear-gradient(135deg, #FACC15, #D97706);" title="Gold Executive"></div>
+            </div>
+
+            <!-- Option 3: Custom Photo Upload -->
+            <div class="avatar-section-title"><i class="fa-solid fa-camera" style="color:var(--cyan)"></i> Or Upload Custom Photo</div>
+            <input type="file" id="avatarPhotoInput" accept="image/jpeg, image/png, image/webp" style="display:none;">
+            <div class="photo-upload-zone" onclick="document.getElementById('avatarPhotoInput').click()">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.4rem; color:var(--cyan); margin-bottom:5px; display:block;"></i>
+                <div style="font-size:0.85rem; color:var(--text-main); font-weight:600;">Click to select photo</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Auto-cropped to circular profile badge (JPG, PNG, WEBP)</div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:15px;">
+                <button type="button" class="btn-action" onclick="closeAvatarModal()" style="border-color:var(--shell-border); color:var(--text-muted);">Cancel</button>
+                <button type="button" class="btn-submit" id="saveAvatarModalBtn">
+                    <i class="fa-solid fa-check"></i> Apply Profile Icon
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="js/theme.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/chatbot.js"></script>
     <script>
+        let currentUser = null;
+        let selectedIcon = 'fa-user-shield';
+        let selectedBg = 'linear-gradient(135deg, #FF9D50, #E67E22)';
+        let selectedCustomPhoto = ''; // If base64 photo is selected
+
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
             if(!user) return;
             
-            const name = user.name || user.username || 'Investigator';
-            
-            // Topbar
-            document.getElementById('topName').innerText = name;
-            document.getElementById('topAvatar').innerText = name.charAt(0).toUpperCase();
-            
-            // Profile Card
-            document.getElementById('profName').innerText = name;
-            document.getElementById('profRole').innerText = user.role || 'Investigator';
-            document.getElementById('avatarInitials').innerText = name.substring(0, 2).toUpperCase();
-            
-            if(user.id) document.getElementById('profId').innerText = user.id.split('-')[0].toUpperCase();
-            if(user.created_at) document.getElementById('profDate').innerText = new Date(user.created_at).toLocaleDateString();
-            else document.getElementById('profDate').innerText = 'Not available';
-            
-            // Form
-            document.getElementById('inputName').value = name;
-            document.getElementById('inputEmail').value = user.email || user.username || 'Not available';
-            document.getElementById('inputRole').value = user.role || 'Investigator';
+            currentUser = user;
+            populateUserData(user);
+            setupTabs();
+            setupProfileForm();
+            setupPasswordForm();
+            setupAvatarModalInteractions();
         });
+
+        // Universal Avatar Rendering Helper
+        function renderAvatarElement(el, avatarStr, fallbackName) {
+            if(!el) return;
+            el.innerHTML = '';
+            
+            if(avatarStr && (avatarStr.startsWith('data:image/') || avatarStr.startsWith('http'))) {
+                el.style.background = 'transparent';
+                const img = document.createElement('img');
+                img.src = avatarStr;
+                img.alt = fallbackName || 'Avatar';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '50%';
+                img.style.display = 'block';
+                el.appendChild(img);
+            } else if(avatarStr && avatarStr.startsWith('icon:')) {
+                const parts = avatarStr.replace('icon:', '').split('|');
+                const iconClass = parts[0] || 'fa-user-shield';
+                const bg = parts[1] || 'linear-gradient(135deg, #FF9D50, #E67E22)';
+                
+                el.style.background = bg;
+                if(iconClass === 'initials') {
+                    el.innerText = computeInitials(fallbackName);
+                } else {
+                    el.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+                }
+            } else {
+                // Default initials
+                el.style.background = 'linear-gradient(135deg, #FF9D50, #E67E22)';
+                el.innerText = computeInitials(fallbackName);
+            }
+        }
+
+        function computeInitials(name) {
+            const clean = (name || 'Investigator').trim();
+            const parts = clean.split(/\s+/);
+            if(parts.length > 1) {
+                return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+            } else if(clean.length > 1) {
+                return clean.substring(0, 2).toUpperCase();
+            }
+            return (clean.charAt(0) || 'I').toUpperCase();
+        }
+
+        function populateUserData(user) {
+            currentUser = user;
+            const name = user.name || user.username || 'Investigator';
+            const role = user.role || 'Investigator';
+            const email = user.email || 'investigator@sentinel.local';
+            const dept = user.department || 'Forensic Screening Unit';
+            const badge = user.badge_number || `SEN-${(user.id || '8492').substring(0, 4).toUpperCase()}`;
+            const avatar = user.avatar || localStorage.getItem('sentinel_avatar') || '';
+
+            // Topbar Sync
+            document.getElementById('topName').innerText = name;
+            renderAvatarElement(document.getElementById('topAvatar'), avatar, name);
+
+            // Left Card Sync
+            document.getElementById('profName').innerText = name;
+            document.getElementById('profRoleBadge').innerText = role;
+            document.getElementById('profBadgePill').innerText = badge;
+            document.getElementById('profBadge').innerText = badge;
+            document.getElementById('profDept').innerText = dept;
+
+            // Left Avatar Circle
+            renderAvatarElement(document.getElementById('avatarDisplay'), avatar, name);
+
+            // System ID
+            if(user.id) {
+                document.getElementById('profId').innerText = user.id.toUpperCase();
+            }
+
+            // Member Date
+            if(user.created_at) {
+                const dateObj = new Date(user.created_at);
+                document.getElementById('profDate').innerText = dateObj.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } else {
+                document.getElementById('profDate').innerText = new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+
+            // Form Fields
+            document.getElementById('inputName').value = name;
+            document.getElementById('inputEmail').value = email;
+            document.getElementById('inputRole').value = role.toUpperCase();
+            document.getElementById('inputDept').value = dept;
+            document.getElementById('inputBadge').value = badge;
+        }
+
+        // ------------------ Tab Navigation ------------------
+        function setupTabs() {
+            const tabBtns = document.querySelectorAll('.profile-tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+                    btn.classList.add('active');
+                    const targetId = btn.getAttribute('data-tab');
+                    const targetPane = document.getElementById(targetId);
+                    if(targetPane) targetPane.classList.add('active');
+                });
+            });
+        }
+
+        // ------------------ Edit Profile Submission ------------------
+        function setupProfileForm() {
+            const form = document.getElementById('profileEditForm');
+            const submitBtn = document.getElementById('saveProfileBtn');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('inputName').value.trim();
+                const dept = document.getElementById('inputDept').value.trim();
+                const badge = document.getElementById('inputBadge').value.trim();
+
+                if(!name) {
+                    Toast.warning("Validation Error", "Full Name is required.");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+
+                try {
+                    const res = await fetchWithAuth(`${API_BASE}/auth/profile`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            name: name,
+                            department: dept,
+                            badge_number: badge,
+                            avatar: currentUser ? currentUser.avatar : undefined
+                        })
+                    });
+
+                    const data = await res.json();
+                    if(res.ok) {
+                        Toast.success("Profile Updated", "Investigator credentials updated successfully.");
+                        populateUserData(data.user);
+                    } else {
+                        Toast.error("Update Failed", data.detail || "Unable to save profile changes.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    Toast.error("Network Error", "Unable to connect to authorization server.");
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Profile Changes';
+                }
+            });
+        }
+
+        // ------------------ Change Password Submission ------------------
+        function setupPasswordForm() {
+            const form = document.getElementById('passwordChangeForm');
+            const submitBtn = document.getElementById('changePasswordBtn');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const currentPass = document.getElementById('inputCurrentPass').value;
+                const newPass = document.getElementById('inputNewPass').value;
+                const confirmPass = document.getElementById('inputConfirmPass').value;
+
+                if(newPass.length < 6) {
+                    Toast.warning("Weak Password", "New password must be at least 6 characters.");
+                    return;
+                }
+
+                if(newPass !== confirmPass) {
+                    Toast.warning("Mismatch", "New password and confirmation do not match.");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Updating Credentials...';
+
+                try {
+                    const res = await fetchWithAuth(`${API_BASE}/auth/change-password`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            current_password: currentPass,
+                            new_password: newPass
+                        })
+                    });
+
+                    const data = await res.json();
+                    if(res.ok) {
+                        Toast.success("Security Updated", "Your password has been changed successfully.");
+                        form.reset();
+                    } else {
+                        Toast.error("Password Update Failed", data.detail || "Verification failed.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    Toast.error("Network Error", "Unable to reach security server.");
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-key"></i> Update Password';
+                }
+            });
+        }
+
+        // ------------------ Avatar Modal & Selection ------------------
+        function openAvatarModal() {
+            document.getElementById('avatarModal').style.display = 'flex';
+            updateModalPreview();
+        }
+
+        function closeAvatarModal() {
+            document.getElementById('avatarModal').style.display = 'none';
+        }
+
+        function setupAvatarModalInteractions() {
+            const previewEl = document.getElementById('modalAvatarPreview');
+            const iconOptions = document.querySelectorAll('.icon-option');
+            const colorOptions = document.querySelectorAll('.color-option');
+            const photoInput = document.getElementById('avatarPhotoInput');
+            const saveBtn = document.getElementById('saveAvatarModalBtn');
+
+            // Icon click
+            iconOptions.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    iconOptions.forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    selectedIcon = opt.getAttribute('data-icon');
+                    selectedCustomPhoto = ''; // Clear photo if icon selected
+                    updateModalPreview();
+                });
+            });
+
+            // Color click
+            colorOptions.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    colorOptions.forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    selectedBg = opt.getAttribute('data-bg');
+                    selectedCustomPhoto = ''; // Clear photo if color selected
+                    updateModalPreview();
+                });
+            });
+
+            // Custom photo file selection
+            photoInput.addEventListener('change', function() {
+                if(this.files && this.files[0]) {
+                    const file = this.files[0];
+                    if(!file.type.startsWith('image/')) {
+                        Toast.warning("Invalid File", "Please upload a valid image file.");
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Create image and draw to canvas for clean 160x160 thumbnail
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = 160;
+                            canvas.height = 160;
+                            const ctx = canvas.getContext('2d');
+                            
+                            // Center crop
+                            const minSide = Math.min(img.width, img.height);
+                            const startX = (img.width - minSide) / 2;
+                            const startY = (img.height - minSide) / 2;
+                            ctx.drawImage(img, startX, startY, minSide, minSide, 0, 0, 160, 160);
+                            
+                            selectedCustomPhoto = canvas.toDataURL('image/jpeg', 0.85);
+                            iconOptions.forEach(o => o.classList.remove('active'));
+                            updateModalPreview();
+                            Toast.info("Photo Loaded", "Custom avatar photo loaded. Click Apply to save.");
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Save Avatar Button
+            saveBtn.addEventListener('click', async () => {
+                let avatarPayload = '';
+                if(selectedCustomPhoto) {
+                    avatarPayload = selectedCustomPhoto;
+                } else {
+                    avatarPayload = `icon:${selectedIcon}|${selectedBg}`;
+                }
+
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving Icon...';
+
+                try {
+                    const name = document.getElementById('inputName').value.trim() || (currentUser ? currentUser.name : 'Investigator');
+                    const dept = document.getElementById('inputDept').value.trim() || (currentUser ? currentUser.department : '');
+                    const badge = document.getElementById('inputBadge').value.trim() || (currentUser ? currentUser.badge_number : '');
+
+                    const res = await fetchWithAuth(`${API_BASE}/auth/profile`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            name: name,
+                            department: dept,
+                            badge_number: badge,
+                            avatar: avatarPayload
+                        })
+                    });
+
+                    const data = await res.json();
+                    if(res.ok) {
+                        localStorage.setItem('sentinel_avatar', avatarPayload);
+                        populateUserData(data.user);
+                        closeAvatarModal();
+                        Toast.success("Profile Icon Updated", "Your investigator icon has been customized successfully.");
+                    } else {
+                        Toast.error("Update Failed", data.detail || "Unable to save profile icon.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    Toast.error("Network Error", "Unable to save profile icon.");
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Apply Profile Icon';
+                }
+            });
+        }
+
+        function updateModalPreview() {
+            const previewEl = document.getElementById('modalAvatarPreview');
+            const name = document.getElementById('inputName').value || (currentUser ? currentUser.name : 'Investigator');
+            
+            if(selectedCustomPhoto) {
+                renderAvatarElement(previewEl, selectedCustomPhoto, name);
+            } else {
+                renderAvatarElement(previewEl, `icon:${selectedIcon}|${selectedBg}`, name);
+            }
+        }
     </script>
 </body>
 </html>

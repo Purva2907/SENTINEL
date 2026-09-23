@@ -47,7 +47,32 @@ async function checkAuth() {
     try {
         const res = await fetchWithAuth(`${API_BASE}/auth/me`);
         if (res.ok) {
-            return await res.json();
+            const user = await res.json();
+            if (user.avatar) {
+                localStorage.setItem('sentinel_avatar', user.avatar);
+            }
+            const topAv = document.getElementById('topAvatar');
+            if (topAv) {
+                const av = user.avatar || localStorage.getItem('sentinel_avatar');
+                if (av && (av.startsWith('data:image/') || av.startsWith('http'))) {
+                    topAv.innerHTML = `<img src="${av}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
+                    topAv.style.background = 'transparent';
+                    topAv.style.overflow = 'hidden';
+                } else if (av && av.startsWith('icon:')) {
+                    const parts = av.replace('icon:', '').split('|');
+                    const iconClass = parts[0] || 'fa-user-shield';
+                    const bg = parts[1] || 'linear-gradient(135deg, var(--orange), #e67e22)';
+                    topAv.style.background = bg;
+                    topAv.style.overflow = 'hidden';
+                    if (iconClass === 'initials') {
+                        const name = user.name || 'I';
+                        topAv.innerText = name.charAt(0).toUpperCase();
+                    } else {
+                        topAv.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+                    }
+                }
+            }
+            return user;
         } else {
             removeToken();
             window.location.href = 'login.html';
