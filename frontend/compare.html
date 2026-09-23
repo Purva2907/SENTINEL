@@ -683,7 +683,7 @@
                 const data = await res.json();
 
                 if (!res.ok || !data.success) {
-                    throw new Error(data.detail || data.message || "Comparison failed");
+                    throw new Error(getErrorMessage(data) || "Comparison failed");
                 }
 
                 comparisonData = data;
@@ -691,7 +691,7 @@
                 Toast.success("Analysis Complete", "Differential analysis matrix calculated successfully.");
             } catch (err) {
                 loadToast.dismiss();
-                Toast.error("Comparison Error", err.message || "Could not complete comparison.");
+                Toast.error("Comparison Error", (err && err.message) ? err.message : "Could not complete comparison.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-code-compare"></i> Run Differential Analysis';

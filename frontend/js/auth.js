@@ -15,9 +15,15 @@ function removeToken() {
 async function fetchWithAuth(url, options = {}) {
     const token = getToken();
     const headers = {
-        'Content-Type': 'application/json',
         ...options.headers
     };
+    
+    // If sending FormData, do not set Content-Type so browser generates multipart boundary
+    if (options.body instanceof FormData) {
+        delete headers['Content-Type'];
+    } else if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+    }
     
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;

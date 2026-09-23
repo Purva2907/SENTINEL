@@ -108,8 +108,14 @@ async def compare_uploaded_files(
         raise HTTPException(status_code=400, detail="Both files must be provided.")
 
     ts = int(time.time())
-    path_a = os.path.join(UPLOAD_DIR, f"cmp_a_{ts}_{file_a.filename}")
-    path_b = os.path.join(UPLOAD_DIR, f"cmp_b_{ts}_{file_b.filename}")
+    safe_name_a = "".join(c for c in os.path.basename(file_a.filename) if c.isalnum() or c in "._- ")
+    safe_name_b = "".join(c for c in os.path.basename(file_b.filename) if c.isalnum() or c in "._- ")
+    if not safe_name_a:
+        safe_name_a = "specimen_a.png"
+    if not safe_name_b:
+        safe_name_b = "specimen_b.png"
+    path_a = os.path.join(UPLOAD_DIR, f"cmp_a_{ts}_{safe_name_a}")
+    path_b = os.path.join(UPLOAD_DIR, f"cmp_b_{ts}_{safe_name_b}")
 
     try:
         with open(path_a, "wb") as buf_a:
