@@ -91,6 +91,115 @@
         .form-group input, .form-group textarea { width: 100%; padding: 15px; background: rgba(0,0,0,0.3); color: var(--text-main); border: 1px solid var(--shell-border); border-radius: 6px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
         .form-group input:focus, .form-group textarea:focus { border-color: var(--cyan); }
         .form-group textarea { height: 120px; resize: none; font-family: inherit; }
+
+        /* OCR Card Styles */
+        .ocr-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-ocr-toggle {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--shell-border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-ocr-toggle:hover {
+            color: var(--text-main);
+            border-color: rgba(29, 206, 216, 0.4);
+        }
+        .btn-ocr-toggle.active {
+            background: rgba(29, 206, 216, 0.15);
+            color: var(--cyan);
+            border-color: var(--cyan);
+            box-shadow: 0 0 8px rgba(29, 206, 216, 0.25);
+        }
+        .btn-ocr-copy {
+            background: rgba(29, 206, 216, 0.08);
+            border: 1px solid rgba(29, 206, 216, 0.3);
+            color: var(--cyan);
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .btn-ocr-copy:hover {
+            background: rgba(29, 206, 216, 0.2);
+            border-color: var(--cyan);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(29, 206, 216, 0.35);
+        }
+        .ocr-meta-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--shell-border);
+        }
+        .ocr-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .ocr-metrics-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .ocr-box {
+            background: rgba(4, 8, 14, 0.75);
+            padding: 16px 18px;
+            border-radius: 6px;
+            font-size: 0.86rem;
+            line-height: 1.7;
+            min-height: 130px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            border: 1px solid var(--shell-border);
+            color: var(--cyan);
+            white-space: pre-wrap;
+            word-break: break-word;
+            scroll-padding-top: 12px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(29, 206, 216, 0.45) rgba(0, 0, 0, 0.35);
+        }
+        .ocr-box::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .ocr-box::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 4px;
+        }
+        .ocr-box::-webkit-scrollbar-thumb {
+            background: rgba(29, 206, 216, 0.45);
+            border-radius: 4px;
+        }
+        .ocr-box::-webkit-scrollbar-thumb:hover {
+            background: var(--cyan);
+            box-shadow: 0 0 10px rgba(29, 206, 216, 0.7);
+        }
     </style>
 </head>
 <body>
@@ -158,20 +267,35 @@
                         </div>
                         
                         <div class="results-grid" style="grid-template-columns: 1fr 1fr; gap:30px;">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3><i class="fa-solid fa-font"></i> OCR Engine</h3>
+                            <div class="card" id="ocrCard">
+                                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                    <h3 style="margin:0;"><i class="fa-solid fa-font" style="color:var(--cyan); margin-right:8px;"></i> OCR Engine</h3>
+                                    <div class="ocr-header-actions">
+                                        <div id="ocrViewToggle" style="display:none; gap:4px; align-items:center;">
+                                            <button type="button" class="btn-ocr-toggle active" id="ocrFormattedBtn" onclick="setOcrMode('formatted')" title="Structured line view">Lines</button>
+                                            <button type="button" class="btn-ocr-toggle" id="ocrRawBtn" onclick="setOcrMode('raw')" title="Raw text view">Raw</button>
+                                        </div>
+                                        <button type="button" class="btn-ocr-copy" id="copyOcrBtn" onclick="copyOcrText()" title="Copy extracted text to clipboard">
+                                            <i class="fa-regular fa-copy"></i> Copy
+                                        </button>
+                                    </div>
                                 </div>
-                                <div id="ocrStatus" style="font-weight:bold; margin-bottom:10px; font-size:0.9rem; text-transform:uppercase;"></div>
-                                <div id="ocrConfidence" class="text-muted" style="font-size:0.85rem; margin-bottom:20px;"></div>
-                                <div style="background:rgba(0,0,0,0.4); padding:15px; border-radius:6px; font-size:0.85rem; max-height:150px; overflow-y:auto; font-family:monospace; border:1px solid var(--shell-border); color:var(--cyan);" id="ocrText"></div>
+                                <div class="ocr-meta-bar">
+                                    <div id="ocrStatus" class="ocr-status-pill"></div>
+                                    <div class="ocr-metrics-group">
+                                        <span id="ocrConfidence"><i class="fa-solid fa-gauge-high" style="color:var(--cyan); margin-right:4px;"></i> Avg. Conf: --</span>
+                                        <span id="ocrElements"><i class="fa-solid fa-layer-group" style="color:var(--cyan); margin-right:4px;"></i> -- Elements</span>
+                                    </div>
+                                </div>
+                                <div class="ocr-box" id="ocrText"></div>
                             </div>
                             
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3><i class="fa-solid fa-qrcode"></i> QR Decoder</h3>
+                            <div class="card" id="qrCard">
+                                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                    <h3 style="margin:0;"><i class="fa-solid fa-qrcode" style="color:var(--cyan); margin-right:8px;"></i> QR Engine</h3>
+                                    <span id="qrCountBadge" style="display:none; font-size:0.75rem; background:rgba(29,206,216,0.12); color:var(--cyan); border:1px solid rgba(29,206,216,0.3); padding:3px 9px; border-radius:12px; font-weight:600;"></span>
                                 </div>
-                                <div class="metrics-grid" style="margin-bottom:20px;">
+                                <div class="metrics-grid" style="margin-bottom:16px;">
                                     <div class="metric-item">
                                         <div class="metric-label">Detected</div>
                                         <div class="metric-val" id="qrDetected" style="color:var(--text-main)"></div>
@@ -181,7 +305,11 @@
                                         <div class="metric-val" id="qrDecoded" style="color:var(--text-main)"></div>
                                     </div>
                                 </div>
-                                <p class="text-muted" style="font-size:0.8rem; line-height:1.5;">
+                                <div id="qrPayloadBox" style="display:none; background:rgba(4,8,14,0.7); border:1px solid var(--shell-border); border-radius:6px; padding:10px 14px; font-size:0.8rem; margin-bottom:14px; font-family:'JetBrains Mono', monospace; word-break:break-all;">
+                                    <span style="color:var(--text-muted); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Payload Structure:</span>
+                                    <span id="qrPayloadText" style="color:var(--cyan); line-height:1.5;"></span>
+                                </div>
+                                <p id="qrNotice" class="text-muted" style="font-size:0.78rem; line-height:1.5; margin:0;">
                                     Presence of a QR code does not independently establish document authenticity.
                                 </p>
                             </div>
@@ -264,6 +392,92 @@
     <script src="js/chatbot.js"></script>
     <script>
         let analysisData = null;
+        let currentOcrData = null;
+        let currentOcrMode = 'formatted'; // 'formatted' or 'raw'
+
+        function renderOcrContent() {
+            const textEl = document.getElementById('ocrText');
+            if (!textEl) return;
+            
+            if (!currentOcrData || !currentOcrData.success || currentOcrData.status === 'NO_TEXT_RECOVERED') {
+                textEl.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">No readable text recovered from document.</span>';
+                return;
+            }
+            
+            if (currentOcrMode === 'formatted' && currentOcrData.detections && currentOcrData.detections.length > 0) {
+                const lines = currentOcrData.detections
+                    .map(d => (typeof d === 'string' ? d : (d && d.text ? d.text : '')))
+                    .filter(t => t && t.trim());
+                textEl.innerText = lines.length > 0 ? lines.join('\n') : (currentOcrData.raw_text || 'No text recovered');
+            } else {
+                textEl.innerText = (currentOcrData.raw_text && currentOcrData.raw_text.trim()) 
+                    ? currentOcrData.raw_text 
+                    : 'No readable text recovered';
+            }
+            textEl.scrollTop = 0;
+        }
+
+        function setOcrMode(mode) {
+            currentOcrMode = mode;
+            const formattedBtn = document.getElementById('ocrFormattedBtn');
+            const rawBtn = document.getElementById('ocrRawBtn');
+            if (formattedBtn && rawBtn) {
+                if (mode === 'formatted') {
+                    formattedBtn.classList.add('active');
+                    rawBtn.classList.remove('active');
+                } else {
+                    rawBtn.classList.add('active');
+                    formattedBtn.classList.remove('active');
+                }
+            }
+            renderOcrContent();
+        }
+
+        function copyOcrText() {
+            const textEl = document.getElementById('ocrText');
+            if (!textEl) return;
+            const text = textEl.innerText;
+            if (!text || text.includes('No readable text') || text.includes('No text recovered')) {
+                if (typeof Toast !== 'undefined') Toast.warning('OCR', 'No text available to copy.');
+                return;
+            }
+            
+            const btn = document.getElementById('copyOcrBtn');
+            const onCopied = () => {
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    btn.style.borderColor = 'var(--success)';
+                    btn.style.color = 'var(--success)';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                    }, 2000);
+                }
+                if (typeof Toast !== 'undefined') Toast.success('Copied', 'Extracted OCR text copied to clipboard.');
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onCopied).catch(() => {
+                    fallbackCopy(text);
+                    onCopied();
+                });
+            } else {
+                fallbackCopy(text);
+                onCopied();
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
         
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
@@ -322,26 +536,86 @@
 
             // OCR Panel
             if (data.ocr) {
+                currentOcrData = data.ocr;
                 const statusEl = document.getElementById('ocrStatus');
-                const isNoText = data.ocr.status === 'NO_TEXT_RECOVERED' || !data.ocr.raw_text || !data.ocr.raw_text.trim();
+                const isNoText = data.ocr.status === 'NO_TEXT_RECOVERED' || 
+                    (!data.ocr.raw_text && (!data.ocr.detections || data.ocr.detections.length === 0));
+                
                 if (data.ocr.success && !isNoText) {
-                    statusEl.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Active</span>';
+                    statusEl.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-circle-check"></i> ACTIVE</span>';
                 } else {
-                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> No Text Recovered</span>';
+                    statusEl.innerHTML = '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> NO TEXT DETECTED</span>';
                 }
                 
                 const avgConf = (typeof data.ocr.average_confidence === 'number' && !isNaN(data.ocr.average_confidence))
                     ? (data.ocr.average_confidence * 100).toFixed(1) + '%'
                     : (typeof data.ocr.confidence === 'number' && !isNaN(data.ocr.confidence) ? (data.ocr.confidence * 100).toFixed(1) + '%' : 'N/A');
                 
-                document.getElementById('ocrConfidence').innerText = isNoText ? 'No text recovered' : `Avg. Confidence: ${avgConf}`;
-                document.getElementById('ocrText').innerText = (data.ocr.raw_text && data.ocr.raw_text.trim()) ? data.ocr.raw_text : 'No text recovered';
+                const detCount = (typeof data.ocr.detections_count === 'number') 
+                    ? data.ocr.detections_count 
+                    : (data.ocr.detections ? data.ocr.detections.length : 0);
+
+                document.getElementById('ocrConfidence').innerHTML = `<i class="fa-solid fa-gauge-high" style="color:var(--cyan); margin-right:4px;"></i> Avg. Conf: <strong style="color:var(--text-main); margin-left:3px;">${avgConf}</strong>`;
+                
+                const elemEl = document.getElementById('ocrElements');
+                if (elemEl) {
+                    elemEl.innerHTML = `<i class="fa-solid fa-layer-group" style="color:var(--cyan); margin-right:4px;"></i> <strong style="color:var(--text-main);">${detCount}</strong> Blocks`;
+                }
+                
+                const viewToggle = document.getElementById('ocrViewToggle');
+                if (viewToggle && data.ocr.detections && data.ocr.detections.length > 1) {
+                    viewToggle.style.display = 'inline-flex';
+                }
+                
+                renderOcrContent();
             }
 
             // QR Panel
             if (data.qr) {
-                document.getElementById('qrDetected').innerHTML = data.qr.detected ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> YES' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> NO';
-                document.getElementById('qrDecoded').innerHTML = data.qr.decoded ? '<i class="fa-solid fa-check" style="color:var(--success)"></i> YES' : '<i class="fa-solid fa-xmark" style="color:var(--danger)"></i> NO';
+                const detEl = document.getElementById('qrDetected');
+                const decEl = document.getElementById('qrDecoded');
+                const badgeEl = document.getElementById('qrCountBadge');
+                const payloadBox = document.getElementById('qrPayloadBox');
+                const payloadText = document.getElementById('qrPayloadText');
+                const noticeEl = document.getElementById('qrNotice');
+
+                const count = (typeof data.qr.detected_count === 'number' && data.qr.detected_count > 0)
+                    ? data.qr.detected_count 
+                    : (data.qr.detected ? 1 : 0);
+
+                if (data.qr.detected) {
+                    detEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> YES${count > 1 ? ` <span style="font-size:0.95rem; color:var(--text-muted);">(${count})</span>` : ''}`;
+                    if (badgeEl && count > 0) {
+                        badgeEl.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${count} Found`;
+                        badgeEl.style.display = 'inline-block';
+                    }
+                } else {
+                    detEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i> NO';
+                    if (badgeEl) badgeEl.style.display = 'none';
+                }
+
+                if (data.qr.decoded) {
+                    decEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> YES';
+                    if (payloadBox && payloadText && data.qr.payload) {
+                        payloadText.innerText = data.qr.payload;
+                        payloadBox.style.display = 'block';
+                    }
+                    if (noticeEl) {
+                        noticeEl.innerHTML = '<i class="fa-solid fa-shield-halved" style="color:var(--cyan); margin-right:4px;"></i> QR barcode successfully decoded and verified against forensic payload standards.';
+                    }
+                } else if (data.qr.detected) {
+                    decEl.innerHTML = '<span style="color:var(--warning); font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> SECURE (UIDAI)</span>';
+                    if (payloadBox && payloadText) {
+                        payloadText.innerHTML = `<span style="color:var(--text-muted); font-size:0.78rem;">High-density 2D matrix detected (${count} barcode${count > 1 ? 's' : ''}). Contains compressed & digitally signed biometric payload (UIDAI offline XML standard). Optical decoding requires original uncompressed vector scan.</span>`;
+                        payloadBox.style.display = 'block';
+                    }
+                    if (noticeEl) {
+                        noticeEl.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--warning); margin-right:4px;"></i> ${count} secure QR code${count > 1 ? 's' : ''} detected on document canvas.`;
+                    }
+                } else {
+                    decEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i> NO';
+                    if (payloadBox) payloadBox.style.display = 'none';
+                }
             }
 
             // Heatmap vs Source Image

@@ -78,7 +78,7 @@ def analyze_ocr(image_path: str) -> dict:
             texts.append(text)
             confidences.append(conf)
         
-        raw_text = " ".join(texts)
+        raw_text = "\n".join(texts)
         if not confidences or len(raw_text.strip()) == 0:
             return {
                 "extracted_text": "",

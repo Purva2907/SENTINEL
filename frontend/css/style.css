@@ -26,6 +26,32 @@ body {
     min-height: 100vh;
 }
 
+/* Custom Cyber-Forensic Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(29, 206, 216, 0.4);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--cyan);
+    box-shadow: 0 0 10px rgba(29, 206, 216, 0.6);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(29, 206, 216, 0.4) rgba(0, 0, 0, 0.3);
+}
+
 /* Background Effects */
 .forensic-bg {
     position: fixed;
