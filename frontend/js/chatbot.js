@@ -79,6 +79,25 @@ function getForensicContext() {
             evidence: analysisData.evidence,
             heatmap: !!analysisData.heatmap
         };
+    } 
+    // From active session storage across dashboard / profile / cases
+    else {
+        try {
+            const cached = sessionStorage.getItem('analysisResult');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                context = {
+                    risk_score: parsed.risk_score,
+                    classification: parsed.classification,
+                    document_type: parsed.document_type,
+                    quality: parsed.quality,
+                    ocr: parsed.ocr,
+                    qr: parsed.qr,
+                    evidence: parsed.evidence,
+                    heatmap: !!parsed.heatmap
+                };
+            }
+        } catch(e) {}
     }
 
     return { context, caseId };
