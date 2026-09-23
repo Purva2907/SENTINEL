@@ -152,3 +152,90 @@ def test_chat_case_aware_with_valid_case_id(client):
     assert resp_missing.status_code == 404
     assert "not found" in resp_missing.json()["detail"].lower()
 
+def test_thank_you_polite_response(client, auth_headers):
+    """Verify chatbot responds warmly and helpfully to thank you pleasantries."""
+    for thanks_phrase in ["Thank you so much!", "thanks", "appreciate it", "great work"]:
+        resp = client.post("/api/chat", json={"message": thanks_phrase}, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert any(w in data["response"].lower() for w in ["welcome", "pleasure", "assist", "forensic", "standby"])
+
+def test_cross_case_inquiry_and_comparison(client):
+    """Verify chatbot recognizes another case when mentioned by name or ID, and can compare cases."""
+    import uuid
+    email = f"multi_case_{uuid.uuid4().hex[:8]}@example.com"
+    client.post("/api/auth/register", json={
+        "email": email, "password": "pass", "name": "Cross Case Investigator", "role": "investigator"
+    })
+    login_resp = client.post("/api/auth/login", json={"email": email, "password": "pass"})
+    token = login_resp.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Case 1: Aadhaar
+    c1 = client.post("/api/cases", json={
+        "title": "Aadhaar Card Verification",
+        "document_type": "Aadhaar Card",
+        "risk_score": 52,
+        "classification": "Review Required",
+        "analysis_data": {"risk_score": 52, "classification": "Review Required", "document_type": "Aadhaar Card"}
+    }, headers=headers).json()["case"]
+
+    # Case 2: Passport
+    c2 = client.post("/api/cases", json={
+        "title": "Suspect Interpol Passport",
+        "document_type": "Passport",
+        "risk_score": 88,
+        "classification": "High Suspicion",
+        "analysis_data": {
+            "risk_score": 88, 
+            "classification": "High Suspicion", 
+            "document_type": "Passport",
+            "evidence": [{"title": "MRZ Mismatch", "finding": "Checksum altered", "risk_contribution": 45}]
+        }
+    }, headers=headers).json()["case"]
+
+    # 1. Ask about the other case by name while on Case 1
+    resp_other = client.post("/api/chat", json={
+        "message": "What about the Passport case?",
+        "case_id": c1["id"]
+    }, headers=headers)
+    assert resp_other.status_code == 200
+    res_text = resp_other.json()["response"].lower()
+    assert "passport" in res_text or "88" in res_text
+
+    # 2. Ask to compare Case 1 and Case 2
+    resp_compare = client.post("/api/chat", json={
+        "message": f"Compare this case with {c2['case_id']}",
+        "case_id": c1["id"]
+    }, headers=headers)
+    assert resp_compare.status_code == 200
+    comp_text = resp_compare.json()["response"]
+    assert "Comparison" in comp_text or "comparison" in comp_text.lower()
+    assert "88" in comp_text or "52" in comp_text
+
+    # 3. Ask to list all cases
+    resp_list = client.post("/api/chat", json={
+        "message": "List my cases please"
+    }, headers=headers)
+    assert resp_list.status_code == 200
+    list_text = resp_list.json()["response"]
+    assert "Aadhaar" in list_text or "Passport" in list_text
+
+def test_summary_on_tokens_or_request(client, auth_headers):
+    """Verify chatbot provides a comprehensive dossier summary when requested."""
+    resp = client.post("/api/chat", json={
+        "message": "give me summary of this case",
+        "context": {
+            "risk_score": 65,
+            "classification": "Review Required",
+            "document_type": "PAN Card",
+            "evidence": [{"title": "Font Mismatch", "finding": "Disparate kerning", "risk_contribution": 25}]
+        }
+    }, headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "summary" in data["response"].lower() or "dossier" in data["response"].lower() or "verdict" in data["response"].lower()
+
+

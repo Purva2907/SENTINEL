@@ -1,14 +1,24 @@
-# 🛡️ SENTINEL-MUSA
+<p align="center">
+  <img src="assets/hero-banner.svg" alt="SENTINEL-MUSA Forensic Defense Platform Banner" width="100%">
+</p>
 
-> **Automated Multi-Vector Document Forensics, Tamper Detection & Case Management Platform**
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.8+-blue.svg?logo=python&logoColor=white" alt="Python 3.8+"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.100+-009688.svg?logo=fastapi&logoColor=white" alt="FastAPI"></a>
+  <a href="https://opencv.org/"><img src="https://img.shields.io/badge/OpenCV-Computer_Vision-5C3EE8.svg?logo=opencv&logoColor=white" alt="OpenCV"></a>
+  <a href="https://github.com/JaidedAI/EasyOCR"><img src="https://img.shields.io/badge/EasyOCR-Deep_Learning_OCR-FF6F00.svg" alt="EasyOCR"></a>
+  <a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/Database-MongoDB%20%7C%20SQLite%20Fallback-47A248.svg?logo=mongodb&logoColor=white" alt="Database"></a>
+  <a href="backend/tests/"><img src="https://img.shields.io/badge/pytest-40%20passed%20%7C%20100%25-brightgreen.svg?logo=pytest&logoColor=white" alt="Tests"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
+</p>
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-Computer_Vision-5C3EE8.svg?logo=opencv&logoColor=white)](https://opencv.org/)
-[![EasyOCR](https://img.shields.io/badge/EasyOCR-Deep_Learning_OCR-FF6F00.svg)](https://github.com/JaidedAI/EasyOCR)
-[![Database](https://img.shields.io/badge/Database-MongoDB%20%7C%20SQLite%20Fallback-47A248.svg?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tests](https://img.shields.io/badge/pytest-20%20passed%20%7C%20100%25-brightgreen.svg?logo=pytest&logoColor=white)](backend/tests/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+---
+
+## ⚡ Live Forensic Pipeline Flow
+
+<p align="center">
+  <img src="assets/animated-flow.svg" alt="SENTINEL-MUSA Animated Forensic Workflow" width="100%">
+</p>
 
 ---
 
@@ -297,11 +307,75 @@ backend/tests/test_forensic_pipeline.py::test_pipeline_canonical_contract PASSED
 backend/tests/test_forensic_pipeline.py::test_original_image_vs_heatmap_separation PASSED [ 80%]
 backend/tests/test_forensic_pipeline.py::test_ocr_empty_state_and_finite_confidence PASSED [ 85%]
 backend/tests/test_forensic_pipeline.py::test_qr_detection_and_decoding_states PASSED [ 90%]
-backend/tests/test_forensic_pipeline.py::test_case_score_and_type_preservation PASSED [ 95%]
-backend/tests/test_forensic_pipeline.py::test_zero_data_and_analytics_robustness PASSED [100%]
+backend/tests/test_advanced_features.py::test_chain_of_custody_full_lifecycle PASSED      [ 25%]
+backend/tests/test_advanced_features.py::test_synthetic_lab_generation_and_safety PASSED  [ 50%]
+backend/tests/test_advanced_features.py::test_synthetic_lab_all_manipulations PASSED      [ 75%]
+backend/tests/test_advanced_features.py::test_document_comparison_cases PASSED            [100%]
 
-============================== 20 passed in 18.43s ==============================
+============================== 40 passed, 138 warnings in 54.93s ==============================
 ```
+
+---
+
+## 🚀 Advanced Forensic Features Suite (v2.1.0)
+
+SENTINEL-MUSA v2.1.0 introduces an advanced suite of forensic capabilities spanning evidence chain of custody, controlled synthetic document generation, forensic document fingerprinting, similar case intelligence, chronological event timelines, and side-by-side differential analysis.
+
+### 🔗 1. Cryptographic Evidence Chain of Custody
+- **SHA-256 Evidence Ingestion Digest:** At the point of document upload, raw bytes are hashed with SHA-256 and persisted alongside the immutable case dossier (`analysis_version: "2.1.0"`).
+- **Integrity Verification (`GET /api/cases/{case_id}/verify-custody`):** Actively verifies stored evidence bytes against the initial intake digest on demand.
+- **Defensible Statuses:** Explicitly returns `TAMPER_FREE`, `INTEGRITY_BREACH` (if bytes diverge), or `UNAVAILABLE` (if file access is severed).
+- **Visual Intake Flow:** Illustrated sequence in Case Detail: $\text{Evidence Ingested} \to \text{SHA-256 Calculated} \to \text{Forensic Analysis} \to \text{Case Dossier} \to \text{Forensic Report}$.
+
+### 🔬 2. Controlled Synthetic Forensics Lab (`frontend/lab.html`)
+- **Safety Standard:** Strictly generates fictional credentials carrying a prominent, non-removable watermark:  
+  `"SYNTHETIC DEMO — NOT A REAL GOVERNMENT DOCUMENT"`. No real identity data, Aadhaar numbers, PAN numbers, or real credentials are ever fabricated.
+- **Deterministic Manipulations:** 8 controlled, reproducible transformations with variable severity ($1 - 100$):
+  1. *Typography Alteration* (font scaling disparity and stroke weight variance)
+  2. *Kerning Distortion* (irregular non-uniform character gap spacing)
+  3. *Layout Shift* (off-grid displacement of demographic text blocks)
+  4. *Image Splice* (injection of secondary digital graphic patches)
+  5. *QR Corruption* (2D matrix optical interference and occlusion noise)
+  6. *Substrate Blur* (calibrated Gaussian filter simulation)
+  7. *JPEG Compression* (quantization artifacts triggering ELA response)
+  8. *Illumination Change* (non-linear exposure and spotlight overexposure)
+- **One-Click Detector Benchmark:** Passes manipulated artifacts directly into SENTINEL's actual multi-vector analysis engine to benchmark detector sensitivity against ground-truth controlled conditions.
+
+### 📊 3. Forensic Explainability Panel
+- **Deconstructed Signal Metric Cards:** Every forensic signal exposes its exact component category, numerical risk contribution ($+\text{pts}$), and qualitative assessment.
+- **Forensic Signal Confidence:** Distinguishes signal observation certainty from fraud probability. Labeled explicitly with contextual tooltips: *"Represents confidence in the underlying observed signal from deterministic detectors, NOT a probability of fraud or illegality."*
+- **Empirical Grounding:** Metrics reflect actual computer vision and OCR calculations (`Laplacian variance`, `inter-field spacing ratios`, `quantization residuals`); unavailable metrics report `"Metric unavailable"` without NaN values or synthetic filler.
+
+### 🧬 4. Forensic Document Fingerprinting (`backend/forensic/fingerprint.py`)
+- **Normalized Feature Vector:** Computes an 11-dimensional normalized characteristic vector encompassing image aspect ratio, resolution, OCR word density, character confidence, typography variance, layout variance, QR presence, blur metric, luminance, and ELA anomaly magnitude.
+- **Risk Score Exclusion:** `risk_score` is strictly excluded from fingerprint generation, ensuring similarity is governed solely by observable morphological characteristics, not model classification output.
+- **Deterministic Hash:** Generates a 64-character SHA-256 fingerprint hash for deterministic deduplication and clustering.
+
+### 🔎 5. Similar Case Detection (`GET /api/cases/{case_id}/similar`)
+- **Cosine Metric Matching:** Evaluates document vector angles against other dossiers in the user's authorized docket.
+- **Self-Exclusion & Tenant Boundary:** Excludes the query case and enforces multi-tenant boundary isolation.
+- **Copilot Integration:** Informs the interactive AI Copilot when analysts ask: *"Have we seen a similar document before?"*
+
+### ⏳ 6. Chronological Investigation Timeline
+- **Auditable Case Milestones:** Captures actual investigation milestones: `EVIDENCE_INGESTED`, `SHA256_CALCULATED`, `FORENSIC_SCREENING_COMPLETED`, `CASE_CREATED`, `NOTE_ADDED`, `STATUS_CHANGED`, `REPORT_GENERATED`, and `INTEGRITY_VERIFICATION`.
+- **Chronological Feed:** Renders in Case Detail with verified timestamps and investigator attribution.
+
+### 🔀 7. Side-by-Side Document Comparison (`frontend/compare.html`)
+- **Dual Intake Modes:** Accommodates either two directly uploaded document specimens or two existing case dossiers.
+- **Thermal Difference Heatmap:** Computes an OpenCV absolute difference (`cv2.absdiff`) rendered via JET thermal colormap and alpha blend.
+- **Neutral Forensic Lexicon:** Employs objective terminology (*"Visual Difference Detected"*, *"Structural Difference Detected"*, *"Text Difference Detected"*).
+- **Interactive Controls:** Side-by-side viewports, blend overlay with opacity slider, synchronized zoom ($0.4\times - 3.0\times$), and OCR token divergence analysis.
+
+---
+
+## ⚠️ Important Limitations & Forensic Scope
+
+1. **Decision-Support Scope:** SENTINEL-MUSA is an automated forensic screening and decision-support system designed to assist qualified investigators. It does not replace statutory identity verification, legal adjudication, or official government databases.
+2. **Evidence Integrity vs. Document Authenticity:** Cryptographic SHA-256 hashing verifies that stored evidence files have not been tampered with or corrupted after ingestion. It does not establish that a document is legally genuine or officially issued.
+3. **Forensic Similarity vs. Fraud Probability:** Similar Case Detection computes mathematical closeness of observable digital and typographical characteristics. A high similarity score does not indicate a probability of fraud.
+4. **Synthetic Lab Boundaries:** Synthetic documents produced by the lab are strictly demonstration artifacts created for detector testing and evaluation. Fictional names, addresses, and identifiers are used exclusively.
+5. **Computer Vision & OCR Fallibility:** Optical Character Recognition and algorithmic image forensics may encounter degradation under low-resolution, high-noise, or heavily compressed conditions.
+6. **AI Copilot & Offline Resilience:** Cloud LLM integrations (Gemini, Groq, OpenAI) are optional enhancements. The platform includes a deterministic local fallback that operates completely offline and air-gapped without external network calls.
 
 ---
 
@@ -311,18 +385,23 @@ backend/tests/test_forensic_pipeline.py::test_zero_data_and_analytics_robustness
 SENTINEL-MUSA/
 ├── backend/
 │   ├── api/
-│   │   ├── analyze.py             # Document upload & pipeline execution endpoint
+│   │   ├── analyze.py             # Document intake & SHA-256 custody tracking
 │   │   ├── auth.py                # Registration, login, and JWT verification
-│   │   ├── cases.py               # Case creation, retrieval, and notes API
-│   │   ├── chatbot.py             # AI Copilot assistant endpoint
+│   │   ├── cases.py               # Case creation, custody verification, similar cases & notes
+│   │   ├── chatbot.py             # AI Copilot assistant with multi-case intelligence
+│   │   ├── compare.py             # Dual document upload & case comparison API
+│   │   ├── synthetic.py           # Controlled Synthetic Forensics Lab endpoints
 │   │   └── reports.py             # PDF generation and download endpoint
 │   ├── auth/
 │   │   └── jwt.py                 # Token generation and password hashing
 │   ├── database/
 │   │   ├── mongodb.py             # Async MongoDB driver integration (Motor)
-│   │   ├── sqlite.py              # Zero-config SQLite database initialization
-│   │   └── repository.py          # Unified data access layer with dual-engine support
+│   │   ├── sqlite.py              # Zero-config SQLite database initialization & migrations
+│   │   └── repository.py          # Unified data access layer with dual-engine parity
 │   ├── forensic/
+│   │   ├── comparison.py          # Thermal absdiff heatmap & OCR token differential
+│   │   ├── fingerprint.py         # 11-dimensional normalized fingerprinting & cosine similarity
+│   │   ├── synthetic_lab.py       # Controlled synthetic credential canvas & 8 manipulation modules
 │   │   ├── image_quality.py       # Laplacian blur variance, brightness & resolution
 │   │   ├── ocr.py                 # EasyOCR engine with character-level confidence
 │   │   ├── qr.py                  # Multi-stage QR detection & decoding pipeline
@@ -332,27 +411,32 @@ SENTINEL-MUSA/
 │   │   └── pipeline.py            # Master orchestrator & explainable scoring model
 │   ├── reports/
 │   │   └── pdf_report.py          # ReportLab court-ready investigative dossier builder
-│   ├── tests/                     # 20 Automated pytest suites
+│   ├── tests/
+│   │   ├── test_advanced_features.py # 10 Comprehensive tests for Waves 1, 2, and 3
+│   │   └── ...                    # 30 Baseline automated test suites
 │   ├── app.py                     # FastAPI application factory & router registration
 │   └── requirements.txt           # Python dependency manifest
-├── data/
-│   └── sentinel_dataset/
-│       ├── documents/             # 10 Ground-truth synthetic reference cards
-│       ├── generate_dataset.py    # Synthetic document generator with calibrated signals
-│       └── metadata.json          # Ground-truth labels and generation parameters
 ├── frontend/
 │   ├── css/
 │   │   ├── style.css              # Cyber-forensic dark design system
-│   │   └── auth.css               # Authentication modal styling
+│   │   ├── variables.css          # Theme design tokens & CSS variables
+│   │   └── chatbot.css            # Floating AI Copilot assistant styling
 │   ├── js/
-│   │   ├── main.js                # Core UI event bindings
-│   │   └── auth.js                # JWT session management & token refresh
+│   │   ├── auth.js                # JWT session management & token refresh
+│   │   ├── chatbot.js             # Interactive Copilot client & case context
+│   │   ├── theme.js               # Dark/Light theme switching engine
+│   │   └── toast.js               # Non-blocking forensic notifications
 │   ├── index.html                 # Landing page & feature showcase
-│   ├── upload.html                # Live file dropzone & analysis trigger
+│   ├── analyze.html               # Forensic intake workstation
+│   ├── lab.html                   # Controlled Synthetic Forensics Lab UI
+│   ├── compare.html               # Side-by-side differential comparison workstation
 │   ├── results.html               # Forensic inspection view (Heatmap + Findings)
 │   ├── cases.html                 # Case management & investigation backlog
-│   ├── case-detail.html           # Immutable case dossier & investigator notes
+│   ├── case-detail.html           # Custody, timeline, explainability & similar cases
 │   ├── dashboard.html             # Real-time analytics, risk breakdown & charts
+│   ├── reports.html               # Report generation & archive portal
+│   ├── profile.html               # Investigator profile & credentials
+│   ├── settings.html              # System preferences & theme controls
 │   └── login.html                 # Investigator portal authentication
 ├── LICENSE                        # MIT Open Source License
 └── README.md                      # Complete Project Documentation

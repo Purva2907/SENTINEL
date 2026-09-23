@@ -1,0 +1,261 @@
+<svg fill="none" viewBox="0 0 1000 360" width="1000" height="360" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <style>
+        .banner-container {
+          width: 1000px;
+          height: 360px;
+          background: radial-gradient(circle at 50% 20%, #101c2e 0%, #060a12 75%, #03060a 100%);
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
+          color: #e2e8f0;
+          position: relative;
+          overflow: hidden;
+          box-sizing: border-box;
+          border-radius: 12px;
+          border: 1px solid rgba(29, 206, 216, 0.35);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(29, 206, 216, 0.15) inset;
+        }
+
+        /* Cyber grid background */
+        .grid-layer {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: 
+            linear-gradient(rgba(29, 206, 216, 0.07) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(29, 206, 216, 0.07) 1px, transparent 1px);
+          background-size: 35px 35px;
+          perspective: 600px;
+        }
+
+        /* Laser scan line animation */
+        .scan-laser {
+          position: absolute;
+          top: 0; left: -100%;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent 0%, rgba(29, 206, 216, 0.08) 50%, rgba(29, 206, 216, 0.35) 95%, #1DCED8 100%);
+          border-right: 2px solid #1DCED8;
+          box-shadow: 0 0 25px rgba(29, 206, 216, 0.8);
+          animation: sweep 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes sweep {
+          0% { left: -60%; opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { left: 120%; opacity: 0; }
+        }
+
+        /* Ambient glowing circles */
+        .glow-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(50px);
+          pointer-events: none;
+        }
+        .glow-cyan {
+          width: 320px; height: 320px;
+          top: -120px; left: 50px;
+          background: rgba(29, 206, 216, 0.18);
+          animation: pulse-glow 6s infinite alternate ease-in-out;
+        }
+        .glow-orange {
+          width: 280px; height: 280px;
+          bottom: -100px; right: 80px;
+          background: rgba(255, 157, 80, 0.14);
+          animation: pulse-glow 7s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+          0% { transform: scale(0.9); opacity: 0.15; }
+          100% { transform: scale(1.15); opacity: 0.3; }
+        }
+
+        /* Corner HUD reticles */
+        .reticle {
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          border-color: #1DCED8;
+          opacity: 0.7;
+        }
+        .top-left { top: 14px; left: 14px; border-top: 2px solid #1DCED8; border-left: 2px solid #1DCED8; }
+        .top-right { top: 14px; right: 14px; border-top: 2px solid #1DCED8; border-right: 2px solid #1DCED8; }
+        .bottom-left { bottom: 14px; left: 14px; border-bottom: 2px solid #1DCED8; border-left: 2px solid #1DCED8; }
+        .bottom-right { bottom: 14px; right: 14px; border-bottom: 2px solid #1DCED8; border-right: 2px solid #1DCED8; }
+
+        /* Main content layout */
+        .content {
+          position: relative;
+          z-index: 10;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 0 40px;
+          text-align: center;
+        }
+
+        .hud-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 4px 14px;
+          background: rgba(29, 206, 216, 0.12);
+          border: 1px solid rgba(29, 206, 216, 0.4);
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #1DCED8;
+          margin-bottom: 12px;
+          box-shadow: 0 0 15px rgba(29, 206, 216, 0.2);
+        }
+
+        .pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #55E07E;
+          box-shadow: 0 0 8px #55E07E;
+          animation: blink 1.4s infinite;
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(0.7); }
+        }
+
+        .title {
+          font-size: 46px;
+          font-weight: 900;
+          letter-spacing: 4px;
+          margin: 0;
+          background: linear-gradient(135deg, #ffffff 0%, #d1f7f9 40%, #1DCED8 80%, #13a7b0 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          text-shadow: 0 0 35px rgba(29, 206, 216, 0.4);
+          line-height: 1.1;
+        }
+
+        .tagline {
+          font-size: 14px;
+          font-weight: 500;
+          color: #94a3b8;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin-top: 10px;
+          margin-bottom: 22px;
+        }
+
+        /* Metric pills row */
+        .pills-row {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .pill {
+          background: rgba(15, 23, 42, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          padding: 7px 14px;
+          font-size: 11px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          backdrop-filter: blur(8px);
+          transition: all 0.3s ease;
+        }
+        .pill-label {
+          color: #64748b;
+          text-transform: uppercase;
+          font-weight: 600;
+          letter-spacing: 1px;
+        }
+        .pill-val {
+          color: #ffffff;
+          font-weight: 700;
+          font-family: monospace;
+        }
+        .pill.active-cyan {
+          border-color: rgba(29, 206, 216, 0.4);
+        }
+        .pill.active-cyan .pill-val { color: #1DCED8; }
+
+        .pill.active-orange {
+          border-color: rgba(255, 157, 80, 0.4);
+        }
+        .pill.active-orange .pill-val { color: #FF9D50; }
+
+        .pill.active-green {
+          border-color: rgba(85, 224, 126, 0.4);
+        }
+        .pill.active-green .pill-val { color: #55E07E; }
+
+        /* Ticker status at bottom */
+        .ticker-bar {
+          position: absolute;
+          bottom: 12px;
+          font-size: 10px;
+          color: #475569;
+          font-family: monospace;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+        }
+      </style>
+
+      <div class="banner-container">
+        <div class="grid-layer"></div>
+        <div class="scan-laser"></div>
+        <div class="glow-orb glow-cyan"></div>
+        <div class="glow-orb glow-orange"></div>
+
+        <div class="reticle top-left"></div>
+        <div class="reticle top-right"></div>
+        <div class="reticle bottom-left"></div>
+        <div class="reticle bottom-right"></div>
+
+        <div class="content">
+          <div class="hud-badge">
+            <span class="pulse-dot"></span>
+            <span>FORENSIC DEFENSE SYSTEM • V2.1.0 ONLINE</span>
+          </div>
+
+          <h1 class="title">SENTINEL-MUSA</h1>
+          <div class="tagline">Automated Multi-Vector Document Forensics &amp; Tamper Intelligence</div>
+
+          <div class="pills-row">
+            <div class="pill active-cyan">
+              <span class="pill-label">Vectors:</span>
+              <span class="pill-val">6 DEEP VECTORS</span>
+            </div>
+            <div class="pill active-green">
+              <span class="pill-label">Custody:</span>
+              <span class="pill-val">SHA-256 IMMUTABLE</span>
+            </div>
+            <div class="pill active-orange">
+              <span class="pill-label">Synthetic Lab:</span>
+              <span class="pill-val">8 MODES CONTROLLED</span>
+            </div>
+            <div class="pill active-cyan">
+              <span class="pill-label">Comparison:</span>
+              <span class="pill-val">THERMAL ABSDIFF</span>
+            </div>
+            <div class="pill active-green">
+              <span class="pill-label">Tests:</span>
+              <span class="pill-val">40/40 PASSED (100%)</span>
+            </div>
+          </div>
+
+          <div class="ticker-bar">
+            [SYS_STATUS: OPTIMAL] • [HASH_ENGINE: SHA-256 VERIFIED] • [OCR: EASYOCR DEEP MODEL] • [DATABASE: MOTOR/SQLITE DUAL ENGINE]
+          </div>
+        </div>
+      </div>
+    </div>
+  </foreignObject>
+</svg>

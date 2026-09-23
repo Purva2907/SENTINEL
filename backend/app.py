@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import analyze, auth, cases, reports, chatbot, analytics
+from api import analyze, auth, cases, reports, chatbot, analytics, synthetic, compare
 from database.repository import init_db
 
 app = FastAPI(
     title="SENTINEL API",
     description="AI-Powered Document Forensics API",
-    version="1.0.0"
+    version="2.1.0"
 )
 
 # CORS config
@@ -28,6 +28,8 @@ app.include_router(cases.router, prefix="/api/cases", tags=["cases"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(chatbot.router, prefix="/api/chat", tags=["chat"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(synthetic.router, prefix="/api/synthetic", tags=["synthetic"])
+app.include_router(compare.router, prefix="/api/compare", tags=["compare"])
 
 @app.get("/api/health")
 def health_check():

@@ -22,7 +22,7 @@
 
         .score-card { 
             background: var(--bg-card); 
-            padding: 50px 40px; 
+            padding: 40px 30px; 
             border-radius: 8px; 
             text-align: center; 
             border: 1px solid var(--shell-border); 
@@ -43,30 +43,320 @@
         .score-card.med-risk::before { background: var(--warning); box-shadow: 0 0 20px var(--warning); }
         .score-card.low-risk::before { background: var(--success); box-shadow: 0 0 20px var(--success); }
 
-        .risk-score { font-size: 6rem; font-weight: 800; margin: 10px 0; line-height: 1; letter-spacing: -2px; }
-        .classification { font-size: 1.5rem; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 10px; }
+        .risk-score { font-size: 5rem; font-weight: 800; margin: 10px 0; line-height: 1; letter-spacing: -2px; }
+        .classification { font-size: 1.35rem; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
         
-        /* Evidence Styles */
-        .evidence-group { margin-bottom: 25px; }
-        .evidence-group-title { font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
-        
-        .evidence-item { 
-            padding: 20px; 
-            background: rgba(0,0,0,0.3); 
-            margin-bottom: 15px; 
-            border-radius: 6px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-start;
-            border-right: 1px solid var(--shell-border);
-            border-top: 1px solid var(--shell-border);
-            border-bottom: 1px solid var(--shell-border);
+        /* Chain of Custody */
+        .custody-card {
+            background: var(--bg-card);
+            border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
         }
-        .evidence-left strong { display: block; margin-bottom: 8px; font-size: 1.1rem; color: var(--text-main); }
-        .evidence-left p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 5px; line-height: 1.5; }
-        .evidence-severity { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .evidence-right { text-align: right; min-width: 80px; }
-        .evidence-score { font-size: 1.3rem; font-weight: bold; }
+        .custody-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            gap: 10px;
+        }
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 110px;
+        }
+        .flow-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(29, 206, 216, 0.12);
+            color: var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            border: 1px solid rgba(29, 206, 216, 0.3);
+        }
+        .flow-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+        }
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            opacity: 0.5;
+        }
+        .custody-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .custody-item {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            padding: 12px 15px;
+        }
+        .custody-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .custody-val {
+            font-size: 0.92rem;
+            font-weight: 500;
+            word-break: break-all;
+            color: var(--text-main);
+        }
+        .custody-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .custody-status-badge.tamper-free {
+            background: rgba(85,224,126,0.15);
+            color: var(--success);
+            border: 1px solid rgba(85,224,126,0.3);
+        }
+        .custody-status-badge.breach {
+            background: rgba(255,77,77,0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255,77,77,0.3);
+        }
+        .custody-status-badge.unavailable {
+            background: rgba(255,204,0,0.15);
+            color: var(--warning);
+            border: 1px solid rgba(255,204,0,0.3);
+        }
+
+        /* Explainability Evidence Cards */
+        .evidence-card {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+        .evidence-card:hover {
+            border-color: rgba(29, 206, 216, 0.3);
+        }
+        .evidence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 15px;
+        }
+        .evidence-cat-tag {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(29, 206, 216, 0.12);
+            color: var(--cyan);
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .evidence-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+        .evidence-metrics-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin: 12px 0;
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.88rem;
+        }
+        .evidence-metrics-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .metric-bullet {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 4px;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+        .metric-bullet::before {
+            content: '•';
+            color: var(--cyan);
+            font-weight: bold;
+        }
+        .assessment-box {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            border-left: 3px solid var(--cyan);
+            padding-left: 10px;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .confidence-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .confidence-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            max-width: 140px;
+        }
+        .confidence-bar-fill {
+            height: 100%;
+            background: var(--cyan);
+            border-radius: 3px;
+        }
+        .info-tooltip-wrap {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .info-tooltip-wrap .tooltip-text {
+            visibility: hidden;
+            width: 240px;
+            background-color: #0d1520;
+            color: #d1d9e6;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -120px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            border: 1px solid var(--shell-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .info-tooltip-wrap:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Investigation Timeline */
+        .timeline-card {
+            background: var(--bg-card);
+            border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .timeline-feed {
+            position: relative;
+            padding-left: 30px;
+            margin-top: 20px;
+        }
+        .timeline-feed::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 5px;
+            bottom: 5px;
+            width: 2px;
+            background: var(--shell-border);
+        }
+        .timeline-node {
+            position: relative;
+            margin-bottom: 22px;
+        }
+        .timeline-node::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--cyan);
+            border: 2px solid var(--bg-card);
+            box-shadow: 0 0 8px var(--cyan);
+        }
+        .timeline-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-bottom: 4px;
+        }
+        .timeline-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+        .timeline-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Similar Cases */
+        .similar-card {
+            background: var(--bg-card);
+            border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .similar-item {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            transition: all 0.2s;
+        }
+        .similar-item:hover {
+            border-color: rgba(29, 206, 216, 0.4);
+            transform: translateX(3px);
+        }
         
         /* Heatmap Tabs */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--shell-border); padding-bottom: 15px; }
@@ -86,12 +376,12 @@
 
         /* Notes Section */
         .notes-list { max-height: 300px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px; }
-        .note-item { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid var(--cyan); border-right: 1px solid var(--shell-border); border-top: 1px solid var(--shell-border); border-bottom: 1px solid var(--shell-border); }
-        .note-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--shell-border); padding-bottom: 10px; }
-        .note-text { font-size: 0.95rem; line-height: 1.6; color: var(--text-main); white-space: pre-wrap; }
+        .note-item { background: rgba(0,0,0,0.3); padding: 18px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid var(--cyan); border-right: 1px solid var(--shell-border); border-top: 1px solid var(--shell-border); border-bottom: 1px solid var(--shell-border); }
+        .note-meta { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--shell-border); padding-bottom: 8px; }
+        .note-text { font-size: 0.92rem; line-height: 1.5; color: var(--text-main); white-space: pre-wrap; }
         
-        .note-input-container { display: flex; flex-direction: column; gap: 15px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 6px; border: 1px solid var(--shell-border); }
-        .note-input { width: 100%; padding: 15px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--shell-border); border-radius: 6px; resize: vertical; min-height: 100px; font-family: inherit; outline: none; }
+        .note-input-container { display: flex; flex-direction: column; gap: 15px; background: rgba(0,0,0,0.2); padding: 18px; border-radius: 6px; border: 1px solid var(--shell-border); }
+        .note-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--shell-border); border-radius: 6px; resize: vertical; min-height: 85px; font-family: inherit; outline: none; }
         .note-input:focus { border-color: var(--cyan); }
     </style>
 </head>
@@ -105,6 +395,8 @@
             <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
             <a href="analyze.html" class="nav-item"><i class="fa-solid fa-microscope"></i> New Analysis</a>
             <a href="cases.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="lab.html" class="nav-item"><i class="fa-solid fa-flask-vial"></i> Synthetic Lab</a>
+            <a href="compare.html" class="nav-item"><i class="fa-solid fa-code-compare"></i> Compare</a>
             <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
@@ -141,6 +433,7 @@
             </div>
             
             <div id="caseContent" style="display:none;" class="content-area">
+                <!-- TOP SUMMARY & SCORE -->
                 <div class="results-grid">
                     <div class="card">
                         <div class="card-header">
@@ -174,16 +467,115 @@
                         <p class="text-muted" id="cRec" style="margin-top: 15px; font-size:0.9rem; line-height:1.5;"></p>
                     </div>
                 </div>
+
+                <!-- FEATURE 1: EVIDENCE CHAIN OF CUSTODY -->
+                <div class="custody-card">
+                    <div class="card-header" style="padding-bottom:12px; border-bottom:1px solid var(--shell-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h3><i class="fa-solid fa-link"></i> Evidence Chain of Custody</h3>
+                            <span class="text-muted" style="font-size:0.82rem;">Cryptographic SHA-256 evidence integrity tracking</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div id="custodyBadge" class="custody-status-badge unavailable">
+                                <i class="fa-solid fa-clock"></i> UNVERIFIED
+                            </div>
+                            <button id="verifyCustodyBtn" class="btn-primary" onclick="verifyCustodyIntegrity()" style="padding:7px 18px; font-size:0.85rem;">
+                                <i class="fa-solid fa-fingerprint"></i> VERIFY INTEGRITY
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visual Flow Diagram -->
+                    <div class="custody-flow">
+                        <div class="flow-step">
+                            <div class="flow-icon"><i class="fa-solid fa-file-import"></i></div>
+                            <div class="flow-label">Evidence Ingested</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-right flow-arrow"></i>
+                        <div class="flow-step">
+                            <div class="flow-icon"><i class="fa-solid fa-hashtag"></i></div>
+                            <div class="flow-label">SHA-256 Calculated</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-right flow-arrow"></i>
+                        <div class="flow-step">
+                            <div class="flow-icon"><i class="fa-solid fa-microscope"></i></div>
+                            <div class="flow-label">Forensic Analysis</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-right flow-arrow"></i>
+                        <div class="flow-step">
+                            <div class="flow-icon"><i class="fa-solid fa-folder-closed"></i></div>
+                            <div class="flow-label">Case Dossier</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-right flow-arrow"></i>
+                        <div class="flow-step">
+                            <div class="flow-icon"><i class="fa-solid fa-file-shield"></i></div>
+                            <div class="flow-label">Forensic Report</div>
+                        </div>
+                    </div>
+
+                    <div style="font-size:0.82rem; color:var(--text-muted); background:rgba(0,0,0,0.2); padding:10px 14px; border-radius:6px; border-left:3px solid var(--warning); margin-bottom:15px;">
+                        <i class="fa-solid fa-shield-halved" style="color:var(--warning); margin-right:5px;"></i>
+                        <strong>Integrity Verification Notice:</strong> SHA-256 is an evidence integrity mechanism that validates stored evidence bytes have not been modified or corrupted. It does not establish the legal authenticity or official government issuance of a document.
+                    </div>
+
+                    <div class="custody-grid">
+                        <div class="custody-item">
+                            <div class="custody-label">Evidence ID</div>
+                            <div class="custody-val" id="custodyEvidenceId" style="color:var(--cyan); font-family:monospace;">--</div>
+                        </div>
+                        <div class="custody-item">
+                            <div class="custody-label">Ingestion Timestamp</div>
+                            <div class="custody-val" id="custodyTimestamp">--</div>
+                        </div>
+                        <div class="custody-item">
+                            <div class="custody-label">Investigator</div>
+                            <div class="custody-val" id="custodyInvestigator">--</div>
+                        </div>
+                        <div class="custody-item">
+                            <div class="custody-label">Analysis Engine Version</div>
+                            <div class="custody-val" id="custodyVersion">2.1.0</div>
+                        </div>
+                        <div class="custody-item">
+                            <div class="custody-label">File Size</div>
+                            <div class="custody-val" id="custodyFileSize">--</div>
+                        </div>
+                        <div class="custody-item">
+                            <div class="custody-label">MIME Type</div>
+                            <div class="custody-val" id="custodyMimeType">--</div>
+                        </div>
+                        <div class="custody-item" style="grid-column: 1 / -1;">
+                            <div class="custody-label">SHA-256 Evidence Digest</div>
+                            <div class="custody-val" id="custodySha256" style="font-family:monospace; font-size:0.85rem; letter-spacing:0.5px; color:var(--cyan);">--</div>
+                        </div>
+                    </div>
+                </div>
                 
+                <!-- EVIDENCE & TIMELINE / VISUALS GRID -->
                 <div class="results-grid">
                     <div>
+                        <!-- FEATURE 3: FORENSIC EXPLAINABILITY PANEL -->
                         <div class="card" style="margin-bottom:30px;">
-                            <div class="card-header">
-                                <h3><i class="fa-solid fa-magnifying-glass"></i> Forensic Evidence Log</h3>
+                            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <h3><i class="fa-solid fa-magnifying-glass"></i> Forensic Explainability Panel</h3>
+                                    <span class="text-muted" style="font-size:0.82rem;">Deconstructed signal metrics, component risk contributions, and confidence</span>
+                                </div>
                             </div>
-                            <div id="cEvidence" style="max-height: 500px; overflow-y: auto; padding-right:5px;"></div>
+                            <div id="cEvidence" style="max-height: 580px; overflow-y: auto; padding-right:5px; margin-top:15px;"></div>
                         </div>
 
+                        <!-- FEATURE 6: INVESTIGATION TIMELINE -->
+                        <div class="timeline-card">
+                            <div class="card-header" style="padding-bottom:12px; border-bottom:1px solid var(--shell-border);">
+                                <h3><i class="fa-solid fa-timeline"></i> Investigation Timeline</h3>
+                                <span class="text-muted" style="font-size:0.82rem;">Auditable, chronological case event log</span>
+                            </div>
+                            <div class="timeline-feed" id="timelineFeed">
+                                <p class="text-muted" style="padding:15px 0;">Loading timeline events...</p>
+                            </div>
+                        </div>
+
+                        <!-- INVESTIGATOR NOTES -->
                         <div class="card" style="margin-bottom:30px;">
                             <div class="card-header">
                                 <h3><i class="fa-solid fa-pen-to-square"></i> Investigator Notes</h3>
@@ -201,6 +593,7 @@
                     </div>
                     
                     <div>
+                        <!-- FORENSIC VISUALS -->
                         <div class="card" style="margin-bottom:30px;">
                             <div class="card-header">
                                 <h3><i class="fa-solid fa-map"></i> Forensic Visuals</h3>
@@ -218,7 +611,27 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- FEATURE 5: SIMILAR CASES -->
+                        <div class="similar-card">
+                            <div class="card-header" style="padding-bottom:12px; border-bottom:1px solid var(--shell-border); display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <h3><i class="fa-solid fa-diagram-project"></i> Similar Cases</h3>
+                                    <span class="text-muted" style="font-size:0.8rem;">Forensic fingerprint vector comparison</span>
+                                </div>
+                                <button class="view-btn" id="findSimilarBtn" onclick="findSimilarCases()" style="padding:6px 14px;">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Find Similar
+                                </button>
+                            </div>
+                            <div style="font-size:0.78rem; color:var(--text-muted); margin:12px 0;">
+                                Note: Forensic Similarity reflects alignment of measurable visual, typographic, and structural characteristics, not a probability of fraud.
+                            </div>
+                            <div id="similarCasesList">
+                                <p class="text-muted" style="font-size:0.85rem; text-align:center; padding:15px 0;">Click "Find Similar" to discover related dossiers across your docket.</p>
+                            </div>
+                        </div>
                         
+                        <!-- QUALITY METRICS -->
                         <div class="card" style="margin-bottom:30px;">
                             <div class="card-header">
                                 <h3><i class="fa-solid fa-camera"></i> Quality Metrics</h3>
@@ -235,6 +648,7 @@
                             </div>
                         </div>
                         
+                        <!-- EXTRACTION SIGNALS -->
                         <div class="card">
                             <div class="card-header">
                                 <h3><i class="fa-solid fa-qrcode"></i> Extraction Signals</h3>
@@ -341,6 +755,7 @@
 
                 document.getElementById('cRec').innerText = analysis.recommendation || 'No manual recommendation available.';
                 
+                // Visuals
                 const hm = document.getElementById('cHeatmap');
                 const orig = document.getElementById('cOriginal');
                 const fallback = document.getElementById('cHeatmapFallback');
@@ -366,36 +781,16 @@
                     switchHeatmapTab('heatmap');
                 }
                 
-                const evList = analysis.evidence || [];
-                document.getElementById('cEvidence').innerHTML = evList.length ? evList.map(ev => {
-                    const contrib = (ev.risk_contribution !== undefined && ev.risk_contribution !== null) 
-                        ? ev.risk_contribution 
-                        : (ev.score !== undefined && ev.score !== null ? ev.score : null);
-                        
-                    const contribHtml = contrib !== null 
-                        ? `<div class="evidence-score" style="color: ${contrib > 0 ? 'var(--danger)' : 'var(--success)'}">${contrib > 0 ? '+' : ''}${contrib} risk</div>` 
-                        : '';
-                        
-                    return `
-                        <div class="evidence-item" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
-                            <div class="evidence-left">
-                                <span class="evidence-severity" style="background: ${ev.severity === 'High' ? 'rgba(255,77,77,0.1)' : ev.severity === 'Warning' ? 'rgba(255,204,0,0.1)' : 'rgba(85,224,126,0.1)'}; color: ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">${ev.severity}</span>
-                                <strong style="margin-top:10px;">${ev.title}</strong>
-                                <p>${ev.finding}</p>
-                            </div>
-                            <div class="evidence-right">
-                                ${contribHtml}
-                            </div>
-                        </div>
-                    `;
-                }).join('') : `
-                    <div class="empty-state" style="border:none; background:transparent;">
-                        <i class="fa-solid fa-shield-blank empty-icon" style="font-size:3rem; opacity:0.3;"></i>
-                        <h4 style="margin:10px 0;">No Specific Evidence</h4>
-                        <p style="font-size:0.9rem;">No deterministic flags triggered.</p>
-                    </div>
-                `;
-                
+                // Feature 1: Populate Chain of Custody
+                renderChainOfCustody(data, analysis);
+
+                // Feature 3: Forensic Explainability Panel
+                renderExplainabilityPanel(analysis.evidence || []);
+
+                // Feature 6: Investigation Timeline
+                renderInvestigationTimeline(data.timeline || []);
+
+                // Quality & Extraction
                 if(analysis.quality) {
                     const qScore = (typeof analysis.quality.score === 'number') ? `${analysis.quality.score}/100` : 'N/A';
                     document.getElementById('mQualScore').innerText = qScore;
@@ -432,7 +827,229 @@
                 Toast.error("Error", "Could not retrieve case details.");
             }
         }
-        
+
+        function renderChainOfCustody(data, analysis) {
+            const custody = data.chain_of_custody || analysis.chain_of_custody || {};
+            const evId = data.evidence_id || custody.evidence_id || ('EVD-' + (data.case_id || 'UNKNOWN'));
+            const sha256 = data.sha256_hash || custody.sha256_hash || 'SHA-256 Digest Pending Ingestion Recording';
+            const timestamp = custody.ingestion_timestamp ? new Date(custody.ingestion_timestamp).toLocaleString() : (data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A');
+            const investigator = custody.investigator_name || data.investigator_name || 'Assigned Forensic Analyst';
+            const version = custody.analysis_version || '2.1.0';
+            const fileSize = (data.file_size || custody.file_size) ? `${((data.file_size || custody.file_size)/1024).toFixed(1)} KB` : 'Recorded with dossier';
+            const mimeType = data.mime_type || custody.mime_type || 'image/jpeg';
+
+            document.getElementById('custodyEvidenceId').innerText = evId;
+            document.getElementById('custodyTimestamp').innerText = timestamp;
+            document.getElementById('custodyInvestigator').innerText = investigator;
+            document.getElementById('custodyVersion').innerText = version;
+            document.getElementById('custodyFileSize').innerText = fileSize;
+            document.getElementById('custodyMimeType').innerText = mimeType;
+            document.getElementById('custodySha256').innerText = sha256;
+        }
+
+        async function verifyCustodyIntegrity() {
+            const btn = document.getElementById('verifyCustodyBtn');
+            const badge = document.getElementById('custodyBadge');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
+
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/cases/${caseObjId}/verify-custody`);
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || 'Verification error');
+
+                if (data.status === 'TAMPER_FREE') {
+                    badge.className = 'custody-status-badge tamper-free';
+                    badge.innerHTML = '<i class="fa-solid fa-shield-check"></i> TAMPER-FREE';
+                    Toast.success("Integrity Verified", "Stored evidence bytes match the SHA-256 cryptographic digest.");
+                } else if (data.status === 'INTEGRITY_BREACH') {
+                    badge.className = 'custody-status-badge breach';
+                    badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> INTEGRITY BREACH';
+                    Toast.error("Integrity Breach Detected", "Stored evidence bytes do NOT match initial SHA-256 digest!");
+                } else {
+                    badge.className = 'custody-status-badge unavailable';
+                    badge.innerHTML = '<i class="fa-solid fa-circle-question"></i> UNAVAILABLE';
+                    Toast.warning("Integrity Check Unavailable", data.message || "Original evidence file cannot be accessed.");
+                }
+
+                // Refresh timeline to reflect verification event
+                if (data.timeline) {
+                    renderInvestigationTimeline(data.timeline);
+                } else {
+                    loadTimelineDirect();
+                }
+            } catch (err) {
+                badge.className = 'custody-status-badge unavailable';
+                badge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ERROR';
+                Toast.error("Verification Error", err.message || "Failed to verify integrity.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> VERIFY INTEGRITY';
+            }
+        }
+
+        async function loadTimelineDirect() {
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/cases/${caseObjId}`);
+                if (res.ok) {
+                    const c = await res.json();
+                    if (c.timeline) renderInvestigationTimeline(c.timeline);
+                }
+            } catch(e) {}
+        }
+
+        function renderExplainabilityPanel(evList) {
+            const container = document.getElementById('cEvidence');
+            if (!evList || evList.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="border:none; background:transparent;">
+                        <i class="fa-solid fa-shield-blank empty-icon" style="font-size:3rem; opacity:0.3;"></i>
+                        <h4 style="margin:10px 0;">No Specific Evidence</h4>
+                        <p style="font-size:0.9rem;">No deterministic flags triggered.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = evList.map(ev => {
+                const contrib = (ev.risk_contribution !== undefined && ev.risk_contribution !== null) 
+                    ? ev.risk_contribution 
+                    : (ev.score !== undefined && ev.score !== null ? ev.score : 0);
+                    
+                const contribHtml = `<div class="evidence-score" style="color: ${contrib > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:1.15rem; font-weight:700;">${contrib > 0 ? '+' : ''}${contrib} pts</div>`;
+                
+                const confidenceVal = (typeof ev.confidence === 'number') ? ev.confidence : 75;
+                const category = ev.category || 'General Forensics';
+                const assessment = ev.assessment || ev.finding || 'Analysis complete.';
+                const observedSignals = ev.observed_metrics || (ev.finding ? [ev.finding] : ['Metric unavailable']);
+
+                return `
+                    <div class="evidence-card" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
+                        <div class="evidence-header">
+                            <div>
+                                <span class="evidence-cat-tag">${escapeHtml(category)}</span>
+                                <h4 class="evidence-title">${escapeHtml(ev.title || 'Signal Observation')}</h4>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">Risk Contribution</div>
+                                ${contribHtml}
+                            </div>
+                        </div>
+
+                        <!-- Confidence & Tooltip -->
+                        <div class="confidence-row">
+                            <span style="font-weight:600;">Forensic Signal Confidence:</span>
+                            <span style="color:var(--cyan); font-weight:700;">${confidenceVal}%</span>
+                            <div class="confidence-bar-bg">
+                                <div class="confidence-bar-fill" style="width: ${confidenceVal}%"></div>
+                            </div>
+                            <div class="info-tooltip-wrap">
+                                <i class="fa-solid fa-circle-question" style="color:var(--text-muted); cursor:pointer;"></i>
+                                <span class="tooltip-text">
+                                    <strong>Forensic Signal Confidence:</strong> Represents confidence in the underlying observed signal from deterministic detectors, NOT a probability of fraud or illegality.
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Observed Metrics -->
+                        <div class="evidence-metrics-box">
+                            <div class="evidence-metrics-title">Observed Signals / Metrics:</div>
+                            ${observedSignals.map(sig => `
+                                <div class="metric-bullet">${escapeHtml(sig)}</div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Forensic Assessment -->
+                        <div class="assessment-box">
+                            <strong>Assessment:</strong> "${escapeHtml(assessment)}"
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderInvestigationTimeline(timeline) {
+            const feed = document.getElementById('timelineFeed');
+            if (!timeline || timeline.length === 0) {
+                feed.innerHTML = '<p class="text-muted" style="padding:10px 0;">No chronological events recorded yet.</p>';
+                return;
+            }
+
+            // Ensure chronological order
+            const sorted = [...timeline].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            feed.innerHTML = sorted.map(event => {
+                const typePretty = (event.event_type || 'EVENT').replace(/_/g, ' ');
+                const timeStr = event.timestamp ? new Date(event.timestamp).toLocaleString() : 'Timestamp unavailable';
+                const investigator = event.investigator_name ? ` • by ${escapeHtml(event.investigator_name)}` : '';
+                const desc = event.description || '';
+
+                return `
+                    <div class="timeline-node">
+                        <div class="timeline-time">${timeStr}${investigator}</div>
+                        <div class="timeline-title">${escapeHtml(typePretty)}</div>
+                        <div class="timeline-desc">${escapeHtml(desc)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function findSimilarCases() {
+            const btn = document.getElementById('findSimilarBtn');
+            const list = document.getElementById('similarCasesList');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Searching...';
+
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/cases/${caseObjId}/similar`);
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || 'Could not query similar cases.');
+
+                const matches = data.similar_cases || [];
+
+                if (matches.length === 0) {
+                    list.innerHTML = `
+                        <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.88rem;">
+                            <i class="fa-solid fa-folder-open" style="font-size:2rem; margin-bottom:8px; opacity:0.4;"></i>
+                            <p>No similar forensic profiles found in your accessible docket.</p>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = matches.map(m => {
+                        const simPct = (m.similarity_score !== undefined) ? Math.round(m.similarity_score * 100) : (m.similarity || 0);
+                        const signals = (m.shared_signals || []).slice(0, 3).join(', ') || 'Shared geometry profile';
+                        const docType = (m.document_type || 'DOC').toUpperCase();
+
+                        return `
+                            <div class="similar-item">
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <strong style="color:var(--text-main); font-family:monospace;">${escapeHtml(m.case_id)}</strong>
+                                        <span class="evidence-cat-tag" style="margin-bottom:0;">${escapeHtml(docType)}</span>
+                                    </div>
+                                    <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+                                        Signals: <span style="color:var(--text-main);">${escapeHtml(signals)}</span>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:1.1rem; font-weight:700; color:var(--cyan);">${simPct}%</div>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">Forensic Similarity</div>
+                                    <a href="case-detail.html?id=${m.case_id}" class="btn-action" style="font-size:0.75rem; padding:3px 10px; margin-top:5px; display:inline-block;">Open Case</a>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                list.innerHTML = `<p style="color:var(--danger); font-size:0.85rem; padding:10px 0;">${escapeHtml(err.message)}</p>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Find Similar';
+            }
+        }
+
         function switchHeatmapTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             const hm = document.getElementById('cHeatmap');
@@ -470,10 +1087,10 @@
             list.innerHTML = notes.map(n => `
                 <div class="note-item">
                     <div class="note-meta">
-                        <strong style="color:var(--cyan)"><i class="fa-solid fa-user-shield" style="margin-right:5px;"></i> ${n.investigator_name || 'Investigator'}</strong>
+                        <strong style="color:var(--cyan)"><i class="fa-solid fa-user-shield" style="margin-right:5px;"></i> ${escapeHtml(n.investigator_name || 'Investigator')}</strong>
                         <span>${new Date(n.created_at).toLocaleString()}</span>
                     </div>
-                    <div class="note-text">${n.text}</div>
+                    <div class="note-text">${escapeHtml(n.text)}</div>
                 </div>
             `).join('');
             
@@ -561,6 +1178,13 @@
                 btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Generate PDF';
                 btn.disabled = false;
             }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
         }
     </script>
 </body>

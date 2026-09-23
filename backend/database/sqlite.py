@@ -59,11 +59,37 @@ def init_sqlite():
             risk_score INTEGER,
             classification TEXT,
             analysis_id TEXT,
+            evidence_id TEXT,
+            sha256_hash TEXT,
+            file_path TEXT,
+            file_size INTEGER,
+            mime_type TEXT,
+            fingerprint_hash TEXT,
+            fingerprint_vector TEXT,
+            timeline_json TEXT,
+            custody_json TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
+
+    # Safe migrations for existing databases
+    for col, col_type in [
+        ("evidence_id", "TEXT"),
+        ("sha256_hash", "TEXT"),
+        ("file_path", "TEXT"),
+        ("file_size", "INTEGER"),
+        ("mime_type", "TEXT"),
+        ("fingerprint_hash", "TEXT"),
+        ("fingerprint_vector", "TEXT"),
+        ("timeline_json", "TEXT"),
+        ("custody_json", "TEXT")
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE cases ADD COLUMN {col} {col_type}")
+        except Exception:
+            pass
     
     # Analyses Table
     cursor.execute('''

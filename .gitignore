@@ -11,3 +11,5 @@ __pycache__/
 test_credentials.json
 data/uploads/
 data/reports/
+backend/data/
+backend/venv/

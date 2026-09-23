@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        (function(){
+            var theme = localStorage.getItem('sentinel_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENTINEL | Controlled Synthetic Forensics Lab</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .lab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.25fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 1100px) {
+            .lab-grid { grid-template-columns: 1fr; }
+        }
+
+        .manip-checkbox-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 15px 0 20px 0;
+        }
+        @media (max-width: 600px) {
+            .manip-checkbox-grid { grid-template-columns: 1fr; }
+        }
+
+        .manip-card {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .manip-card:hover {
+            border-color: rgba(29, 206, 216, 0.4);
+            background: rgba(29, 206, 216, 0.05);
+        }
+        .manip-card input[type="checkbox"] {
+            accent-color: var(--cyan);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .manip-card.selected {
+            border-color: var(--cyan);
+            background: rgba(29, 206, 216, 0.1);
+        }
+
+        .severity-wrap {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+        .severity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .severity-val {
+            color: var(--cyan);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .severity-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1e293b;
+            outline: none;
+            accent-color: var(--cyan);
+            cursor: pointer;
+        }
+
+        .specimen-viewport {
+            height: 380px;
+            background: #0a0e17;
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .specimen-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+
+        .watermark-banner {
+            background: rgba(225, 29, 72, 0.15);
+            border: 1px solid rgba(225, 29, 72, 0.4);
+            color: #fb7185;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .correlation-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--shell-border);
+            border-radius: 6px;
+            padding: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="forensic-bg"></div>
+    <div class="forensic-grid"></div>
+
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="analyze.html" class="nav-item"><i class="fa-solid fa-microscope"></i> New Analysis</a>
+            <a href="lab.html" class="nav-item active"><i class="fa-solid fa-flask-vial"></i> Synthetic Lab</a>
+            <a href="compare.html" class="nav-item"><i class="fa-solid fa-code-compare"></i> Document Compare</a>
+            <a href="cases.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Cases</a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-file-pdf"></i> Reports</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Profile</a>
+            <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <div style="flex:1"></div>
+            <a href="#" class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+
+        <div class="main-content">
+            <div class="topbar">
+                <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-left">
+                    <h2>Controlled Synthetic Forensics Lab</h2>
+                    <p class="text-muted">Simulate deterministic tamper transformations & evaluate detector sensitivity</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-profile">
+                        <div class="user-avatar" id="topAvatar">I</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="watermark-banner">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem;"></i>
+                    <div>
+                        <strong>SAFETY & ETHICS NOTICE:</strong> All lab documents are fictional demonstration artifacts generated with visible watermarks. No real identity credentials, government records, or individual PII are produced.
+                    </div>
+                </div>
+
+                <div class="lab-grid">
+                    <!-- Controls Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-sliders"></i> Test Generation Controls</h3>
+                        </div>
+
+                        <div style="margin-bottom:18px;">
+                            <label style="display:block; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; letter-spacing:1px;">Document Template</label>
+                            <select id="docTypeSelect" class="form-control" style="width:100%; background:rgba(0,0,0,0.4); color:var(--text-main); border:1px solid var(--shell-border); padding:10px 14px; border-radius:6px; outline:none;">
+                                <option value="Synthetic ID">Synthetic ID (Aadhaar-like format)</option>
+                                <option value="Synthetic PAN-like">Synthetic PAN-like Tax Specimen</option>
+                                <option value="Synthetic Passport-like">Synthetic Travel Specimen</option>
+                                <option value="Generic Identity Document">Generic Credential Specimen</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom:10px;">
+                            <label style="display:block; font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Select Simulated Manipulations</label>
+                            <div class="manip-checkbox-grid">
+                                <label class="manip-card">
+                                    <input type="checkbox" value="typography_alteration">
+                                    <span>Typography Disparity</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="kerning_distortion">
+                                    <span>Kerning & Spacing</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="layout_shift">
+                                    <span>Layout Grid Shift</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="image_splice">
+                                    <span>Graphic Patch Splice</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="qr_corruption">
+                                    <span>2D QR Corruption</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="blur">
+                                    <span>Substrate Blur</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="jpeg_compression">
+                                    <span>JPEG Quantization</span>
+                                </label>
+                                <label class="manip-card">
+                                    <input type="checkbox" value="illumination_change">
+                                    <span>Illumination Shift</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="severity-wrap">
+                            <div class="severity-header">
+                                <span>Manipulation Severity</span>
+                                <span class="severity-val" id="sevVal">50 / 100</span>
+                            </div>
+                            <input type="range" id="sevSlider" class="severity-slider" min="1" max="100" value="50" oninput="document.getElementById('sevVal').innerText = this.value + ' / 100'">
+                        </div>
+
+                        <div style="display:flex; gap:12px;">
+                            <button id="genBtn" class="btn-action" style="flex:1; padding:12px; justify-content:center;" onclick="generateSample(false)">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Sample
+                            </button>
+                            <button id="genAnalyzeBtn" class="btn-primary" style="flex:1; padding:12px; justify-content:center;" onclick="generateSample(true)">
+                                <i class="fa-solid fa-microscope"></i> Generate & Analyze
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visual Viewport Card -->
+                    <div class="card">
+                        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3><i class="fa-solid fa-eye"></i> Generated Specimen Preview</h3>
+                            <div class="tabs" style="margin:0; border:none; padding:0;">
+                                <button class="tab-btn active" id="tabManip" onclick="switchSpecimenTab('manip')">Manipulated</button>
+                                <button class="tab-btn" id="tabOrig" onclick="switchSpecimenTab('orig')">Baseline (Clean)</button>
+                            </div>
+                        </div>
+
+                        <div class="specimen-viewport" id="specimenBox">
+                            <div id="noSpecimenPrompt" style="color:var(--text-muted); text-align:center; padding:30px;">
+                                <i class="fa-solid fa-flask" style="font-size:3rem; margin-bottom:12px; opacity:0.3;"></i>
+                                <p>Select manipulations and click <strong>Generate Sample</strong> to render a test canvas.</p>
+                            </div>
+                            <img id="imgManip" class="specimen-img" style="display:none;" alt="Manipulated Specimen">
+                            <img id="imgOrig" class="specimen-img" style="display:none;" alt="Baseline Specimen">
+                        </div>
+
+                        <div id="genMetaBar" style="display:none; margin-top:14px; font-size:0.82rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+                            <span id="metaSampleId">ID: --</span>
+                            <span id="metaInjectedCount">Injected: 0 transformations</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Results Section (When Generate & Analyze is clicked) -->
+                <div id="labAnalysisResults" style="display:none;">
+                    <div class="card">
+                        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3><i class="fa-solid fa-clipboard-check"></i> Live Pipeline Detection Correlation</h3>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-action" id="saveCaseBtn" onclick="saveSampleAsCase()">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save As Investigation Case
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:25px; margin-bottom:20px;">
+                            <div style="background:rgba(0,0,0,0.3); padding:25px; border-radius:6px; border:1px solid var(--shell-border); text-align:center; display:flex; flex-direction:column; justify-content:center;">
+                                <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px;">Calculated Risk Score</div>
+                                <div id="labScore" style="font-size:4.5rem; font-weight:800; line-height:1;">--</div>
+                                <div id="labClass" style="font-size:1.1rem; font-weight:700; margin-top:8px; text-transform:uppercase;">--</div>
+                            </div>
+
+                            <div class="correlation-box">
+                                <h4 style="color:var(--cyan); margin-bottom:10px; font-size:1rem;"><i class="fa-solid fa-scale-balanced"></i> Injected Manipulations vs. Detected Signals</h4>
+                                <div id="correlationList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                            </div>
+                        </div>
+
+                        <h4 style="margin:20px 0 12px 0; color:var(--text-main); font-size:1rem;"><i class="fa-solid fa-list-check"></i> Evidence Items & Explainability</h4>
+                        <div id="labEvidenceContainer" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script>
+        let currentSample = null;
+        let currentAnalysis = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await checkAuth();
+            if(user && user.name) {
+                document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
+
+            // Sync visual styling on checkbox selection
+            document.querySelectorAll('.manip-card input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    cb.closest('.manip-card').classList.toggle('selected', cb.checked);
+                });
+            });
+        });
+
+        function switchSpecimenTab(tab) {
+            const btnManip = document.getElementById('tabManip');
+            const btnOrig = document.getElementById('tabOrig');
+            const imgManip = document.getElementById('imgManip');
+            const imgOrig = document.getElementById('imgOrig');
+
+            if(tab === 'manip') {
+                btnManip.classList.add('active');
+                btnOrig.classList.remove('active');
+                if(currentSample) {
+                    imgManip.style.display = 'block';
+                    imgOrig.style.display = 'none';
+                }
+            } else {
+                btnOrig.classList.add('active');
+                btnManip.classList.remove('active');
+                if(currentSample) {
+                    imgOrig.style.display = 'block';
+                    imgManip.style.display = 'none';
+                }
+            }
+        }
+
+        async function generateSample(andAnalyze = false) {
+            const docType = document.getElementById('docTypeSelect').value;
+            const severity = parseInt(document.getElementById('sevSlider').value);
+            const checkboxes = document.querySelectorAll('.manip-card input[type="checkbox"]:checked');
+            const manips = Array.from(checkboxes).map(c => c.value);
+
+            const btn = andAnalyze ? document.getElementById('genAnalyzeBtn') : document.getElementById('genBtn');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const endpoint = andAnalyze ? `${API_BASE}/synthetic/analyze` : `${API_BASE}/synthetic/generate`;
+
+            try {
+                const res = await fetchWithAuth(endpoint, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        document_type: docType,
+                        manipulations: manips,
+                        severity: severity
+                    })
+                });
+
+                if(!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Generation failed');
+                }
+
+                const data = await res.json();
+                
+                document.getElementById('noSpecimenPrompt').style.display = 'none';
+                const imgManip = document.getElementById('imgManip');
+                const imgOrig = document.getElementById('imgOrig');
+
+                if(andAnalyze) {
+                    currentSample = data.sample_metadata;
+                    currentAnalysis = data.analysis;
+
+                    imgManip.src = currentSample.manipulated_image;
+                    imgOrig.src = currentSample.original_image;
+                    switchSpecimenTab('manip');
+
+                    renderAnalysisResults(data);
+                    showToast('Synthetic sample generated & screened through pipeline!', 'success');
+                } else {
+                    currentSample = data.sample;
+                    currentAnalysis = null;
+
+                    imgManip.src = currentSample.manipulated_image;
+                    imgOrig.src = currentSample.original_image;
+                    switchSpecimenTab('manip');
+
+                    document.getElementById('labAnalysisResults').style.display = 'none';
+                    showToast('Synthetic sample generated successfully.', 'success');
+                }
+
+                document.getElementById('genMetaBar').style.display = 'flex';
+                document.getElementById('metaSampleId').innerText = `SPECIMEN: ${currentSample.sample_id || 'SYN-001'}`;
+                document.getElementById('metaInjectedCount').innerText = `Injected: ${manips.length} transformation(s)`;
+
+            } catch(e) {
+                showToast(e.message || 'Operation failed', 'error');
+            } finally {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function renderAnalysisResults(data) {
+            const resSec = document.getElementById('labAnalysisResults');
+            resSec.style.display = 'block';
+
+            const score = data.analysis.risk_score;
+            const cls = data.analysis.classification;
+            const scoreEl = document.getElementById('labScore');
+            const classEl = document.getElementById('labClass');
+
+            scoreEl.innerText = score;
+            classEl.innerText = cls;
+
+            if(score >= 70) {
+                scoreEl.style.color = 'var(--danger)';
+                classEl.style.color = 'var(--danger)';
+            } else if(score >= 35) {
+                scoreEl.style.color = 'var(--warning)';
+                classEl.style.color = 'var(--warning)';
+            } else {
+                scoreEl.style.color = 'var(--success)';
+                classEl.style.color = 'var(--success)';
+            }
+
+            // Render correlation items
+            const corrList = document.getElementById('correlationList');
+            const injected = data.sample_metadata.injected_manipulations || [];
+            const detected = data.correlation.detected_signals || [];
+
+            let html = '';
+            if(injected.length === 0) {
+                html += '<p class="text-muted" style="font-size:0.85rem;">Pristine baseline test: No simulated manipulations were injected.</p>';
+            } else {
+                injected.forEach(m => {
+                    html += `
+                        <div style="font-size:0.85rem; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-bolt" style="color:var(--orange)"></i>
+                            <span>Injected <strong>${m.manipulation}</strong> (${m.detail || 'Applied'})</span>
+                        </div>
+                    `;
+                });
+            }
+
+            html += '<div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--shell-border);">';
+            if(detected.length > 0) {
+                detected.forEach(d => {
+                    html += `
+                        <div style="font-size:0.85rem; color:var(--cyan); display:flex; align-items:center; gap:8px; margin-top:4px;">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Detector flagged: <strong>${d}</strong></span>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="font-size:0.85rem; color:var(--success);"><i class="fa-solid fa-shield-halved"></i> All forensic thresholds within normal baselines.</div>';
+            }
+            html += '</div>';
+            corrList.innerHTML = html;
+
+            // Render Explainability Evidence Cards
+            const evContainer = document.getElementById('labEvidenceContainer');
+            const evidence = data.analysis.evidence || [];
+            let evHtml = '';
+            evidence.forEach(ev => {
+                const conf = ev.confidence !== undefined ? ev.confidence : 85;
+                const metricsList = ev.observed_metrics && ev.observed_metrics.length 
+                    ? ev.observed_metrics.map(m => `<li>${m}</li>`).join('') 
+                    : `<li>${ev.finding}</li>`;
+                
+                evHtml += `
+                    <div style="background:rgba(0,0,0,0.3); border:1px solid var(--shell-border); border-radius:6px; padding:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <strong style="color:var(--cyan); font-size:0.95rem;">${ev.title}</strong>
+                            <span style="font-size:0.8rem; font-weight:700; color:${ev.risk_contribution > 0 ? 'var(--orange)' : 'var(--success)'};">
+                                +${ev.risk_contribution} pts
+                            </span>
+                        </div>
+                        <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">
+                            Forensic Signal Confidence: <strong style="color:var(--text-main);">${conf}%</strong>
+                        </div>
+                        <ul style="padding-left:16px; font-size:0.82rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.4;">
+                            ${metricsList}
+                        </ul>
+                        <div style="font-size:0.8rem; background:rgba(29,206,216,0.06); border-left:3px solid var(--cyan); padding:6px 10px; color:var(--text-main); font-style:italic;">
+                            "${ev.assessment || ev.explanation}"
+                        </div>
+                    </div>
+                `;
+            });
+            evContainer.innerHTML = evHtml;
+        }
+
+        async function saveSampleAsCase() {
+            if(!currentAnalysis) return;
+
+            const title = `Synthetic Test: ${currentSample.document_type} (Sev: ${currentSample.severity})`;
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/cases`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title: title,
+                        description: `Controlled synthetic test sample generated in lab. Injected manipulations: ${(currentSample.injected_manipulations || []).map(m=>m.manipulation).join(', ') || 'None'}.`,
+                        document_type: currentSample.document_type,
+                        risk_score: currentAnalysis.risk_score,
+                        classification: currentAnalysis.classification,
+                        analysis_data: currentAnalysis
+                    })
+                });
+
+                if(!res.ok) throw new Error('Failed to save case');
+                const data = await res.json();
+                showToast(`Case ${data.case.case_id} archived successfully!`, 'success');
+                setTimeout(() => {
+                    window.location.href = `case-detail.html?id=${data.case.id}`;
+                }, 1200);
+            } catch(e) {
+                showToast(e.message || 'Error saving case', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
