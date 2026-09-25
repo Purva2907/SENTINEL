@@ -99,22 +99,93 @@ body {
 }
 
 .sidebar-brand {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 800;
-    color: var(--orange);
+    color: var(--text-main);
     text-align: left;
     padding: 0 25px;
-    margin-bottom: 40px;
+    margin-bottom: 35px;
     display: flex;
     align-items: center;
     gap: 12px;
-    letter-spacing: 1px;
+    letter-spacing: 0.08em;
+    user-select: none;
 }
 
-.sidebar-brand i {
-    font-size: 1.8rem;
-    color: var(--cyan);
+.sidebar-brand a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
+
+/* ========================================================
+   SENTINEL Global Official Logo & Branding System
+   ======================================================== */
+.sentinel-brand-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sentinel-brand-logo img.sentinel-logo-img {
+    height: 36px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.sentinel-brand-logo:hover img.sentinel-logo-img {
+    transform: scale(1.02);
+}
+
+.sentinel-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sentinel-brand-mark img.sentinel-mark-img {
+    height: 32px;
+    width: 32px;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.sentinel-brand-mark:hover img.sentinel-mark-img {
+    transform: scale(1.05);
+}
+
+.sentinel-brand-wordmark {
+    font-family: 'Outfit', -apple-system, sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--text-main);
+    text-transform: uppercase;
+}
+
+/* Automatic Theme Switching for Logo Images */
+.sentinel-logo-dark {
+    display: block !important;
+}
+.sentinel-logo-light {
+    display: none !important;
+}
+
+[data-theme="light"] .sentinel-logo-dark {
+    display: none !important;
+}
+[data-theme="light"] .sentinel-logo-light {
+    display: block !important;
+}
+
 
 .nav-item {
     display: flex;
@@ -503,3 +574,40 @@ body {
 @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
 }
+
+/* Minimal SENTINEL loading state */
+.sentinel-loader {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    text-align: center;
+}
+.sentinel-loader-mark {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+    animation: sentinel-loader-pulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 16px rgba(29, 206, 216, 0.45));
+}
+.sentinel-loader-word {
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: var(--text-main);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+.sentinel-loader-sub {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    text-transform: uppercase;
+}
+@keyframes sentinel-loader-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 24px rgba(29, 206, 216, 0.75)); }
+}
+

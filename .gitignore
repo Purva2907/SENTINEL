@@ -13,3 +13,5 @@ data/uploads/
 data/reports/
 backend/data/
 backend/venv/
+node_modules/
+backend/mail/node_modules/

@@ -1,0 +1,16 @@
+{
+  "name": "sentinel-mail-service",
+  "version": "1.0.0",
+  "description": "Secure Nodemailer service for SENTINEL contact and demo requests",
+  "main": "mailService.js",
+  "scripts": {
+    "start": "node mailService.js",
+    "test": "node test_mail.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.13"
+  }
+}

@@ -1,7 +1,7 @@
 import os
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, Image
 from reportlab.lib import colors
 
 def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
@@ -112,22 +112,40 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
     date_str = str(case.get('created_at', ''))[:19].replace('T', ' ')
     readable_report_id = report_id or f"RPT-2026-{case.get('case_id', 'DOC')}"
     
-    header_data = [
-        [
+    report_type_style = ParagraphStyle(
+        'ReportTypeSub',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=7,
+        leading=9,
+        textColor=colors.HexColor("#64748B")
+    )
+    
+    logo_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "assets", "sentinel-mark-light.png")
+    if not os.path.exists(logo_path):
+        logo_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "assets", "sentinel-mark.png")
+    
+    has_logo = os.path.exists(logo_path)
+    
+    if has_logo:
+        logo_img = Image(logo_path, width=32, height=32)
+        brand_flow = [
             Paragraph("<b>SENTINEL</b>", brand_title_style),
+            Paragraph("AI-POWERED DOCUMENT FORENSICS", brand_sub_style),
+            Paragraph("FORENSIC INVESTIGATION REPORT", report_type_style)
+        ]
+        meta_flow = [
             Paragraph(f"<b>REPORT ID:</b> {readable_report_id}<br/><b>DATE:</b> {date_str} UTC", ParagraphStyle(
                 'HeaderRight',
                 parent=styles['Normal'],
                 fontName='Helvetica',
                 fontSize=8,
                 leading=11,
-                alignment=2, # Right align
+                alignment=2,
                 textColor=colors.HexColor("#475569")
-            ))
-        ],
-        [
-            Paragraph("AI-POWERED DOCUMENT FORENSIC DOSSIER", brand_sub_style),
-            Paragraph("CONFIDENTIAL // LAW ENFORCEMENT & COMPLIANCE", ParagraphStyle(
+            )),
+            Spacer(1, 4),
+            Paragraph("CONFIDENTIAL // FORENSIC AUDIT RECORD", ParagraphStyle(
                 'HeaderRightConf',
                 parent=styles['Normal'],
                 fontName='Helvetica-Bold',
@@ -137,17 +155,51 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
                 textColor=colors.HexColor("#94A3B8")
             ))
         ]
-    ]
-    
-    header_table = Table(header_data, colWidths=[300, 240])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 2),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('LINEBELOW', (0, 1), (-1, 1), 1.5, colors.HexColor("#0284C7")),
-    ]))
+        header_table = Table([[logo_img, brand_flow, meta_flow]], colWidths=[38, 270, 232])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('LINEBELOW', (0, 0), (-1, 0), 1.5, colors.HexColor("#0284C7")),
+        ]))
+    else:
+        header_data = [
+            [
+                Paragraph("<b>SENTINEL</b>", brand_title_style),
+                Paragraph(f"<b>REPORT ID:</b> {readable_report_id}<br/><b>DATE:</b> {date_str} UTC", ParagraphStyle(
+                    'HeaderRight',
+                    parent=styles['Normal'],
+                    fontName='Helvetica',
+                    fontSize=8,
+                    leading=11,
+                    alignment=2,
+                    textColor=colors.HexColor("#475569")
+                ))
+            ],
+            [
+                Paragraph("AI-POWERED DOCUMENT FORENSICS<br/><font color='#64748B' size='7'>FORENSIC INVESTIGATION REPORT</font>", brand_sub_style),
+                Paragraph("CONFIDENTIAL // FORENSIC AUDIT RECORD", ParagraphStyle(
+                    'HeaderRightConf',
+                    parent=styles['Normal'],
+                    fontName='Helvetica-Bold',
+                    fontSize=7,
+                    leading=8,
+                    alignment=2,
+                    textColor=colors.HexColor("#94A3B8")
+                ))
+            ]
+        ]
+        header_table = Table(header_data, colWidths=[300, 240])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 2),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('LINEBELOW', (0, 1), (-1, 1), 1.5, colors.HexColor("#0284C7")),
+        ]))
     story.append(header_table)
     story.append(Spacer(1, 10))
     

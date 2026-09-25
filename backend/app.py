@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import analyze, auth, cases, reports, chatbot, analytics, synthetic, compare
+from api import analyze, auth, cases, reports, chatbot, analytics, synthetic, compare, contact
 from database.repository import init_db
 
 app = FastAPI(
@@ -30,6 +30,8 @@ app.include_router(chatbot.router, prefix="/api/chat", tags=["chat"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(synthetic.router, prefix="/api/synthetic", tags=["synthetic"])
 app.include_router(compare.router, prefix="/api/compare", tags=["compare"])
+app.include_router(contact.router, prefix="/api", tags=["contact"])
+
 
 @app.get("/api/health")
 def health_check():

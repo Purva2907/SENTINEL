@@ -9,446 +9,906 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENTINEL | AI-Powered Document Forensics</title>
+    <title>SENTINEL | AI-Powered Document Forensics — Trust the Evidence</title>
+    <meta name="description" content="SENTINEL is an AI-powered document forensics command center designed to detect synthetic and manipulated identity documents through explainable multi-signal forensic analysis.">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <link rel="shortcut icon" href="assets/favicon.ico">
+
+    <!-- CSS Stylesheets -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chatbot.css">
+    <link rel="stylesheet" href="css/toast.css">
+    <link rel="stylesheet" href="css/landing.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Three.js r128 Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <style>
-        body { margin: 0; overflow-x: hidden; }
-        
-        /* Navbar */
-        .landing-nav { position: fixed; top: 0; width: 100%; background: rgba(18, 18, 18, 0.9); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; padding: 15px 50px; z-index: 1000; border-bottom: 1px solid var(--border-color); box-sizing: border-box; }
-        .landing-nav .brand { font-size: 1.5rem; font-weight: bold; color: var(--orange); text-decoration: none; }
-        .nav-links { display: flex; gap: 20px; align-items: center; }
-        .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 500; transition: color 0.3s; }
-        .nav-links a:hover { color: var(--cyan); }
-        .nav-actions { display: flex; gap: 15px; }
-        .btn-outline { border: 1px solid var(--cyan); color: var(--cyan); padding: 8px 15px; border-radius: 4px; text-decoration: none; transition: 0.3s; font-weight: bold; }
-        .btn-outline:hover { background: var(--cyan); color: #000; }
-        .btn-fill { background: var(--orange); color: #000; padding: 8px 15px; border-radius: 4px; text-decoration: none; transition: 0.3s; font-weight: bold; border: none; }
-        .btn-fill:hover { background: #e08b47; }
-        
-        /* Hero Section */
-        .hero { position: relative; height: 100vh; display: flex; align-items: center; padding: 0 50px; background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%); overflow: hidden; }
-        #canvas-container { position: absolute; top: 0; right: 0; width: 50%; height: 100%; z-index: 1; pointer-events: none; }
-        .hero-content { position: relative; z-index: 2; max-width: 600px; }
-        .hero-title { font-size: 3.5rem; color: var(--text-main); margin-bottom: 20px; line-height: 1.2; }
-        .hero-title span { color: var(--cyan); }
-        .hero-subtitle { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6; }
-        .hero-actions { display: flex; gap: 20px; }
-        
-        /* Sections */
-        .section { padding: 80px 50px; max-width: 1200px; margin: 0 auto; }
-        .section-header { text-align: center; margin-bottom: 60px; }
-        .section-title { font-size: 2.5rem; color: var(--orange); margin-bottom: 15px; }
-        .section-desc { font-size: 1.1rem; color: var(--text-muted); max-width: 700px; margin: 0 auto; }
-        
-        /* Grid Layouts */
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
-        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; align-items: center; }
-        
-        .card { background: var(--bg-card); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); transition: transform 0.3s; }
-        .card:hover { transform: translateY(-5px); border-color: var(--cyan); }
-        .card i { font-size: 2rem; color: var(--cyan); margin-bottom: 20px; }
-        .card h3 { margin-bottom: 15px; font-size: 1.3rem; }
-        .card p { color: var(--text-muted); line-height: 1.6; }
-        
-        /* Workflow */
-        .workflow { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
-        .step { text-align: center; flex: 1; min-width: 120px; }
-        .step-icon { width: 60px; height: 60px; background: rgba(255, 157, 80, 0.1); color: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 15px; border: 1px solid rgba(255,157,80,0.3); }
-        .step-title { font-weight: bold; }
-        
-        /* Explainable Risk */
-        .risk-demo { background: var(--bg-card); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; }
-        .risk-score { font-size: 5rem; font-weight: bold; color: var(--danger); margin-bottom: 10px; }
-        .risk-class { font-size: 1.5rem; font-weight: bold; color: var(--danger); letter-spacing: 2px; margin-bottom: 30px; }
-        .evidence-tag { display: inline-block; padding: 8px 15px; background: rgba(255,77,77,0.1); color: var(--danger); border-radius: 20px; font-size: 0.9rem; margin: 5px; border: 1px solid rgba(255,77,77,0.3); }
-        
-        /* Footer */
-        .footer { background: #0a0a0a; padding: 60px 50px 30px; border-top: 1px solid var(--border-color); }
-        .footer-content { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 1200px; margin: 0 auto 40px; }
-        .footer-brand h2 { color: var(--orange); margin-bottom: 10px; }
-        .footer-links { display: flex; gap: 30px; }
-        .footer-links div { display: flex; flex-direction: column; gap: 10px; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: 0.3s; }
-        .footer-links a:hover { color: var(--cyan); }
-        .footer-bottom { text-align: center; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem; }
-        
-        @media (max-width: 1024px) {
-            #canvas-container { opacity: 0.3; width: 100%; }
-            .hero-content { max-width: 100%; text-align: center; margin: 0 auto; }
-            .hero-actions { justify-content: center; }
-            .grid-3 { grid-template-columns: repeat(2, 1fr); }
-            .grid-2 { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 768px) {
-            .landing-nav { padding: 15px 20px; }
-            .nav-links { display: none; }
-            .hero { padding: 0 20px; }
-            .hero-title { font-size: 2.5rem; }
-            .section { padding: 50px 20px; }
-            .grid-3 { grid-template-columns: 1fr; }
-            .footer-content { grid-template-columns: 1fr; }
-        }
-    </style>
 </head>
-<body>
-    <nav class="landing-nav">
-        <a href="#" class="brand"><i class="fa-solid fa-shield-halved"></i> SENTINEL</a>
-        <div class="nav-links">
-            <a href="#problem">The Problem</a>
-            <a href="#capabilities">Capabilities</a>
-            <a href="#workflow">Workflow</a>
-            <a href="#security">Security</a>
-        </div>
-        <div class="nav-actions">
-            <a href="login.html" class="btn-outline">Login</a>
-            <a href="login.html" class="btn-fill">Start Investigation</a>
-        </div>
-    </nav>
+<body class="landing-page">
 
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">Investigate the <span>evidence</span> behind every document.</h1>
-            <p class="hero-subtitle">SENTINEL combines OCR, QR analysis, image quality assessment, visual forensics and explainable risk scoring into a unified document screening workflow.</p>
-            <div class="hero-actions">
-                <a href="login.html" class="btn-fill" style="padding: 12px 25px; font-size: 1.1rem;">Start Investigation</a>
-                <a href="#capabilities" class="btn-outline" style="padding: 12px 25px; font-size: 1.1rem; border-color: var(--border-color); color: var(--text-main);">Explore SENTINEL</a>
-            </div>
-        </div>
-        <div id="canvas-container"></div>
-    </section>
+    <!-- ========================================================
+         TOP NAVIGATION BAR
+         ======================================================== -->
+    <header>
+        <nav class="landing-nav" aria-label="Main Navigation">
+            <a href="#" class="brand-wrapper" aria-label="SENTINEL - AI-Powered Document Forensics">
+                <img src="assets/sentinel-mark.png" alt="SENTINEL" class="brand-logo-img sentinel-dynamic-mark" data-brand-variant="mark" style="height:36px; width:36px; object-fit:contain;">
+                <div class="brand-info">
+                    <span class="brand-name">SENTINEL</span>
+                    <span class="brand-tagline">AI-POWERED DOCUMENT FORENSICS</span>
+                </div>
+            </a>
 
-    <section id="problem" class="section">
-        <div class="section-header">
-            <h2 class="section-title">The Problem</h2>
-            <p class="section-desc">Subtle document manipulation can be difficult to identify through appearance alone.</p>
-        </div>
-        <div class="grid-3">
-            <div class="card">
-                <i class="fa-solid fa-eye-slash"></i>
-                <h3>Manual Review is Subjective</h3>
-                <p>Human inspection is slow and prone to missing sophisticated, pixel-level alterations.</p>
+            <div class="nav-links" id="navLinks">
+                <a href="#hero" class="active">Home</a>
+                <a href="#problem">The Problem</a>
+                <a href="#pillars">Forensic Pillars</a>
+                <a href="#workflow">How It Works</a>
+                <a href="#risk-engine">Risk Engine</a>
+                <a href="#copilot">AI Copilot</a>
+                <a href="#capabilities">Platform</a>
+                <a href="#security">Security</a>
+                <a href="#contact">Contact</a>
             </div>
-            <div class="card">
-                <i class="fa-solid fa-layer-group"></i>
-                <h3>Visual Manipulation</h3>
-                <p>Advanced editing tools create forgeries that look perfect to the naked eye.</p>
-            </div>
-            <div class="card">
-                <i class="fa-solid fa-image"></i>
-                <h3>Low-Quality Documents</h3>
-                <p>Poor image quality (blur, compression) does not automatically mean fraud. Signal disambiguation is required.</p>
-            </div>
-        </div>
-    </section>
 
-    <section id="capabilities" class="section" style="background: rgba(0,0,0,0.3);">
-        <div class="section-header">
-            <h2 class="section-title">Forensic Signals</h2>
-            <p class="section-desc">SENTINEL analyzes multiple orthogonal signals to build a comprehensive risk profile.</p>
-        </div>
-        <div class="grid-3">
-            <div class="card">
-                <i class="fa-solid fa-font"></i>
-                <h3>OCR Analysis</h3>
-                <p>Extract and inspect document text for inconsistencies and manipulation.</p>
+            <div class="nav-actions">
+                <button type="button" class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle visual theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <a href="login.html" class="nav-btn-login" id="navAuthBtn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                </a>
+                <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
             </div>
-            <div class="card">
-                <i class="fa-solid fa-qrcode"></i>
-                <h3>QR Analysis</h3>
-                <p>Detect and decode available QR regions for structural consistency.</p>
-            </div>
-            <div class="card">
-                <i class="fa-solid fa-camera"></i>
-                <h3>Image Quality</h3>
-                <p>Assess blur, resolution, brightness, and contrast to contextualize findings.</p>
-            </div>
-            <div class="card">
-                <i class="fa-solid fa-text-height"></i>
-                <h3>Typography</h3>
-                <p>Inspect text consistency, alignment, and visual rendering artifacts.</p>
-            </div>
-            <div class="card">
-                <i class="fa-solid fa-border-all"></i>
-                <h3>Layout Analysis</h3>
-                <p>Analyze structural alignment and positional consistency across the document.</p>
-            </div>
-            <div class="card">
-                <i class="fa-solid fa-fingerprint"></i>
-                <h3>Image Forensics</h3>
-                <p>Look for visual manipulation indicators like compression mismatches and clone stamps.</p>
-            </div>
-        </div>
-    </section>
+        </nav>
+    </header>
 
-    <section class="section">
-        <div class="grid-2">
-            <div>
-                <h2 class="section-title">Explainable Risk</h2>
-                <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 20px; line-height: 1.6;">SENTINEL doesn't just output a black-box result. Every analysis provides a deterministic risk score backed by specific, traceable forensic evidence.</p>
-                <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6;">Our risk indicator is a powerful forensic screening tool designed to assist manual review, not replace official authentication.</p>
+    <!-- ========================================================
+         HERO SECTION: 3D INVESTIGATION COMMAND CENTER
+         ======================================================== -->
+    <main>
+        <section class="hero-section" id="hero">
+            <div class="hero-backdrop" aria-hidden="true"></div>
+
+            <div class="hero-container">
+                <!-- Hero Left: Content & CTAs -->
+                <div class="hero-left">
+                    <div class="cyber-badge">
+                        <span class="pulse-dot"></span>
+                        <span>PROBLEM STATEMENT CX0203</span>
+                    </div>
+
+                    <h1 class="hero-title">SENTINEL</h1>
+                    <div class="hero-subtitle-label">AI-POWERED DOCUMENT FORENSICS</div>
+
+                    <p class="hero-description">
+                        Detect synthetic and manipulated identity documents through explainable forensic analysis. 
+                        Investigate the physical, textual, and cryptographic evidence behind every document with zero black-box obscurity.
+                    </p>
+
+                    <div class="hero-cta-group">
+                        <a href="login.html" class="btn-cyber-primary" id="heroStartBtn">
+                            <span>START INVESTIGATION</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                        <a href="#workflow" class="btn-cyber-secondary">
+                            <i class="fa-solid fa-play"></i>
+                            <span>WATCH DEMO</span>
+                        </a>
+                    </div>
+
+                    <!-- Compact Supporting Indicators -->
+                    <div class="hero-metrics-strip">
+                        <div class="metric-item">
+                            <span class="metric-val">6</span>
+                            <span class="metric-label">Forensic Modules</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-val">100+</span>
+                            <span class="metric-label">Signal Vectors</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-val"><i class="fa-solid fa-scale-balanced" style="font-size: 1.2rem;"></i></span>
+                            <span class="metric-label">Explainable Results</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-val"><i class="fa-solid fa-user-shield" style="font-size: 1.2rem;"></i></span>
+                            <span class="metric-label">Investigator Focused</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Right: Interactive 3D Synthetic Document Scene -->
+                <div class="hero-right">
+                    <div class="demo-badge-watermark">
+                        <i class="fa-solid fa-circle-dot" style="color: var(--cyan);"></i>
+                        <span>LIVE FORENSIC DEMO</span>
+                    </div>
+
+                    <!-- Three.js Canvas Container -->
+                    <div id="canvas-container" role="region" aria-label="Interactive 3D Synthetic Document Visualizer"></div>
+
+                    <!-- Floating Forensic Glass Analysis Cards -->
+                    <div class="floating-panel-layer" aria-hidden="true">
+                        <!-- OCR Analysis Panel -->
+                        <div class="glass-forensic-card panel-ocr">
+                            <div class="card-header-mini">
+                                <span class="card-title-mini">OCR ANALYSIS</span>
+                                <span class="card-status-badge badge-success">92%</span>
+                            </div>
+                            <div class="card-metric-row">
+                                <span class="card-metric-val">TEXT MATCH</span>
+                            </div>
+                            <div class="card-mini-bar">
+                                <div class="card-mini-bar-fill" style="width: 92%; background: var(--green);"></div>
+                            </div>
+                        </div>
+
+                        <!-- QR Analysis Panel -->
+                        <div class="glass-forensic-card panel-qr">
+                            <div class="card-header-mini">
+                                <span class="card-title-mini">QR ANALYSIS</span>
+                                <span class="card-status-badge badge-danger">ANOMALY</span>
+                            </div>
+                            <div class="card-metric-row">
+                                <span class="card-metric-val" style="color: var(--danger); font-size: 0.95rem;">DETECTED</span>
+                            </div>
+                            <div class="card-metric-sub">DECODE STATUS: SYNTHETIC</div>
+                        </div>
+
+                        <!-- Layout Check Panel -->
+                        <div class="glass-forensic-card panel-layout">
+                            <div class="card-header-mini">
+                                <span class="card-title-mini">LAYOUT CHECK</span>
+                                <span class="card-status-badge badge-warning">DRIFT</span>
+                            </div>
+                            <div class="card-metric-row">
+                                <span class="card-metric-val" style="color: var(--orange); font-size: 0.95rem;">ANOMALY SIGNAL</span>
+                            </div>
+                            <div class="card-metric-sub">OFFSET: +4.2mm MARGIN</div>
+                        </div>
+
+                        <!-- ELA Analysis Heatmap Panel -->
+                        <div class="glass-forensic-card panel-ela">
+                            <div class="card-header-mini">
+                                <span class="card-title-mini">ELA ANALYSIS</span>
+                                <span class="card-status-badge badge-warning">HEATMAP</span>
+                            </div>
+                            <canvas id="ela-heatmap-canvas" class="ela-preview-canvas"></canvas>
+                        </div>
+
+                        <!-- Typography Analysis Panel -->
+                        <div class="glass-forensic-card panel-typography">
+                            <div class="card-header-mini">
+                                <span class="card-title-mini">TYPOGRAPHY</span>
+                                <span class="card-status-badge badge-warning">ALERT</span>
+                            </div>
+                            <div class="card-metric-row">
+                                <span class="card-metric-val" style="font-size: 0.9rem;">BASELINE JITTER</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="risk-demo">
-                <div class="risk-score">84<span style="font-size:2rem; color:var(--text-muted)">/100</span></div>
-                <div class="risk-class">HIGH SUSPICION</div>
+
+            <!-- Forensic Pillars Strip (Hero Bottom) -->
+            <div class="pillars-strip-container">
+                <div class="pillars-strip">
+                    <a href="#pillar-1" class="pillar-item">
+                        <div class="pillar-icon-box"><i class="fa-solid fa-camera"></i></div>
+                        <div class="pillar-text-box">
+                            <span class="pillar-title">Image Quality</span>
+                            <span class="pillar-desc">Blur & Sharpness</span>
+                        </div>
+                    </a>
+                    <a href="#pillar-2" class="pillar-item">
+                        <div class="pillar-icon-box"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="pillar-text-box">
+                            <span class="pillar-title">OCR Extraction</span>
+                            <span class="pillar-desc">Multilingual Text</span>
+                        </div>
+                    </a>
+                    <a href="#pillar-3" class="pillar-item">
+                        <div class="pillar-icon-box"><i class="fa-solid fa-qrcode"></i></div>
+                        <div class="pillar-text-box">
+                            <span class="pillar-title">QR Analysis</span>
+                            <span class="pillar-desc">Payload Integrity</span>
+                        </div>
+                    </a>
+                    <a href="#pillar-4" class="pillar-item">
+                        <div class="pillar-icon-box"><i class="fa-solid fa-font"></i></div>
+                        <div class="pillar-text-box">
+                            <span class="pillar-title">Typography</span>
+                            <span class="pillar-desc">Font & Geometry</span>
+                        </div>
+                    </a>
+                    <a href="#pillar-5" class="pillar-item">
+                        <div class="pillar-icon-box"><i class="fa-solid fa-table-cells-large"></i></div>
+                        <div class="pillar-text-box">
+                            <span class="pillar-title">Layout Check</span>
+                            <span class="pillar-desc">Spatial Alignment</span>
+                        </div>
+                    </a>
+                    <a href="#pillar-6" class="pillar-item">
+                        <div class="pillar-icon-box"><i class="fa-solid fa-fingerprint"></i></div>
+                        <div class="pillar-text-box">
+                            <span class="pillar-title">ELA Forensics</span>
+                            <span class="pillar-desc">Splicing & Noise</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 2: THE PROBLEM (THE AADHAAR LOOK-ALIKE)
+             ======================================================== -->
+        <section class="landing-section" id="problem">
+            <div class="section-header">
+                <span class="section-tag">INVESTIGATIVE CHALLENGE</span>
+                <h2 class="section-title">THE AADHAAR LOOK-ALIKE PROBLEM</h2>
+                <p class="section-desc">
+                    Synthetic or manipulated identity documents can visually resemble genuine documents, 
+                    making manual inspection difficult, inconsistent, and vulnerable to advanced generative tools.
+                </p>
+            </div>
+
+            <div class="grid-2">
+                <!-- Visual Comparison Side-by-Side Mockup -->
+                <div class="problem-card-compare">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="compare-badge badge-authentic-look">
+                            <i class="fa-solid fa-eye"></i> VISUAL INSPECTION
+                        </span>
+                        <span class="compare-badge badge-forensic-flag">
+                            <i class="fa-solid fa-microscope"></i> FORENSIC REALITY
+                        </span>
+                    </div>
+
+                    <div class="doc-mockup-wrapper">
+                        <div class="synthetic-demo-label-strip">
+                            DEMONSTRATION SAMPLE &bull; NOT A GOVERNMENT DOCUMENT
+                        </div>
+
+                        <!-- Anomaly pointer flags -->
+                        <div class="anomaly-pointer pointer-1">
+                            <i class="fa-solid fa-triangle-exclamation"></i> QR/OCR Discrepancy
+                        </div>
+                        <div class="anomaly-pointer pointer-2">
+                            <i class="fa-solid fa-magnifying-glass-arrow-right"></i> Font Baseline Drift
+                        </div>
+
+                        <div style="display: flex; gap: 16px; align-items: center; padding: 10px 0;">
+                            <div style="width: 70px; height: 90px; background: rgba(29,206,216,0.15); border: 1px solid var(--cyan); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--cyan); font-size: 2rem;">
+                                <i class="fa-solid fa-user-secret"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem; color: var(--landing-text-dim);">Synthetic Specimen</div>
+                                <div style="font-weight: 700; font-size: 1.2rem; color: var(--landing-text-bright); margin-bottom: 4px;">AARAV DEMO</div>
+                                <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--cyan);">ID: SENTINEL-DEMO-001</div>
+                                <div style="font-size: 0.75rem; color: var(--orange); margin-top: 6px;">
+                                    <i class="fa-solid fa-circle-exclamation"></i> ELA indicates localized compression anomaly
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--landing-text-dim); margin-top: 14px;">
+                        <span><strong style="color: var(--green);">Appears Authentic:</strong> Standard layout & typography</span>
+                        <span><strong style="color: var(--danger);">Forensic Check:</strong> 3 High-risk signals</span>
+                    </div>
+                </div>
+
+                <!-- Problem Breakdown Points -->
+                <div class="problem-item-list">
+                    <div class="problem-bullet">
+                        <div class="problem-bullet-icon">
+                            <i class="fa-solid fa-eye-slash"></i>
+                        </div>
+                        <div>
+                            <h4>Human Review is Subjective & Slow</h4>
+                            <p>Manual examiners process documents in seconds, routinely missing microscopic font distortions, sub-pixel cloning, and mismatched compression artifacts.</p>
+                        </div>
+                    </div>
+
+                    <div class="problem-bullet">
+                        <div class="problem-bullet-icon">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div>
+                            <h4>Generative AI & Look-Alike Templates</h4>
+                            <p>Modern editing suites and diffusion models easily generate synthetic identity cards that match visual layouts while hiding altered identities.</p>
+                        </div>
+                    </div>
+
+                    <div class="problem-bullet">
+                        <div class="problem-bullet-icon">
+                            <i class="fa-solid fa-barcode"></i>
+                        </div>
+                        <div>
+                            <h4>Detached QR Code Payloads</h4>
+                            <p>Fraudulent documents frequently embed arbitrary QR codes or old genuine QR codes with altered printed text, creating invisible cross-signal contradictions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 3: HOW SENTINEL WORKS (WORKFLOW)
+             ======================================================== -->
+        <section class="landing-section section-alt" id="workflow">
+            <div class="section-header">
+                <span class="section-tag">INVESTIGATIVE PIPELINE</span>
+                <h2 class="section-title">THE SENTINEL WORKFLOW</h2>
+                <p class="section-desc">
+                    A rigorous 6-stage forensics pipeline that executes deterministic verification routines,
+                    anchors cryptographic chains of custody, and produces court-ready documentation.
+                </p>
+            </div>
+
+            <div class="workflow-pipeline">
+                <!-- Step 1 -->
+                <div class="workflow-card">
+                    <div class="workflow-step-num">STAGE 01</div>
+                    <div class="workflow-icon-bubble"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <h3>01. Ingestion</h3>
+                    <p>Document ingestion, SHA-256 evidence hashing, and Laplacian quality scoring.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="workflow-card">
+                    <div class="workflow-step-num">STAGE 02</div>
+                    <div class="workflow-icon-bubble"><i class="fa-solid fa-language"></i></div>
+                    <h3>02. OCR Parse</h3>
+                    <p>Multilingual text extraction with character bounding boxes and word confidence.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="workflow-card">
+                    <div class="workflow-step-num">STAGE 03</div>
+                    <div class="workflow-icon-bubble"><i class="fa-solid fa-qrcode"></i></div>
+                    <h3>03. QR Decode</h3>
+                    <p>Cryptographic QR payload extraction, barcode localization, and OCR cross-matching.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="workflow-card">
+                    <div class="workflow-step-num">STAGE 04</div>
+                    <div class="workflow-icon-bubble"><i class="fa-solid fa-text-height"></i></div>
+                    <h3>04. Typography</h3>
+                    <p>Baseline curvature detection, kerning consistency, and font stroke uniformity.</p>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="workflow-card">
+                    <div class="workflow-step-num">STAGE 05</div>
+                    <div class="workflow-icon-bubble"><i class="fa-solid fa-microchip"></i></div>
+                    <h3>05. ELA Analysis</h3>
+                    <p>Error Level Analysis reveals re-saving anomalies, clone stamps, and photo splicing.</p>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="workflow-card">
+                    <div class="workflow-step-num">STAGE 06</div>
+                    <div class="workflow-icon-bubble"><i class="fa-solid fa-certificate"></i></div>
+                    <h3>06. Assessment</h3>
+                    <p>Deterministic composite risk scoring paired with conversational AI Copilot audit.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 4: SIX FORENSIC PILLARS DEEP DIVE
+             ======================================================== -->
+        <section class="landing-section" id="pillars">
+            <div class="section-header">
+                <span class="section-tag">CORE ARCHITECTURE</span>
+                <h2 class="section-title">SIX FORENSIC PILLARS</h2>
+                <p class="section-desc">
+                    SENTINEL does not rely on a single model. It synthesizes six orthogonal disciplines into a comprehensive forensic screening architecture.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <!-- Pillar 1: Image Quality -->
+                <div class="pillar-card-detailed" id="pillar-1">
+                    <span class="pillar-num-watermark">01</span>
+                    <div class="pillar-icon-large"><i class="fa-solid fa-camera"></i></div>
+                    <h3>Image Quality Analysis</h3>
+                    <p>Contextualizes document condition to ensure blur, heavy compression, or lighting artifacts do not generate false positives.</p>
+                    <div class="pillar-tags-list">
+                        <span class="pillar-micro-tag">Laplacian Blur</span>
+                        <span class="pillar-micro-tag">Contrast Ratio</span>
+                        <span class="pillar-micro-tag">Resolution Check</span>
+                        <span class="pillar-micro-tag">Exposure Metric</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 2: OCR -->
+                <div class="pillar-card-detailed" id="pillar-2">
+                    <span class="pillar-num-watermark">02</span>
+                    <div class="pillar-icon-large"><i class="fa-solid fa-file-waveform"></i></div>
+                    <h3>OCR & Text Extraction</h3>
+                    <p>Performs multilingual text reading (English + Hindi/Regional) with character-level confidence scores and structured field parsing.</p>
+                    <div class="pillar-tags-list">
+                        <span class="pillar-micro-tag">EasyOCR Engine</span>
+                        <span class="pillar-micro-tag">Devanagari Support</span>
+                        <span class="pillar-micro-tag">Field Parser</span>
+                        <span class="pillar-micro-tag">Confidence Map</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 3: QR Analysis -->
+                <div class="pillar-card-detailed" id="pillar-3">
+                    <span class="pillar-num-watermark">03</span>
+                    <div class="pillar-icon-large"><i class="fa-solid fa-qrcode"></i></div>
+                    <h3>QR & Barcode Analysis</h3>
+                    <p>Locates and decodes printed QR matrix structures, verifies structural format consistency, and compares payload data against visible text.</p>
+                    <div class="pillar-tags-list">
+                        <span class="pillar-micro-tag">PyZbar Locator</span>
+                        <span class="pillar-micro-tag">Payload Decode</span>
+                        <span class="pillar-micro-tag">Cross-Reference</span>
+                        <span class="pillar-micro-tag">Format Audit</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 4: Typography -->
+                <div class="pillar-card-detailed" id="pillar-4">
+                    <span class="pillar-num-watermark">04</span>
+                    <div class="pillar-icon-large"><i class="fa-solid fa-font"></i></div>
+                    <h3>Typography Analysis</h3>
+                    <p>Measures font baseline alignment, inter-character spacing, stroke weight variation, and ink edge bleed to flag synthetic additions.</p>
+                    <div class="pillar-tags-list">
+                        <span class="pillar-micro-tag">Baseline Angle</span>
+                        <span class="pillar-micro-tag">Kerning Variance</span>
+                        <span class="pillar-micro-tag">Stroke Uniformity</span>
+                        <span class="pillar-micro-tag">Jitter Detection</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 5: Layout -->
+                <div class="pillar-card-detailed" id="pillar-5">
+                    <span class="pillar-num-watermark">05</span>
+                    <div class="pillar-icon-large"><i class="fa-solid fa-table-cells"></i></div>
+                    <h3>Layout & Geometry</h3>
+                    <p>Analyzes spatial relationships, margins, emblem coordinates, photo aspect ratios, and indentation against expected forensic templates.</p>
+                    <div class="pillar-tags-list">
+                        <span class="pillar-micro-tag">Margin Bounds</span>
+                        <span class="pillar-micro-tag">Emblem Offset</span>
+                        <span class="pillar-micro-tag">Photo Aspect</span>
+                        <span class="pillar-micro-tag">Field Alignment</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 6: ELA / Image Forensics -->
+                <div class="pillar-card-detailed" id="pillar-6">
+                    <span class="pillar-num-watermark">06</span>
+                    <div class="pillar-icon-large"><i class="fa-solid fa-fingerprint"></i></div>
+                    <h3>ELA & Splicing Detection</h3>
+                    <p>Error Level Analysis highlights differential compression ratios across image subregions, pinpointing inserted photos and pasted text blocks.</p>
+                    <div class="pillar-tags-list">
+                        <span class="pillar-micro-tag">Error Level Analysis</span>
+                        <span class="pillar-micro-tag">Thermal Heatmap</span>
+                        <span class="pillar-micro-tag">Clone Detection</span>
+                        <span class="pillar-micro-tag">JPEG Quantization</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 5: EXPLAINABLE RISK ENGINE
+             ======================================================== -->
+        <section class="landing-section section-alt" id="risk-engine">
+            <div class="section-header">
+                <span class="section-tag">DETERMINISTIC EVALUATION</span>
+                <h2 class="section-title">EXPLAINABLE RISK ENGINE</h2>
+                <p class="section-desc">
+                    Every assessment is fully traceable. No black boxes. Investigators receive a mathematical risk score backed by transparent contributing evidence.
+                </p>
+            </div>
+
+            <div class="risk-engine-box">
+                <!-- Visual Pipeline Flow -->
+                <div class="risk-pipeline-flow" aria-label="Risk Calculation Pipeline">
+                    <div class="flow-step"><i class="fa-solid fa-file-import"></i> EVIDENCE</div>
+                    <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="flow-step"><i class="fa-solid fa-network-wired"></i> SIGNAL ANALYSIS</div>
+                    <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="flow-step"><i class="fa-solid fa-calculator"></i> RISK ENGINE</div>
+                    <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="flow-step" style="color: var(--orange);"><i class="fa-solid fa-certificate"></i> EXPLAINABLE SCORE</div>
+                </div>
+
+                <!-- Interactive Demonstration Case Switcher -->
+                <div style="margin-bottom: 12px; font-size: 0.82rem; color: var(--landing-text-dim); text-transform: uppercase; font-family: var(--font-mono);">
+                    SELECT DEMONSTRATION CASE:
+                </div>
+                <div class="risk-case-selector">
+                    <button type="button" class="case-chip-btn active" data-case="case-1">
+                        Case #SYN-01 (High Suspicion)
+                    </button>
+                    <button type="button" class="case-chip-btn" data-case="case-2">
+                        Case #SYN-02 (Clean Specimen)
+                    </button>
+                    <button type="button" class="case-chip-btn" data-case="case-3">
+                        Case #SYN-03 (Spliced Photo)
+                    </button>
+                </div>
+
+                <!-- Display Grid -->
+                <div class="risk-display-grid">
+                    <div class="risk-score-dial-wrap">
+                        <div class="risk-dial-score" id="riskDialScore">84</div>
+                        <div class="risk-dial-status" id="riskDialStatus">HIGH SUSPICION</div>
+                        <div class="risk-dial-notice">
+                            <i class="fa-solid fa-circle-info"></i> Interactive Demonstration Visualization
+                        </div>
+                    </div>
+
+                    <!-- Breakdown List -->
+                    <div class="risk-breakdown-list" id="riskBreakdownList">
+                        <div class="risk-breakdown-row danger">
+                            <span class="risk-row-title">Typography: Font Baseline Jitter</span>
+                            <span class="risk-row-impact" style="color: var(--danger);">+25 Risk</span>
+                        </div>
+                        <div class="risk-breakdown-row danger">
+                            <span class="risk-row-title">QR Payload vs OCR Name Mismatch</span>
+                            <span class="risk-row-impact" style="color: var(--danger);">+30 Risk</span>
+                        </div>
+                        <div class="risk-breakdown-row warning">
+                            <span class="risk-row-title">ELA: Photo Frame Compression Variance</span>
+                            <span class="risk-row-impact" style="color: var(--orange);">+20 Risk</span>
+                        </div>
+                        <div class="risk-breakdown-row warning">
+                            <span class="risk-row-title">Layout: Header Indentation Offset</span>
+                            <span class="risk-row-impact" style="color: var(--orange);">+9 Risk</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 6: AI FORENSIC COPILOT
+             ======================================================== -->
+        <section class="landing-section" id="copilot">
+            <div class="grid-2">
                 <div>
-                    <span class="evidence-tag"><i class="fa-solid fa-triangle-exclamation"></i> Typography Anomaly</span>
-                    <span class="evidence-tag"><i class="fa-solid fa-triangle-exclamation"></i> Edge Inconsistency</span>
+                    <span class="section-tag">CONVERSATIONAL INTELLIGENCE</span>
+                    <h2 class="section-title">SENTINEL AI COPILOT</h2>
+                    <p class="section-desc" style="margin-bottom: 24px;">
+                        Interrogate complex forensic cases using conversational AI. Ask questions, compare with historical specimen clusters, extract metadata, and generate case summaries instantly.
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 30px;">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <i class="fa-solid fa-microchip" style="color: var(--cyan); font-size: 1.2rem;"></i>
+                            <span>Multi-LLM Support: Google Gemini, Groq (Llama-3.3-70B), OpenAI, & Local Offline Fallback</span>
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <i class="fa-solid fa-shield-virus" style="color: var(--green); font-size: 1.2rem;"></i>
+                            <span>Zero Credential Leaks: Client never accesses LLM keys; all queries are sanitized server-side.</span>
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <i class="fa-solid fa-code-compare" style="color: var(--orange); font-size: 1.2rem;"></i>
+                            <span>Multi-Case Vector Retrieval: Correlate across investigation archives to uncover synthetic rings.</span>
+                        </div>
+                    </div>
+
+                    <a href="analyze.html" class="btn-cyber-primary">
+                        <span>LAUNCH INVESTIGATION SANDBOX</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Chatbot Mockup Window -->
+                <div class="copilot-mockup-window">
+                    <div class="copilot-top-bar">
+                        <div class="copilot-title-group">
+                            <i class="fa-solid fa-robot copilot-icon"></i>
+                            <span class="copilot-name">SENTINEL Copilot</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span class="model-pill-badge">Llama-3.3-70B / Gemini</span>
+                            <span class="model-pill-badge" style="color: var(--green); border-color: rgba(85,224,126,0.4);">ONLINE</span>
+                        </div>
+                    </div>
+
+                    <div class="copilot-chat-body" id="copilotChatBody">
+                        <!-- Message 1 -->
+                        <div class="chat-bubble chat-bubble-user">
+                            <strong>Investigator:</strong> Why was specimen SENTINEL-DEMO-001 flagged as high suspicion?
+                        </div>
+                        <!-- Message 2 -->
+                        <div class="chat-bubble chat-bubble-ai">
+                            <strong>SENTINEL Copilot:</strong> The document was flagged due to two high-severity orthogonal signals:
+                            <br><br>
+                            1. <strong>Typography:</strong> Detected +25 risk from baseline curvature anomalies in the name line.
+                            <br>
+                            2. <strong>QR Payload Mismatch:</strong> The QR matrix decodes to synthetic payload <code>SENTINEL-DEMO-QR</code>, which contradicts the visible demographic identity.
+                        </div>
+                    </div>
+
+                    <!-- Interactive Quick Action Chips -->
+                    <div class="copilot-quick-actions">
+                        <button type="button" class="quick-action-chip" data-action="explain">
+                            <i class="fa-solid fa-magnifying-glass"></i> Explain Score
+                        </button>
+                        <button type="button" class="quick-action-chip" data-action="compare">
+                            <i class="fa-solid fa-code-compare"></i> Compare Cases
+                        </button>
+                        <button type="button" class="quick-action-chip" data-action="extract">
+                            <i class="fa-solid fa-file-export"></i> Extract Info
+                        </button>
+                        <button type="button" class="quick-action-chip" data-action="summary">
+                            <i class="fa-solid fa-file-lines"></i> Case Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 7: INVESTIGATION WORKFLOW & PLATFORM CAPABILITIES
+             ======================================================== -->
+        <section class="landing-section section-alt" id="capabilities">
+            <div class="section-header">
+                <span class="section-tag">COMMAND CENTER SUITE</span>
+                <h2 class="section-title">INVESTIGATION WORKFLOW MODULES</h2>
+                <p class="section-desc">
+                    Comprehensive tools built specifically for cybersecurity auditors, fraud investigators, and forensic analysts.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="pillar-card-detailed">
+                    <div class="pillar-icon-large"><i class="fa-solid fa-flask-vial"></i></div>
+                    <h3>Forensic Laboratory Sandbox</h3>
+                    <p>Interactive playground to inspect single documents, tune signal sensitivity thresholds, and visualize raw OCR and ELA matrices.</p>
+                    <a href="lab.html" class="nav-btn-login" style="margin-top: 10px;">Launch Lab &rarr;</a>
+                </div>
+
+                <div class="pillar-card-detailed">
+                    <div class="pillar-icon-large"><i class="fa-solid fa-code-compare"></i></div>
+                    <h3>Comparative Dossier Engine</h3>
+                    <p>Compare suspect documents side-by-side against verified templates or historical cases to uncover batch synthesis patterns.</p>
+                    <a href="compare.html" class="nav-btn-login" style="margin-top: 10px;">Compare Cases &rarr;</a>
+                </div>
+
+                <div class="pillar-card-detailed">
+                    <div class="pillar-icon-large"><i class="fa-solid fa-file-pdf"></i></div>
+                    <h3>PDF Dossier Export</h3>
+                    <p>Generate cryptographic audit reports with SHA-256 evidence stamps, timeline logs, and visual heatmap exhibits ready for case submission.</p>
+                    <a href="reports.html" class="nav-btn-login" style="margin-top: 10px;">View Reports &rarr;</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 8: SECURITY & EVIDENCE INTEGRITY
+             ======================================================== -->
+        <section class="landing-section" id="security">
+            <div class="section-header">
+                <span class="section-tag">COMPLIANCE & INTEGRITY</span>
+                <h2 class="section-title">EVIDENCE INTEGRITY & PRIVACY</h2>
+                <p class="section-desc">
+                    Engineered for high-security environments. Strict boundary enforcement guarantees data confidentiality and tamper-proof custody tracking.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="pillar-card-detailed">
+                    <div class="pillar-icon-large"><i class="fa-solid fa-lock"></i></div>
+                    <h3>Authenticated Access (JWT)</h3>
+                    <p>Strict role-based session isolation. Secure cryptographic JWT tokens govern all investigation actions and case dossier access.</p>
+                </div>
+
+                <div class="pillar-card-detailed">
+                    <div class="pillar-icon-large"><i class="fa-solid fa-server"></i></div>
+                    <h3>Local & Air-Gapped Deployable</h3>
+                    <p>Operates entirely on local hardware. Offline AI autonomous fallback ensures zero evidence data leaves the sovereign perimeter.</p>
+                </div>
+
+                <div class="pillar-card-detailed">
+                    <div class="pillar-icon-large"><i class="fa-solid fa-link"></i></div>
+                    <h3>SHA-256 Chain of Custody</h3>
+                    <p>All ingested documents receive an immutable SHA-256 hash stamp upon receipt, guaranteeing verifiable evidence integrity throughout the audit lifecycle.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================
+             SECTION 9: CONTACT & REQUEST DEMO (NODEMAILER INTEGRATION)
+             ======================================================== -->
+        <section class="landing-section section-alt" id="contact">
+            <div class="section-header">
+                <span class="section-tag">GET IN TOUCH</span>
+                <h2 class="section-title">REQUEST A DEMO / CONTACT US</h2>
+                <p class="section-desc">
+                    Interested in deploying SENTINEL for your organization, cyber cell, or institution? 
+                    Submit an inquiry and our forensics engineering team will be in touch.
+                </p>
+            </div>
+
+            <div class="contact-section-wrap">
+                <!-- Contact Details Card -->
+                <div class="contact-info-card">
+                    <h3 style="font-size: 1.4rem; margin-bottom: 12px;">SENTINEL Investigation Operations</h3>
+                    <p style="color: var(--landing-text-dim); line-height: 1.6; font-size: 0.95rem;">
+                        Secure contact channel backed by our dedicated Nodemailer dispatch pipeline. 
+                        Inquiries are routed directly to our investigative team.
+                    </p>
+
+                    <div class="contact-info-list">
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon"><i class="fa-solid fa-envelope"></i></div>
+                            <div>
+                                <div class="contact-info-title">Secure Dispatch Email</div>
+                                <div class="contact-info-desc">investigations@sentinel-forensics.org</div>
+                            </div>
+                        </div>
+
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                            <div>
+                                <div class="contact-info-title">Problem Statement CX0203</div>
+                                <div class="contact-info-desc">The Aadhaar Look-Alike &bull; MUSA CodeX Hackathon</div>
+                            </div>
+                        </div>
+
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon"><i class="fa-solid fa-clock"></i></div>
+                            <div>
+                                <div class="contact-info-title">Operation Hours</div>
+                                <div class="contact-info-desc">24/7 Automated Dispatch & Evaluation System</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nodemailer Contact Form -->
+                <div class="contact-form-card">
+                    <form id="contactForm" novalidate>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="contactName">Full Name *</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-user"></i>
+                                    <input type="text" id="contactName" name="name" class="form-input" placeholder="e.g. Inspector Vikram" required minlength="2" maxlength="100">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="contactEmail">Official Email *</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-at"></i>
+                                    <input type="email" id="contactEmail" name="email" class="form-input" placeholder="name@agency.gov.in" required maxlength="120">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="contactOrg">Organization / Agency *</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-building-shield"></i>
+                                    <input type="text" id="contactOrg" name="organization" class="form-input" placeholder="e.g. Cyber Crime Unit" required minlength="2" maxlength="120">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="contactPhone">Phone Number (Optional)</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-phone"></i>
+                                    <input type="tel" id="contactPhone" name="phone" class="form-input" placeholder="+91 98765 43210" maxlength="30">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="contactSubject">Inquiry Subject *</label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-tag"></i>
+                                <input type="text" id="contactSubject" name="subject" class="form-input" placeholder="e.g. Platform Demonstration & Evaluation Request" required minlength="2" maxlength="150">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="contactMessage">Detailed Message *</label>
+                            <textarea id="contactMessage" name="message" class="form-input form-textarea" placeholder="Please describe your use case, evaluation requirements, or investigative environment..." required minlength="10" maxlength="3000"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-submit-contact" id="contactSubmitBtn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>SEND MESSAGE</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================================
+         FOOTER
+         ======================================================== -->
+    <footer class="landing-footer">
+        <div class="disclaimer-banner">
+            <strong>NOTICE & LEGAL DISCLAIMER:</strong> SENTINEL is an AI-powered document forensics screening prototype designed for research, screening assistance, and investigative demonstration. Results are based on visual, OCR, QR, typographic, and pixel-level image-forensic indicators. SENTINEL does not possess UIDAI database connectivity and does not issue official government credentials or absolute determinations of legal document authenticity.
+        </div>
+
+        <div class="footer-top-grid">
+            <div>
+                <div class="footer-brand-title">
+                    <img src="assets/sentinel-mark.png" alt="SENTINEL" class="sentinel-dynamic-mark" data-brand-variant="mark" style="height:26px; width:26px; object-fit:contain;">
+                    <span>SENTINEL</span>
+                </div>
+                <div class="footer-tagline-motto">TRUST THE EVIDENCE.</div>
+                <p style="font-size: 0.88rem; line-height: 1.6; color: var(--landing-text-dim);">
+                    AI-powered document forensics command center designed for synthetic identity detection and explainable risk analysis.
+                </p>
+                <div style="margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--orange);">
+                    Problem Statement CX0203 &bull; MUSA CodeX
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Platform</h4>
+                <div class="footer-links-list">
+                    <a href="analyze.html">Forensic Analysis</a>
+                    <a href="lab.html">Interactive Lab</a>
+                    <a href="compare.html">Comparison Engine</a>
+                    <a href="cases.html">Case Archive</a>
+                    <a href="reports.html">Forensic Reports</a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Investigation</h4>
+                <div class="footer-links-list">
+                    <a href="#problem">The Problem</a>
+                    <a href="#pillars">Forensic Pillars</a>
+                    <a href="#workflow">Workflow Pipeline</a>
+                    <a href="#risk-engine">Risk Engine</a>
+                    <a href="#security">Security & Hash</a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Access & Legal</h4>
+                <div class="footer-links-list">
+                    <a href="login.html">Investigator Login</a>
+                    <a href="register.html">Account Registration</a>
+                    <a href="#contact">Request Demo</a>
+                    <a href="https://github.com" target="_blank" rel="noopener">GitHub Repository</a>
+                    <a href="#security">Privacy & Terms</a>
                 </div>
             </div>
         </div>
-    </section>
 
-    <section class="section" style="background: rgba(0,0,0,0.3);">
-        <div class="grid-2">
-            <div class="card" style="border-color: var(--orange);">
-                <h3 style="color:var(--orange)"><i class="fa-solid fa-robot"></i> SENTINEL AI Assistant</h3>
-                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
-                    <strong style="color:var(--cyan)">Investigator:</strong> Why was this document flagged?
-                </div>
-                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 4px; border-left: 3px solid var(--orange);">
-                    <strong style="color:var(--orange)">SENTINEL:</strong> "The strongest contributing indicators were typography inconsistency (+15 risk) and image-forensics anomalies (+20 risk). The QR code was detected, but QR detection alone does not establish authenticity."
-                </div>
+        <div class="footer-bottom-bar">
+            <div>
+                &copy; 2026 SENTINEL Forensics. Built for MUSA CodeX Hackathon.
             </div>
             <div>
-                <h2 class="section-title">Context-Aware AI</h2>
-                <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6;">Interact directly with the forensic findings. The SENTINEL AI Assistant understands the specific analysis context, helping investigators quickly grasp complex visual signals without needing to be forensics experts.</p>
+                Engineered with HTML5, CSS3, JavaScript, Three.js & Node.js Nodemailer.
             </div>
-        </div>
-    </section>
-
-    <section id="workflow" class="section">
-        <div class="section-header">
-            <h2 class="section-title">The SENTINEL Approach</h2>
-            <p class="section-desc">A unified pipeline designed for investigative workflows.</p>
-        </div>
-        <div class="workflow">
-            <div class="step">
-                <div class="step-icon"><i class="fa-solid fa-upload"></i></div>
-                <div class="step-title">01. Upload</div>
-            </div>
-            <div class="step">
-                <div class="step-icon"><i class="fa-solid fa-file-export"></i></div>
-                <div class="step-title">02. Extract</div>
-            </div>
-            <div class="step">
-                <div class="step-icon"><i class="fa-solid fa-microscope"></i></div>
-                <div class="step-title">03. Analyze</div>
-            </div>
-            <div class="step">
-                <div class="step-icon"><i class="fa-solid fa-calculator"></i></div>
-                <div class="step-title">04. Score</div>
-            </div>
-            <div class="step">
-                <div class="step-icon"><i class="fa-solid fa-comment-dots"></i></div>
-                <div class="step-title">05. Explain</div>
-            </div>
-            <div class="step">
-                <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
-                <div class="step-title">06. Review</div>
-            </div>
-        </div>
-    </section>
-    
-    <section id="security" class="section" style="background: rgba(0,0,0,0.3); text-align:center;">
-        <h2 class="section-title">Privacy & Security</h2>
-        <p class="section-desc" style="margin-bottom: 40px;">Built for sensitive investigative environments.</p>
-        <div class="grid-3">
-            <div>
-                <i class="fa-solid fa-lock" style="font-size: 2rem; color: var(--cyan); margin-bottom: 15px;"></i>
-                <h4>Authenticated Access</h4>
-                <p class="text-muted">Strict access controls via JWT for all investigations.</p>
-            </div>
-            <div>
-                <i class="fa-solid fa-server" style="font-size: 2rem; color: var(--cyan); margin-bottom: 15px;"></i>
-                <h4>Local Processing</h4>
-                <p class="text-muted">Forensic analysis operates securely within the deployed environment.</p>
-            </div>
-            <div>
-                <i class="fa-solid fa-scale-balanced" style="font-size: 2rem; color: var(--cyan); margin-bottom: 15px;"></i>
-                <h4>Evidence-Based</h4>
-                <p class="text-muted">We provide forensic screening, not unauthorized UIDAI claims.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="section" style="text-align: center; padding: 100px 20px;">
-        <h2 class="section-title">Verify the evidence, not just the appearance.</h2>
-        <a href="login.html" class="btn-fill" style="display: inline-block; margin-top: 20px; padding: 15px 40px; font-size: 1.2rem;">START INVESTIGATION</a>
-    </section>
-
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <h2><i class="fa-solid fa-shield-halved"></i> SENTINEL</h2>
-                <p class="text-muted">AI-Powered Document Forensics</p>
-                <p class="text-muted" style="margin-top:5px; color:var(--cyan)">Trust the Evidence.</p>
-            </div>
-            <div class="footer-links">
-                <div>
-                    <strong style="color:var(--text-main); margin-bottom:10px;">Platform</strong>
-                    <a href="#capabilities">Capabilities</a>
-                    <a href="#workflow">Workflow</a>
-                    <a href="#security">Security</a>
-                </div>
-                <div>
-                    <strong style="color:var(--text-main); margin-bottom:10px;">Account</strong>
-                    <a href="login.html">Login</a>
-                    <a href="register.html">Register</a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>SENTINEL is a forensic screening prototype intended to assist investigation and document review. Results are based on available visual, OCR, QR and image-forensic indicators and should not be treated as official government authentication or a definitive determination of document authenticity.</p>
-            <p style="margin-top: 15px;">&copy; 2026 SENTINEL Forensics. MUSA CodeX Hackathon Prototype.</p>
         </div>
     </footer>
 
-    <!-- Three.js Implementation -->
-    <script>
-        // Only run Three.js on desktop to save mobile performance
-        if (window.innerWidth > 768) {
-            try {
-                initThreeJS();
-            } catch (e) {
-                console.error("Three.js initialization failed, using fallback.", e);
-                setupFallback();
-            }
-        } else {
-            setupFallback();
-        }
-
-        function setupFallback() {
-            const container = document.getElementById('canvas-container');
-            container.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; opacity:0.3;"><i class="fa-solid fa-fingerprint" style="font-size:20rem; color:var(--cyan);"></i></div>';
-        }
-
-        function initThreeJS() {
-            const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(renderer.domElement);
-
-            // Document Plane
-            const docGeometry = new THREE.PlaneGeometry(3, 4.5);
-            const docMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0x1DCED8, 
-                transparent: true, 
-                opacity: 0.1,
-                side: THREE.DoubleSide,
-                wireframe: true
-            });
-            const documentMesh = new THREE.Mesh(docGeometry, docMaterial);
-            
-            // Solid backing for document
-            const solidDocMat = new THREE.MeshBasicMaterial({
-                color: 0x05151a,
-                transparent: true,
-                opacity: 0.8,
-                side: THREE.DoubleSide
-            });
-            const solidDoc = new THREE.Mesh(docGeometry, solidDocMat);
-            solidDoc.position.z = -0.01;
-            documentMesh.add(solidDoc);
-
-            // Scanning Line
-            const scanGeometry = new THREE.PlaneGeometry(3.2, 0.05);
-            const scanMaterial = new THREE.MeshBasicMaterial({ color: 0xFF9D50, transparent: true, opacity: 0.8 });
-            const scanLine = new THREE.Mesh(scanGeometry, scanMaterial);
-            documentMesh.add(scanLine);
-
-            // Nodes/Markers
-            const nodes = new THREE.Group();
-            for(let i=0; i<5; i++) {
-                const nodeGeo = new THREE.CircleGeometry(0.1, 16);
-                const nodeMat = new THREE.MeshBasicMaterial({ color: 0x55E07E, transparent: true, opacity: 0.8 });
-                const node = new THREE.Mesh(nodeGeo, nodeMat);
-                node.position.set((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 4, 0.02);
-                
-                // Ring around node
-                const ringGeo = new THREE.RingGeometry(0.15, 0.17, 32);
-                const ringMat = new THREE.MeshBasicMaterial({ color: 0x55E07E, transparent: true, opacity: 0.5 });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                node.add(ring);
-                
-                nodes.add(node);
-            }
-            documentMesh.add(nodes);
-
-            // Positioning
-            documentMesh.rotation.y = -Math.PI / 6;
-            documentMesh.rotation.x = Math.PI / 12;
-            scene.add(documentMesh);
-
-            camera.position.z = 8;
-            camera.position.x = 0;
-
-            // Particles
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 200;
-            const posArray = new Float32Array(particlesCount * 3);
-            for(let i=0; i<particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 15;
-            }
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.05,
-                color: 0x1DCED8,
-                transparent: true,
-                opacity: 0.3
-            });
-            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particles);
-
-            // Mouse Interaction
-            let mouseX = 0;
-            let mouseY = 0;
-            document.addEventListener('mousemove', (event) => {
-                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-            });
-
-            window.addEventListener('resize', () => {
-                if(!container) return;
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-            });
-
-            let time = 0;
-            function animate() {
-                requestAnimationFrame(animate);
-                time += 0.01;
-
-                // Subtle float
-                documentMesh.position.y = Math.sin(time) * 0.2;
-                
-                // Scan line moving up and down
-                scanLine.position.y = Math.sin(time * 2) * 2.2;
-
-                // Pulse nodes
-                nodes.children.forEach((node, i) => {
-                    const scale = 1 + Math.sin(time * 3 + i) * 0.2;
-                    node.scale.set(scale, scale, 1);
-                });
-
-                // Mouse influence
-                documentMesh.rotation.y = -Math.PI / 6 + mouseX * 0.1;
-                documentMesh.rotation.x = Math.PI / 12 - mouseY * 0.1;
-                
-                particles.rotation.y = time * 0.05;
-
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-    </script>
+    <!-- Global Scripts -->
+    <script src="js/brand.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/landing-3d.js"></script>
+    <script src="js/landing.js"></script>
 </body>
 </html>

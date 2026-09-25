@@ -5,25 +5,42 @@
     bottom: 30px;
     right: 30px;
     background: var(--bg-card);
-    color: var(--cyan);
-    width: 65px;
-    height: 65px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
-    font-size: 26px;
     border: 1px solid var(--cyan);
     cursor: pointer;
     box-shadow: 0 0 20px rgba(29, 206, 216, 0.4);
     z-index: 1000;
-    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s, background 0.3s;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 0;
+    overflow: hidden;
 }
 
 .sentinel-ai-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(29, 206, 216, 0.6);
-    background: rgba(29, 206, 216, 0.1);
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(29, 206, 216, 0.7);
+    background: rgba(29, 206, 216, 0.12);
+}
+
+.sentinel-ai-btn-inner {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.sentinel-ai-btn-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
 }
 
 .sentinel-ai-panel {
@@ -49,22 +66,64 @@
 }
 
 .ai-header {
-    background: rgba(29, 206, 216, 0.12);
-    color: var(--cyan);
+    background: rgba(29, 206, 216, 0.08);
+    color: var(--text-main);
     padding: 12px 18px;
-    font-weight: bold;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(29, 206, 216, 0.3);
+    border-bottom: 1px solid rgba(29, 206, 216, 0.25);
+    backdrop-filter: blur(12px);
 }
 
 .ai-header-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+}
+
+.ai-header-logo-container {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(29, 206, 216, 0.12);
+    border: 1px solid rgba(29, 206, 216, 0.3);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    box-shadow: 0 0 10px rgba(29, 206, 216, 0.2);
+}
+
+.ai-header-logo-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.ai-header-titles {
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-header-title {
+    font-family: 'Outfit', sans-serif;
     font-size: 0.95rem;
-    letter-spacing: 0.5px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: 0.06em;
+    line-height: 1.1;
+}
+
+.ai-header-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
 }
 
 .ai-status-indicator {
@@ -75,6 +134,74 @@
     display: inline-block;
     box-shadow: 0 0 8px var(--success);
 }
+
+/* Copilot Avatar States: Normal, Thinking, Processing, Error */
+.ai-bot-avatar-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(29, 206, 216, 0.1);
+    border: 1px solid rgba(29, 206, 216, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    margin-bottom: 8px;
+    position: relative;
+    box-shadow: 0 0 8px rgba(29, 206, 216, 0.15);
+}
+
+.ai-bot-avatar-badge img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.ai-bot-avatar-badge.thinking {
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(29, 206, 216, 0.4);
+}
+
+.ai-scanning-ring {
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 1.5px solid transparent;
+    border-top-color: var(--cyan);
+    border-bottom-color: var(--cyan);
+    border-radius: 8px;
+    animation: rotateRing 1.4s linear infinite;
+}
+
+@keyframes rotateRing {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.ai-bot-avatar-badge.error {
+    border-color: var(--danger);
+    background: rgba(255, 77, 77, 0.1);
+}
+
+.ai-error-tag {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 900;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 6px var(--danger);
+}
+
 
 .ai-header-right {
     display: flex;

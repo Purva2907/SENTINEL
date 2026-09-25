@@ -10,6 +10,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Login</title>
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <link rel="shortcut icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -230,11 +234,13 @@
         <!-- Left Information Area -->
         <div class="auth-info-section">
             <div class="auth-brand">
-                <i class="fa-solid fa-shield-halved"></i>
-                <div class="auth-brand-text">
-                    <h2>SENTINEL</h2>
-                    <p>AI-Powered Document Forensics</p>
-                </div>
+                <a href="index.html" style="display:flex; align-items:center; gap:16px; text-decoration:none;">
+                    <img src="assets/sentinel-mark.png" alt="SENTINEL" class="sentinel-dynamic-mark" data-brand-variant="mark" style="height:48px; width:48px; object-fit:contain;">
+                    <div class="auth-brand-text">
+                        <h2>SENTINEL</h2>
+                        <p>AI-POWERED DOCUMENT FORENSICS</p>
+                    </div>
+                </a>
             </div>
 
             <div class="auth-hero-text">
@@ -278,8 +284,8 @@
         <div class="auth-form-section">
             <div class="auth-card">
                 
-                <div class="auth-brand-mobile">
-                    <i class="fa-solid fa-shield-halved"></i>
+                <div class="auth-brand-mobile" style="display:flex; flex-direction:column; align-items:center; margin-bottom:20px;">
+                    <img src="assets/sentinel-mark.png" alt="SENTINEL" class="sentinel-dynamic-mark" data-brand-variant="mark" style="height:44px; width:44px; object-fit:contain; margin-bottom:8px;">
                     <h2>SENTINEL</h2>
                 </div>
 
@@ -376,5 +382,6 @@
             }
         });
     </script>
+    <script src="js/brand.js"></script>
 </body>
 </html>

@@ -13,14 +13,25 @@ function initChatbot() {
     if (document.getElementById('sentinelAiPanel')) return;
 
     const html = `
-    <button class="sentinel-ai-btn" id="sentinelAiBtn" title="SENTINEL AI Assistant">
-        <i class="fa-solid fa-robot"></i>
+    <button class="sentinel-ai-btn" id="sentinelAiBtn" title="SENTINEL AI Copilot" aria-label="SENTINEL AI Copilot">
+        <div class="sentinel-ai-btn-inner">
+            <img src="assets/sentinel-mark.png" alt="S" class="ai-btn-mark-img sentinel-logo-dark" />
+            <img src="assets/sentinel-mark-light.png" alt="S" class="ai-btn-mark-img sentinel-logo-light" />
+        </div>
+        <div class="ai-btn-glow-ring"></div>
     </button>
     
     <div class="sentinel-ai-panel" id="sentinelAiPanel">
         <div class="ai-header">
             <div class="ai-header-left">
-                <i class="fa-solid fa-shield-halved"></i> SENTINEL AI
+                <div class="ai-header-logo-container">
+                    <img src="assets/sentinel-mark.png" alt="S" class="ai-header-mark-img sentinel-logo-dark" />
+                    <img src="assets/sentinel-mark-light.png" alt="S" class="ai-header-mark-img sentinel-logo-light" />
+                </div>
+                <div class="ai-header-titles">
+                    <span class="ai-header-title">SENTINEL AI</span>
+                    <span class="ai-header-subtitle">FORENSIC COPILOT</span>
+                </div>
                 <span class="ai-status-indicator" title="Context-aware"></span>
             </div>
             <div class="ai-header-right">
@@ -40,12 +51,16 @@ function initChatbot() {
         
         <div class="ai-body" id="aiChatBody">
             <div class="ai-msg ai-msg-bot">
+                <div class="ai-bot-avatar-badge" title="SENTINEL AI">
+                    <img src="assets/sentinel-mark.png" alt="S" class="sentinel-logo-dark" />
+                    <img src="assets/sentinel-mark-light.png" alt="S" class="sentinel-logo-light" />
+                </div>
                 <div class="ai-msg-content">
                     <p>Hello! I am <strong>SENTINEL AI</strong>, your digital forensic investigation copilot.</p>
                     <p style="margin-top:6px;">I can converse like ChatGPT and assist across your entire docket:</p>
                     <ul>
                         <li><strong>Multi-Case Cross Referencing</strong>: Ask about any of your cases by name or ID (or compare two cases)!</li>
-                        <li><strong>Forensic Explainability</strong>: Drill down into 52 risk score, ELA heatmaps, typography, and QR codes.</li>
+                        <li><strong>Forensic Explainability</strong>: Drill down into risk scores, ELA heatmaps, typography, and QR codes.</li>
                         <li><strong>Demographic Extraction</strong>: Query registered name, DOB, address, Aadhaar/PAN, or virtual ID.</li>
                         <li><strong>Executive Summaries</strong>: Ask <em>"Give me summary"</em> anytime for a full dossier.</li>
                     </ul>
@@ -238,9 +253,20 @@ function attachChatEvents() {
         input.value = '';
         body.scrollTop = body.scrollHeight;
 
-        // Append loading
+        // Append loading with S mark + rotating scanning ring
         const loadingId = 'msg-' + Date.now();
-        body.innerHTML += `<div class="ai-msg ai-msg-bot ai-loading-dots" id="${loadingId}"><i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...</div>`;
+        body.innerHTML += `
+            <div class="ai-msg ai-msg-bot ai-msg-thinking" id="${loadingId}">
+                <div class="ai-bot-avatar-badge thinking" title="SENTINEL AI - Analyzing">
+                    <img src="assets/sentinel-mark.png" alt="S" class="sentinel-logo-dark" />
+                    <img src="assets/sentinel-mark-light.png" alt="S" class="sentinel-logo-light" />
+                    <div class="ai-scanning-ring"></div>
+                </div>
+                <div class="ai-msg-content">
+                    <span class="ai-thinking-text"><i class="fa-solid fa-circle-notch fa-spin"></i> Correlating forensic signals...</span>
+                </div>
+            </div>
+        `;
         body.scrollTop = body.scrollHeight;
 
         const { context, caseId } = getForensicContext();
@@ -273,14 +299,32 @@ function attachChatEvents() {
             } else {
                 const loadingElem = document.getElementById(loadingId);
                 if (loadingElem) {
-                    loadingElem.outerHTML = `<div class="ai-msg ai-msg-bot" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Error: ${escapeHTML(res.detail || 'Could not connect to AI')}</div>`;
+                    loadingElem.outerHTML = `
+                        <div class="ai-msg ai-msg-bot ai-msg-error" style="color:var(--danger)">
+                            <div class="ai-bot-avatar-badge error">
+                                <img src="assets/sentinel-mark.png" alt="S" class="sentinel-logo-dark" />
+                                <img src="assets/sentinel-mark-light.png" alt="S" class="sentinel-logo-light" />
+                                <span class="ai-error-tag">!</span>
+                            </div>
+                            <div class="ai-msg-content"><i class="fa-solid fa-triangle-exclamation"></i> Error: ${escapeHTML(res.detail || 'Could not connect to AI')}</div>
+                        </div>
+                    `;
                 }
                 chatHistory.pop();
             }
         } catch(e) {
             const loadingElem = document.getElementById(loadingId);
             if (loadingElem) {
-                loadingElem.outerHTML = `<div class="ai-msg ai-msg-bot" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Network disconnected.</div>`;
+                loadingElem.outerHTML = `
+                    <div class="ai-msg ai-msg-bot ai-msg-error" style="color:var(--danger)">
+                        <div class="ai-bot-avatar-badge error">
+                            <img src="assets/sentinel-mark.png" alt="S" class="sentinel-logo-dark" />
+                            <img src="assets/sentinel-mark-light.png" alt="S" class="sentinel-logo-light" />
+                            <span class="ai-error-tag">!</span>
+                        </div>
+                        <div class="ai-msg-content"><i class="fa-solid fa-triangle-exclamation"></i> Network disconnected.</div>
+                    </div>
+                `;
             }
             chatHistory.pop();
         }
@@ -301,6 +345,10 @@ function renderBotMessage(text) {
     const formatted = formatAiResponse(text);
     return `
         <div class="ai-msg ai-msg-bot">
+            <div class="ai-bot-avatar-badge" title="SENTINEL AI">
+                <img src="assets/sentinel-mark.png" alt="S" class="sentinel-logo-dark" />
+                <img src="assets/sentinel-mark-light.png" alt="S" class="sentinel-logo-light" />
+            </div>
             <div class="ai-msg-actions">
                 <button class="ai-copy-btn" title="Copy response"><i class="fa-regular fa-copy"></i></button>
             </div>
