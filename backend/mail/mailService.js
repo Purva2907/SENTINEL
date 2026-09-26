@@ -345,6 +345,98 @@ app.post('/api/contact', rateLimiter, async (req, res) => {
   }
 });
 
+// Dedicated Password Reset Email Endpoint
+app.post('/api/mail/password-reset', rateLimiter, async (req, res) => {
+  try {
+    let { email, resetUrl, recipientName } = req.body || {};
+
+    email = sanitizeString(email);
+    recipientName = sanitizeString(recipientName);
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+    }
+
+    if (!resetUrl || typeof resetUrl !== 'string' || (!resetUrl.startsWith('http://') && !resetUrl.startsWith('https://'))) {
+      return res.status(400).json({ success: false, error: 'A valid reset URL is required.' });
+    }
+
+    const senderFrom = process.env.SMTP_USER || '"SENTINEL Forensics" <no-reply@sentinel-forensics.org>';
+    const transporter = await getTransporter();
+
+    const mailOptions = {
+      from: senderFrom,
+      to: email,
+      subject: 'SENTINEL — Password Reset Request',
+      text: `Hello${recipientName ? ' ' + recipientName : ''},\n\nWe received a request to reset the password for your SENTINEL account.\n\nClick the link below to create a new password:\n${resetUrl}\n\nThis link expires in 15 minutes.\n\nIf you did not request this reset, you can safely ignore this email.\n\nSENTINEL\nAI-Powered Document Forensics\nTrust the Evidence.`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #0b0f19; color: #e2e8f0; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: #111827; border: 1px solid #1f2937; border-radius: 8px; overflow: hidden; }
+            .header { background: #030712; padding: 24px; border-bottom: 2px solid #1DCED8; text-align: left; }
+            .header h1 { margin: 0; font-size: 20px; color: #1DCED8; letter-spacing: 1.5px; }
+            .header p { margin: 6px 0 0; color: #94a3b8; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+            .content { padding: 32px 28px; line-height: 1.6; font-size: 14px; color: #cbd5e1; }
+            .btn-container { text-align: center; margin: 30px 0; }
+            .btn-reset { display: inline-block; background-color: #1DCED8; color: #080d14 !important; font-weight: 700; font-size: 14px; letter-spacing: 1px; text-decoration: none; padding: 14px 32px; border-radius: 6px; text-transform: uppercase; box-shadow: 0 4px 15px rgba(29, 206, 216, 0.3); }
+            .notice { background: rgba(255, 157, 80, 0.08); border-left: 3px solid #FF9D50; padding: 12px 16px; margin: 20px 0; border-radius: 4px; font-size: 13px; color: #f8fafc; }
+            .alt-link { font-size: 12px; color: #64748b; word-break: break-all; margin-top: 20px; }
+            .footer { padding: 18px 24px; background: #030712; font-size: 12px; color: #64748b; text-align: center; border-top: 1px solid #1f2937; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🛡️ SENTINEL FORENSICS</h1>
+              <p>SECURITY & ACCESS CONTROL</p>
+            </div>
+            <div class="content">
+              <p>Hello${recipientName ? ' <strong>' + recipientName + '</strong>' : ''},</p>
+              <p>We received a request to reset the password for your SENTINEL account.</p>
+              <div class="btn-container">
+                <a href="${resetUrl}" class="btn-reset" target="_blank">RESET PASSWORD</a>
+              </div>
+              <div class="notice">
+                <strong>Security Notice:</strong> This link expires in <strong>15 minutes</strong>. If you did not request this reset, you can safely ignore this email. Your current password remains unchanged.
+              </div>
+              <p class="alt-link">If the button above does not work, copy and paste this link into your browser:<br><a href="${resetUrl}" style="color: #1DCED8;">${resetUrl}</a></p>
+              <p style="margin-top: 30px;">Sincerely,<br><strong>SENTINEL Forensics Operations</strong><br><em>Trust the Evidence.</em></p>
+            </div>
+            <div class="footer">
+              &copy; 2026 SENTINEL Forensics &bull; AI-Powered Document Forensics
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    if (result && result.messageId) {
+      console.log(`[MailService] Sent password reset email to ${email}, ID: ${result.messageId}`);
+      if (nodemailer.getTestMessageUrl && result) {
+        const previewUrl = nodemailer.getTestMessageUrl(result);
+        if (previewUrl) console.log(`[MailService] Ethereal Reset Preview URL: ${previewUrl}`);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Password reset email sent successfully.'
+    });
+
+  } catch (err) {
+    console.error('[MailService Reset Error]', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Unable to send password reset email. Please try again.'
+    });
+  }
+});
+
 // Start Server if run directly
 if (require.main === module) {
   app.listen(PORT, () => {
@@ -353,6 +445,7 @@ if (require.main === module) {
     console.log(`📡 Endpoints:`);
     console.log(`   - GET  http://localhost:${PORT}/health`);
     console.log(`   - POST http://localhost:${PORT}/api/contact`);
+    console.log(`   - POST http://localhost:${PORT}/api/mail/password-reset`);
     console.log(`===============================================`);
   });
 }

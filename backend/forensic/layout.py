@@ -85,9 +85,9 @@ def analyze_layout(image_path: str, ocr_result: dict = None, qr_result: dict = N
         elif left_align_anomaly:
             score = 75
             risk_contrib = 6
-            findings.append("Minor field alignment drift detected relative to standard template column.")
+            findings.append("Minor field alignment drift detected relative to dominant column margins.")
         else:
-            findings.append("Standard field margins and uniform line spacing.")
+            findings.append("Internal layout consistency observed across margins and line spacing.")
             
         return {
             "score": score,

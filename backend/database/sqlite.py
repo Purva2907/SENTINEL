@@ -2,13 +2,21 @@ import sqlite3
 import json
 import os
 
-DB_PATH = os.environ.get("SQLITE_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "..", "data", "sentinel.db"))
+def get_db_path() -> str:
+    return os.environ.get(
+        "SQLITE_DB_PATH",
+        os.path.join(os.path.dirname(__file__), "..", "..", "data", "sentinel.db")
+    )
+
+# Backwards compatibility accessor
+DB_PATH = get_db_path()
 
 def get_db():
-    db_dir = os.path.dirname(DB_PATH)
+    current_path = get_db_path()
+    db_dir = os.path.dirname(current_path)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(current_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -133,6 +141,25 @@ def init_sqlite():
             FOREIGN KEY (case_id) REFERENCES cases (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
+    ''')
+
+    # Password Reset Tokens Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            token_hash TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            used INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_reset_token_hash ON password_reset_tokens (token_hash)
+    ''')
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_reset_user_id ON password_reset_tokens (user_id)
     ''')
     
     conn.commit()

@@ -18,7 +18,16 @@ METADATA_FILE = os.path.join(DATASET_DIR, "metadata.json")
 
 @pytest.fixture
 def auth_token():
-    return create_access_token(data={"sub": "testuser", "id": "user123"})
+    client.post("/api/auth/register", json={
+        "email": "dataset_tester@sentinel.org",
+        "password": "Password123!",
+        "name": "Dataset Tester"
+    })
+    res = client.post("/api/auth/login", json={
+        "email": "dataset_tester@sentinel.org",
+        "password": "Password123!"
+    })
+    return res.json()["access_token"]
 
 @pytest.fixture
 def auth_headers(auth_token):

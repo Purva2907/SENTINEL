@@ -229,13 +229,39 @@ python -m uvicorn app:app --app-dir backend --host 0.0.0.0 --port 8000 --reload
 In a separate terminal, serve the frontend:
 
 ```bash
-# Using Python's built-in HTTP server:
-python -m http.server 3000 --directory frontend
+# Option A (Recommended): Using Node.js npx serve (respects serve.json config):
+npx -y serve frontend -l 3000
 
-# OR using Node.js npx:
-npx serve frontend -l 3000
+# Option B: Using npm script from project root:
+npm run frontend
+
+# Option C: Using Python built-in HTTP server:
+python -m http.server 3000 --directory frontend
 ```
+
 Open your browser at **[http://localhost:3000](http://localhost:3000)** to access the landing page and investigator portal.
+
+#### Key Frontend Workstations:
+- **Landing Page & 3D Hero:** [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/index.html](http://localhost:3000/index.html)
+- **Investigator Login:** [http://localhost:3000/login.html](http://localhost:3000/login.html)
+- **Forgot Password Recovery:** [http://localhost:3000/forgot-password.html](http://localhost:3000/forgot-password.html)
+- **Forensic Intake & Analysis:** [http://localhost:3000/analyze.html](http://localhost:3000/analyze.html)
+- **Document Comparison:** [http://localhost:3000/compare.html](http://localhost:3000/compare.html)
+- **Synthetic Identity Lab:** [http://localhost:3000/lab.html](http://localhost:3000/lab.html)
+- **Forensic Dashboard:** [http://localhost:3000/dashboard.html](http://localhost:3000/dashboard.html)
+
+---
+
+### Step 6: Launch Mail Microservice (Optional for Email Delivery)
+
+To dispatch password recovery and contact form emails via Nodemailer:
+
+```bash
+cd backend/mail
+npm install
+npm start
+```
+*Runs on port 5001. If SMTP credentials are not configured in `.env`, the service automatically initializes an Ethereal development mailbox with console preview URLs.*
 
 ---
 
@@ -408,6 +434,8 @@ SENTINEL-MUSA/
 ## 🔒 Security & Forensic Integrity
 
 - **Cryptographic User Authentication:** Industry-standard bcrypt password hashing with short-lived JWT access tokens.
+- **Secure Password Reset & Nodemailer Service:** Multi-tiered password recovery via dedicated microservice. Generates cryptographically secure one-time tokens (`secrets.token_urlsafe(48)`), stores only SHA-256 hashes with 15-minute expiration, enforces strict single-use invalidation, anti-enumeration generic responses, and rate limiting (max 3/15 min).
+- **Autonomous Cinematic 3D Forensic Showcase:** Autonomous continuous Three.js document rotation (0.12 rad/s) driven by frame delta time with subtle holographic X-axis breathing, stationary forensic floating panels, complete isolation from cursor movement, and accessible `prefers-reduced-motion` compliance.
 - **Data Sanitization & Containment:** File uploads are inspected in isolated memory buffers; mime types and image dimensional boundaries are strictly enforced.
 - **Audit-Proof Immutability:** Case records and analysis JSON payloads are locked upon creation; opening existing cases never recalculates or shifts historical risk scores.
 - **Privacy & GDPR Compliance:** All image processing runs locally on the application host; documents are never transmitted to external third parties for forensic evaluation.

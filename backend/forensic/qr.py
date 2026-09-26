@@ -89,7 +89,7 @@ def detect_qr_pattern_regions(gray: np.ndarray) -> list:
     except Exception:
         return []
 
-def analyze_qr(image_path: str) -> dict:
+def analyze_qr(image_path: str, document_type: str = None, expected_qr: bool = None) -> dict:
     """
     Detect and decode QR code in the image using multi-stage detection:
     1. Primary OpenCV QRCodeDetector on original image, grayscale, and thresholded representations.
@@ -194,10 +194,25 @@ def analyze_qr(image_path: str) -> dict:
                 detected_bbox = detected_patterns[0]["bbox"]
 
         # State Differentiation
+        # Check if QR is expected for this document type
+        if expected_qr is None:
+            if document_type:
+                dt_lower = document_type.lower()
+                # Document types with standardized machine-readable QR codes
+                if any(k in dt_lower for k in ("aadhaar", "uidai", "synthetic", "e-pan", "digital driving", "smart card")):
+                    expected_qr = True
+                else:
+                    expected_qr = False
+            else:
+                expected_qr = True
+
         if decoded_data:
             consistency = "Valid"
             risk_contribution = 0
-            findings = ["QR code detected and successfully decoded."]
+            findings = [
+                "QR payload decoded successfully.",
+                "Payload authenticity was not cryptographically verified."
+            ]
             
             if len(decoded_data) < 3:
                 consistency = "Suspicious (Truncated)"
@@ -230,36 +245,51 @@ def analyze_qr(image_path: str) -> dict:
                 "detected": True,
                 "decoded": False,
                 "detected_count": qr_count,
-                "data_preview": f"{qr_count} Secure QR Code{plural} Detected (High-Density / Signed)",
+                "data_preview": f"{qr_count} 2D Matrix Pattern{plural} Detected (Undecodable)",
                 "payload": "",
-                "consistency": f"Detected ({qr_count} QR Code{plural})",
+                "consistency": f"Detected ({qr_count} 2D Matrix Pattern{plural})",
                 "bbox": detected_bbox,
                 "bboxes": all_boxes,
                 "status": "DETECTED_NOT_DECODED",
                 "risk_contribution": 5,
                 "findings": [
-                    f"{qr_count} secure high-density QR code{plural} detected on document canvas.",
-                    "Contains high-density digitally signed / compressed matrix (Govt / UIDAI secure standard).",
-                    "Direct optical decoding limited by screen downsampling or cryptographic encryption."
+                    "2D matrix detected but payload could not be decoded.",
+                    "Payload authenticity was not cryptographically verified."
                 ]
             }
         else:
-            return {
-                "detected": False,
-                "decoded": False,
-                "detected_count": 0,
-                "data_preview": "None",
-                "payload": "",
-                "consistency": "Not found",
-                "bbox": None,
-                "bboxes": [],
-                "status": "NOT_DETECTED",
-                "risk_contribution": 15,
-                "findings": [
-                    "No QR code pattern detected on document canvas.",
-                    "Official document templates typically mandate embedded machine-readable barcodes."
-                ]
-            }
+            if not expected_qr:
+                return {
+                    "detected": False,
+                    "decoded": False,
+                    "detected_count": 0,
+                    "data_preview": "Not Applicable",
+                    "payload": "",
+                    "consistency": "Not Applicable",
+                    "bbox": None,
+                    "bboxes": [],
+                    "status": "NOT_APPLICABLE",
+                    "risk_contribution": 0,
+                    "findings": [
+                        "QR code presence is not mandated for this document specification."
+                    ]
+                }
+            else:
+                return {
+                    "detected": False,
+                    "decoded": False,
+                    "detected_count": 0,
+                    "data_preview": "None",
+                    "payload": "",
+                    "consistency": "Not found",
+                    "bbox": None,
+                    "bboxes": [],
+                    "status": "NOT_DETECTED",
+                    "risk_contribution": 15,
+                    "findings": [
+                        "No QR code pattern detected on document canvas."
+                    ]
+                }
             
     except Exception as e:
         return {

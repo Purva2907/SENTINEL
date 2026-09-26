@@ -92,6 +92,35 @@ async function runTests() {
       console.assert(validRes.body.message === 'Message sent successfully.', 'Correct success message');
       console.log('✓ Valid contact request processed successfully');
 
+      // 5. Password Reset Validation Check
+      console.log('Test 5: Password reset validation checks');
+      const badResetRes = await makeRequest({
+        hostname: 'localhost',
+        port: 5099,
+        path: '/api/mail/password-reset',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }, { email: 'bad-email', resetUrl: 'invalid-url' });
+      console.assert(badResetRes.status === 400, `Should return 400 on invalid reset payload, got ${badResetRes.status}`);
+      console.log('✓ Invalid password reset input rejected');
+
+      // 6. Valid Password Reset Submission
+      console.log('Test 6: Valid password reset email dispatch');
+      const validResetRes = await makeRequest({
+        hostname: 'localhost',
+        port: 5099,
+        path: '/api/mail/password-reset',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }, {
+        email: 'officer.test@sentinel-forensics.org',
+        resetUrl: 'http://localhost:3000/reset-password.html?token=test-mock-token-xyz123',
+        recipientName: 'Lead Investigator'
+      });
+      console.assert(validResetRes.status === 200, `Should return 200 on valid reset request, got ${validResetRes.status}`);
+      console.assert(validResetRes.body.success === true, 'success should be true');
+      console.log('✓ Valid password reset request processed successfully');
+
       console.log('\n=== ALL MAIL SERVICE TESTS PASSED! ===');
     } catch (e) {
       console.error('Test execution error:', e);

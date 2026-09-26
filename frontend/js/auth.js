@@ -1,4 +1,67 @@
-const API_BASE = 'http://localhost:8000/api';
+// Configurable API base origin
+function getApiBase() {
+    if (window.__SENTINEL_API_BASE__) return window.__SENTINEL_API_BASE__;
+    try {
+        const stored = localStorage.getItem('SENTINEL_API_BASE');
+        if (stored) return stored;
+    } catch (e) {}
+    // If hosted on same port or reverse-proxied production host
+    if (window.location.port === '8000' || (!window.location.port && window.location.protocol.startsWith('http'))) {
+        return `${window.location.origin}/api`;
+    }
+    const host = window.location.hostname || 'localhost';
+    return `http://${host}:8000/api`;
+}
+
+const API_BASE = getApiBase();
+window.API_BASE = API_BASE;
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+window.escapeHtml = escapeHtml;
+
+function renderAvatarSafely(container, av, name = 'I') {
+    if (!container) return;
+    container.replaceChildren();
+    if (!av) {
+        container.style.background = 'linear-gradient(135deg, var(--orange, #e05a10), #e67e22)';
+        container.textContent = (name || 'I').charAt(0).toUpperCase();
+        return;
+    }
+    if (av.startsWith('data:image/')) {
+        const img = document.createElement('img');
+        img.src = av;
+        img.alt = 'User Avatar';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '50%';
+        img.style.display = 'block';
+        container.style.background = 'transparent';
+        container.style.overflow = 'hidden';
+        container.appendChild(img);
+    } else if (av.startsWith('icon:')) {
+        const parts = av.replace('icon:', '').split('|');
+        const iconClass = (parts[0] || 'fa-user-shield').replace(/[^a-zA-Z0-9_-]/g, '');
+        const bg = parts[1] || 'linear-gradient(135deg, var(--orange, #e05a10), #e67e22)';
+        container.style.background = bg;
+        container.style.overflow = 'hidden';
+        if (iconClass === 'initials') {
+            container.textContent = (name || 'I').charAt(0).toUpperCase();
+        } else {
+            const icon = document.createElement('i');
+            icon.className = `fa-solid ${iconClass}`;
+            container.appendChild(icon);
+        }
+    } else {
+        container.textContent = (name || 'I').charAt(0).toUpperCase();
+    }
+}
+window.renderAvatarSafely = renderAvatarSafely;
 
 function getToken() {
     return localStorage.getItem('token');
@@ -60,23 +123,7 @@ async function checkAuth() {
             const topAv = document.getElementById('topAvatar');
             if (topAv) {
                 const av = user.avatar || localStorage.getItem('sentinel_avatar');
-                if (av && (av.startsWith('data:image/') || av.startsWith('http'))) {
-                    topAv.innerHTML = `<img src="${av}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;">`;
-                    topAv.style.background = 'transparent';
-                    topAv.style.overflow = 'hidden';
-                } else if (av && av.startsWith('icon:')) {
-                    const parts = av.replace('icon:', '').split('|');
-                    const iconClass = parts[0] || 'fa-user-shield';
-                    const bg = parts[1] || 'linear-gradient(135deg, var(--orange), #e67e22)';
-                    topAv.style.background = bg;
-                    topAv.style.overflow = 'hidden';
-                    if (iconClass === 'initials') {
-                        const name = user.name || 'I';
-                        topAv.innerText = name.charAt(0).toUpperCase();
-                    } else {
-                        topAv.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
-                    }
-                }
+                renderAvatarSafely(topAv, av, user.name);
             }
             return user;
         } else {

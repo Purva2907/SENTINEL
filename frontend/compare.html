@@ -87,26 +87,388 @@
         .upload-zone {
             border: 2px dashed var(--shell-border);
             border-radius: 8px;
-            padding: 35px 20px;
+            padding: 38px 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            background: rgba(0,0,0,0.2);
+            transition: all 0.25s ease;
+            background: rgba(0, 0, 0, 0.2);
+            position: relative;
         }
         .upload-zone:hover {
             border-color: var(--cyan);
             background: rgba(29, 206, 216, 0.04);
         }
-        .file-preview {
-            display: none;
-            text-align: center;
-            margin-top: 15px;
+        .upload-zone.drag-over {
+            border-color: var(--cyan);
+            background: rgba(29, 206, 216, 0.12);
+            box-shadow: 0 0 16px rgba(29, 206, 216, 0.25);
+            transform: scale(0.995);
         }
-        .file-preview img {
-            max-height: 180px;
-            max-width: 100%;
-            border-radius: 4px;
+        .upload-zone-icon {
+            font-size: 2.4rem;
+            margin-bottom: 12px;
+            display: inline-block;
+            transition: transform 0.2s ease;
+        }
+        .upload-zone:hover .upload-zone-icon {
+            transform: translateY(-2px);
+        }
+        .upload-zone-title {
+            font-weight: 600;
+            font-size: 0.98rem;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+        .upload-zone-sub {
+            font-size: 0.8rem;
+        }
+
+        /* Compact Forensic Evidence Card */
+        .evidence-file-card {
+            background: rgba(10, 14, 22, 0.7);
             border: 1px solid var(--shell-border);
+            border-radius: 8px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        [data-theme="light"] .evidence-file-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+        }
+        .evidence-file-card.specimen-a-card {
+            border-left: 3px solid var(--cyan);
+        }
+        .evidence-file-card.specimen-b-card {
+            border-left: 3px solid var(--orange);
+        }
+        .evidence-file-card:hover {
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+        }
+        .evidence-card-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .evidence-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .specimen-a-accent {
+            background: rgba(29, 206, 216, 0.12);
+            border: 1px solid rgba(29, 206, 216, 0.3);
+            color: var(--cyan);
+        }
+        .specimen-b-accent {
+            background: rgba(255, 157, 80, 0.12);
+            border: 1px solid rgba(255, 157, 80, 0.3);
+            color: var(--orange);
+        }
+        .evidence-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .evidence-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+        .evidence-kicker {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid var(--shell-border);
+        }
+        .evidence-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--green);
+            background: rgba(85, 224, 126, 0.12);
+            border: 1px solid rgba(85, 224, 126, 0.28);
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .status-pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulseDot 2s infinite ease-in-out;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .evidence-filename {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', -apple-system, monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            margin-bottom: 4px;
+        }
+        .evidence-meta-row {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+        }
+        .evidence-card-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid var(--shell-border);
+            flex-wrap: wrap;
+        }
+        .evidence-action-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .evidence-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 7px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--shell-border);
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--text-main);
+            text-decoration: none;
+        }
+        .evidence-btn:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: 2px;
+        }
+        .evidence-btn-view {
+            background: rgba(29, 206, 216, 0.15);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            font-weight: 600;
+            padding: 7px 18px;
+        }
+        .evidence-btn-view:hover {
+            background: var(--cyan);
+            color: #080d14;
+            box-shadow: 0 0 14px rgba(29, 206, 216, 0.4);
+        }
+        .evidence-btn-replace:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .evidence-btn-remove {
+            background: rgba(255, 77, 77, 0.1);
+            border-color: rgba(255, 77, 77, 0.28);
+            color: var(--danger);
+            padding: 7px 11px;
+        }
+        .evidence-btn-remove:hover {
+            background: rgba(255, 77, 77, 0.25);
+            border-color: var(--danger);
+        }
+        .evidence-btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--shell-border);
+        }
+        .evidence-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Reusable Forensic Preview Modal */
+        .specimen-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            background: rgba(5, 8, 14, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .specimen-modal-container {
+            background: #090e17;
+            border: 1px solid var(--cyan);
+            border-radius: 10px;
+            max-width: 980px;
+            width: 100%;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 25px rgba(29, 206, 216, 0.15);
+            overflow: hidden;
+            animation: modalScaleUp 0.2s ease-out;
+        }
+        @keyframes modalScaleUp {
+            from { transform: scale(0.96); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        [data-theme="light"] .specimen-modal-container {
+            background: #ffffff;
+            border-color: rgba(29, 206, 216, 0.4);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        }
+        .specimen-modal-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--shell-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.25);
+        }
+        [data-theme="light"] .specimen-modal-header {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .specimen-modal-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--cyan);
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 3px;
+        }
+        .specimen-modal-filename {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 720px;
+        }
+        .specimen-modal-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 3px;
+        }
+        .specimen-modal-close-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--shell-border);
+            color: var(--text-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .specimen-modal-close-btn:hover {
+            background: rgba(255, 77, 77, 0.15);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .specimen-modal-viewport {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle, rgba(16, 24, 38, 0.6) 0%, rgba(5, 9, 15, 0.95) 100%);
+            min-height: 300px;
+        }
+        [data-theme="light"] .specimen-modal-viewport {
+            background: #f4f6f9;
+        }
+        .specimen-modal-canvas {
+            max-width: 100%;
+            max-height: 65vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .specimen-modal-image {
+            max-width: 100%;
+            max-height: 65vh;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid var(--shell-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .specimen-modal-footer {
+            padding: 12px 22px;
+            border-top: 1px solid var(--shell-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.25);
+        }
+        [data-theme="light"] .specimen-modal-footer {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .specimen-modal-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+        .specimen-modal-hint kbd {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--shell-border);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            color: var(--text-main);
+            font-family: monospace;
+        }
+        @media (max-width: 600px) {
+            .evidence-card-content { flex-direction: column; }
+            .evidence-card-actions { flex-direction: column; align-items: stretch; }
+            .evidence-action-group { width: 100%; justify-content: space-between; }
+            .specimen-modal-filename { max-width: 200px; }
+            .specimen-modal-header { flex-direction: row; }
         }
         .action-bar {
             display: flex;
@@ -337,43 +699,95 @@
                 <!-- UPLOAD SPECIMENS SECTION -->
                 <div id="uploadModeContainer">
                     <div class="compare-inputs-grid">
-                        <div class="specimen-card">
+                        <div class="specimen-card" id="cardA">
                             <div class="specimen-header">
                                 <div>
                                     <strong style="font-size:1.05rem;">Specimen A (Reference / Baseline)</strong>
-                                    <div class="text-muted" style="font-size:0.85rem;">Primary specimen</div>
+                                    <div class="text-muted" style="font-size:0.85rem;">Primary baseline reference</div>
                                 </div>
                                 <span class="specimen-tag">SPECIMEN-A</span>
                             </div>
-                            <div class="upload-zone" onclick="document.getElementById('fileA').click()">
-                                <i class="fa-solid fa-file-arrow-up" style="font-size:2.4rem; color:var(--cyan); margin-bottom:10px;"></i>
-                                <p style="font-weight:500; margin-bottom:4px;">Select Specimen A</p>
-                                <span class="text-muted" style="font-size:0.8rem;">PNG, JPG, TIFF up to 15MB</span>
+                            <div class="upload-zone" id="uploadZoneA" onclick="document.getElementById('fileA').click()">
+                                <i class="fa-solid fa-file-arrow-up upload-zone-icon" style="color:var(--cyan);"></i>
+                                <p class="upload-zone-title">Upload Specimen A</p>
+                                <span class="upload-zone-sub text-muted">PNG, JPG, TIFF up to 15MB</span>
                                 <input type="file" id="fileA" accept="image/*" style="display:none;" onchange="handleFileSelect('A', event)">
                             </div>
-                            <div class="file-preview" id="previewA">
-                                <img id="imgPreviewA" alt="Specimen A">
-                                <div id="namePreviewA" style="font-size:0.85rem; margin-top:8px; color:var(--text-muted); font-family:monospace;"></div>
+                            <div class="evidence-file-card specimen-a-card" id="evidenceCardA" style="display:none;">
+                                <div class="evidence-card-content">
+                                    <div class="evidence-icon-box specimen-a-accent">
+                                        <i class="fa-solid fa-file-shield"></i>
+                                    </div>
+                                    <div class="evidence-info">
+                                        <div class="evidence-header-row">
+                                            <span class="evidence-kicker">EVIDENCE FILE</span>
+                                            <span class="evidence-status-badge">
+                                                <span class="status-pulse-dot"></span> READY FOR ANALYSIS
+                                            </span>
+                                        </div>
+                                        <div class="evidence-filename" id="evidenceFilenameA" title=""></div>
+                                        <div class="evidence-meta-row" id="evidenceSpecsA"></div>
+                                    </div>
+                                </div>
+                                <div class="evidence-card-actions">
+                                    <button type="button" class="evidence-btn evidence-btn-view" onclick="openSpecimenPreview('A')" aria-label="View specimen A">
+                                        <i class="fa-solid fa-eye"></i> View
+                                    </button>
+                                    <div class="evidence-action-group">
+                                        <button type="button" class="evidence-btn evidence-btn-replace" onclick="replaceSpecimen('A')" aria-label="Replace specimen A">
+                                            <i class="fa-solid fa-arrows-rotate"></i> Replace
+                                        </button>
+                                        <button type="button" class="evidence-btn evidence-btn-remove" onclick="removeSpecimen('A')" aria-label="Remove specimen A" title="Remove specimen">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="specimen-card">
+                        <div class="specimen-card" id="cardB">
                             <div class="specimen-header">
                                 <div>
                                     <strong style="font-size:1.05rem;">Specimen B (Comparison Target)</strong>
-                                    <div class="text-muted" style="font-size:0.85rem;">Questioned specimen</div>
+                                    <div class="text-muted" style="font-size:0.85rem;">Questioned comparison target</div>
                                 </div>
                                 <span class="specimen-tag" style="background:rgba(255,157,80,0.15); color:var(--orange)">SPECIMEN-B</span>
                             </div>
-                            <div class="upload-zone" onclick="document.getElementById('fileB').click()">
-                                <i class="fa-solid fa-file-arrow-up" style="font-size:2.4rem; color:var(--orange); margin-bottom:10px;"></i>
-                                <p style="font-weight:500; margin-bottom:4px;">Select Specimen B</p>
-                                <span class="text-muted" style="font-size:0.8rem;">PNG, JPG, TIFF up to 15MB</span>
+                            <div class="upload-zone" id="uploadZoneB" onclick="document.getElementById('fileB').click()">
+                                <i class="fa-solid fa-file-arrow-up upload-zone-icon" style="color:var(--orange);"></i>
+                                <p class="upload-zone-title">Upload Specimen B</p>
+                                <span class="upload-zone-sub text-muted">PNG, JPG, TIFF up to 15MB</span>
                                 <input type="file" id="fileB" accept="image/*" style="display:none;" onchange="handleFileSelect('B', event)">
                             </div>
-                            <div class="file-preview" id="previewB">
-                                <img id="imgPreviewB" alt="Specimen B">
-                                <div id="namePreviewB" style="font-size:0.85rem; margin-top:8px; color:var(--text-muted); font-family:monospace;"></div>
+                            <div class="evidence-file-card specimen-b-card" id="evidenceCardB" style="display:none;">
+                                <div class="evidence-card-content">
+                                    <div class="evidence-icon-box specimen-b-accent">
+                                        <i class="fa-solid fa-file-shield"></i>
+                                    </div>
+                                    <div class="evidence-info">
+                                        <div class="evidence-header-row">
+                                            <span class="evidence-kicker">EVIDENCE FILE</span>
+                                            <span class="evidence-status-badge">
+                                                <span class="status-pulse-dot"></span> READY FOR ANALYSIS
+                                            </span>
+                                        </div>
+                                        <div class="evidence-filename" id="evidenceFilenameB" title=""></div>
+                                        <div class="evidence-meta-row" id="evidenceSpecsB"></div>
+                                    </div>
+                                </div>
+                                <div class="evidence-card-actions">
+                                    <button type="button" class="evidence-btn evidence-btn-view" onclick="openSpecimenPreview('B')" aria-label="View specimen B">
+                                        <i class="fa-solid fa-eye"></i> View
+                                    </button>
+                                    <div class="evidence-action-group">
+                                        <button type="button" class="evidence-btn evidence-btn-replace" onclick="replaceSpecimen('B')" aria-label="Replace specimen B">
+                                            <i class="fa-solid fa-arrows-rotate"></i> Replace
+                                        </button>
+                                        <button type="button" class="evidence-btn evidence-btn-remove" onclick="removeSpecimen('B')" aria-label="Remove specimen B" title="Remove specimen">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -554,6 +968,33 @@
         </div>
     </div>
 
+    <!-- FORENSIC EVIDENCE PREVIEW MODAL -->
+    <div id="specimenPreviewModal" class="specimen-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalSpecimenFilename" style="display:none;" onclick="handleModalBackdropClick(event)">
+        <div class="specimen-modal-container">
+            <div class="specimen-modal-header">
+                <div class="specimen-modal-title-wrap">
+                    <div class="specimen-modal-eyebrow" id="modalSpecimenEyebrow">FORENSIC SPECIMEN PREVIEW</div>
+                    <h3 class="specimen-modal-filename" id="modalSpecimenFilename">--</h3>
+                    <div class="specimen-modal-meta" id="modalSpecimenMeta">--</div>
+                </div>
+                <button type="button" class="specimen-modal-close-btn" onclick="closeSpecimenPreview()" aria-label="Close specimen preview">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="specimen-modal-viewport">
+                <div class="specimen-modal-canvas">
+                    <img id="modalSpecimenImg" src="" alt="Forensic Specimen Preview" class="specimen-modal-image">
+                </div>
+            </div>
+            <div class="specimen-modal-footer">
+                <span class="specimen-modal-hint"><i class="fa-solid fa-circle-info"></i> Press <kbd>ESC</kbd> or click outside to close preview</span>
+                <button type="button" class="evidence-btn evidence-btn-secondary" onclick="closeSpecimenPreview()">
+                    <i class="fa-solid fa-xmark"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/brand.js"></script>
     <script src="js/theme.js?v=2.2"></script>
     <script src="js/toast.js?v=2.2"></script>
@@ -564,6 +1005,8 @@
         let currentZoom = 1.0;
         let selectedFileA = null;
         let selectedFileB = null;
+        let objectUrlA = null;
+        let objectUrlB = null;
         let comparisonData = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -573,7 +1016,51 @@
                 document.getElementById('topAvatar').innerText = user.name.charAt(0).toUpperCase();
             }
             loadAvailableCases();
+            initDragAndDrop();
+            initKeyboardAndWindowListeners();
+            updateCompareButtonState();
+
+            const selA = document.getElementById('caseSelectA');
+            const selB = document.getElementById('caseSelectB');
+            if (selA) selA.addEventListener('change', updateCompareButtonState);
+            if (selB) selB.addEventListener('change', updateCompareButtonState);
         });
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function getFileType(file) {
+            if (!file) return 'FILE';
+            if (file.name && file.name.includes('.')) {
+                return file.name.split('.').pop().toUpperCase();
+            }
+            if (file.type) {
+                const parts = file.type.split('/');
+                return parts[1] ? parts[1].toUpperCase() : 'IMG';
+            }
+            return 'DOC';
+        }
+
+        function updateCompareButtonState() {
+            const btn = document.getElementById('compareBtn');
+            if (!btn) return;
+            let ready = false;
+            if (currentMode === 'upload') {
+                ready = Boolean(selectedFileA && selectedFileB);
+            } else {
+                const caseA = document.getElementById('caseSelectA') ? document.getElementById('caseSelectA').value : '';
+                const caseB = document.getElementById('caseSelectB') ? document.getElementById('caseSelectB').value : '';
+                ready = Boolean(caseA && caseB && caseA !== caseB);
+            }
+            btn.disabled = !ready;
+            btn.style.opacity = ready ? '1' : '0.6';
+            btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+        }
 
         function setMode(mode) {
             currentMode = mode;
@@ -587,6 +1074,7 @@
                 document.getElementById('uploadModeContainer').style.display = 'none';
                 document.getElementById('casesModeContainer').style.display = 'block';
             }
+            updateCompareButtonState();
         }
 
         async function loadAvailableCases() {
@@ -612,34 +1100,216 @@
                     optB.textContent = `${c.case_id} — ${c.title || 'Untitled'} (${c.document_type || 'DOC'}, Score: ${c.risk_score || 0})`;
                     selB.appendChild(optB);
                 });
+                updateCompareButtonState();
             } catch (err) {
                 console.warn('Could not populate case selector:', err);
             }
         }
 
-        function handleFileSelect(specimen, event) {
-            const file = event.target.files[0];
+        function setSpecimenFile(specimen, file) {
             if (!file) return;
 
             if (specimen === 'A') {
+                if (objectUrlA) {
+                    URL.revokeObjectURL(objectUrlA);
+                    objectUrlA = null;
+                }
                 selectedFileA = file;
+                objectUrlA = URL.createObjectURL(file);
+
+                const filenameEl = document.getElementById('evidenceFilenameA');
+                const specsEl = document.getElementById('evidenceSpecsA');
+                const uploadZone = document.getElementById('uploadZoneA');
+                const evidenceCard = document.getElementById('evidenceCardA');
+
+                if (filenameEl) {
+                    filenameEl.textContent = file.name;
+                    filenameEl.title = file.name;
+                }
+                if (specsEl) {
+                    specsEl.textContent = `${getFileType(file)} • ${formatFileSize(file.size)}`;
+                }
+                if (uploadZone) uploadZone.style.display = 'none';
+                if (evidenceCard) evidenceCard.style.display = 'flex';
             } else {
+                if (objectUrlB) {
+                    URL.revokeObjectURL(objectUrlB);
+                    objectUrlB = null;
+                }
                 selectedFileB = file;
+                objectUrlB = URL.createObjectURL(file);
+
+                const filenameEl = document.getElementById('evidenceFilenameB');
+                const specsEl = document.getElementById('evidenceSpecsB');
+                const uploadZone = document.getElementById('uploadZoneB');
+                const evidenceCard = document.getElementById('evidenceCardB');
+
+                if (filenameEl) {
+                    filenameEl.textContent = file.name;
+                    filenameEl.title = file.name;
+                }
+                if (specsEl) {
+                    specsEl.textContent = `${getFileType(file)} • ${formatFileSize(file.size)}`;
+                }
+                if (uploadZone) uploadZone.style.display = 'none';
+                if (evidenceCard) evidenceCard.style.display = 'flex';
+            }
+            updateCompareButtonState();
+        }
+
+        function handleFileSelect(specimen, event) {
+            const file = event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            setSpecimenFile(specimen, file);
+        }
+
+        function replaceSpecimen(specimen) {
+            const input = document.getElementById('file' + specimen);
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        }
+
+        function removeSpecimen(specimen) {
+            if (specimen === 'A') {
+                if (objectUrlA) {
+                    URL.revokeObjectURL(objectUrlA);
+                    objectUrlA = null;
+                }
+                selectedFileA = null;
+                const input = document.getElementById('fileA');
+                if (input) input.value = '';
+                const uploadZone = document.getElementById('uploadZoneA');
+                const evidenceCard = document.getElementById('evidenceCardA');
+                if (evidenceCard) evidenceCard.style.display = 'none';
+                if (uploadZone) uploadZone.style.display = 'block';
+            } else {
+                if (objectUrlB) {
+                    URL.revokeObjectURL(objectUrlB);
+                    objectUrlB = null;
+                }
+                selectedFileB = null;
+                const input = document.getElementById('fileB');
+                if (input) input.value = '';
+                const uploadZone = document.getElementById('uploadZoneB');
+                const evidenceCard = document.getElementById('evidenceCardB');
+                if (evidenceCard) evidenceCard.style.display = 'none';
+                if (uploadZone) uploadZone.style.display = 'block';
+            }
+            updateCompareButtonState();
+        }
+
+        function openSpecimenPreview(specimen) {
+            const file = specimen === 'A' ? selectedFileA : selectedFileB;
+            const url = specimen === 'A' ? objectUrlA : objectUrlB;
+            if (!file || !url) {
+                if (typeof Toast !== 'undefined' && Toast.info) {
+                    Toast.info("Specimen Missing", "No active specimen file selected to view.");
+                }
+                return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (specimen === 'A') {
-                    document.getElementById('imgPreviewA').src = e.target.result;
-                    document.getElementById('namePreviewA').innerText = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
-                    document.getElementById('previewA').style.display = 'block';
-                } else {
-                    document.getElementById('imgPreviewB').src = e.target.result;
-                    document.getElementById('namePreviewB').innerText = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
-                    document.getElementById('previewB').style.display = 'block';
+            const modal = document.getElementById('specimenPreviewModal');
+            const eyebrow = document.getElementById('modalSpecimenEyebrow');
+            const filenameEl = document.getElementById('modalSpecimenFilename');
+            const metaEl = document.getElementById('modalSpecimenMeta');
+            const imgEl = document.getElementById('modalSpecimenImg');
+
+            if (eyebrow) {
+                eyebrow.textContent = `FORENSIC SPECIMEN PREVIEW • SPECIMEN ${specimen} (${specimen === 'A' ? 'REFERENCE / BASELINE' : 'COMPARISON TARGET'})`;
+                eyebrow.style.color = specimen === 'A' ? 'var(--cyan)' : 'var(--orange)';
+            }
+            if (filenameEl) {
+                filenameEl.textContent = file.name;
+                filenameEl.title = file.name;
+            }
+            if (metaEl) {
+                metaEl.textContent = `${getFileType(file)} • ${formatFileSize(file.size)}`;
+            }
+            if (imgEl) {
+                imgEl.src = url;
+            }
+
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeSpecimenPreview() {
+            const modal = document.getElementById('specimenPreviewModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+            const imgEl = document.getElementById('modalSpecimenImg');
+            if (imgEl) {
+                imgEl.src = '';
+            }
+        }
+
+        function handleModalBackdropClick(event) {
+            if (event.target && event.target.id === 'specimenPreviewModal') {
+                closeSpecimenPreview();
+            }
+        }
+
+        function initKeyboardAndWindowListeners() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('specimenPreviewModal');
+                    if (modal && modal.style.display !== 'none') {
+                        closeSpecimenPreview();
+                    }
                 }
-            };
-            reader.readAsDataURL(file);
+            });
+
+            window.addEventListener('beforeunload', () => {
+                if (objectUrlA) URL.revokeObjectURL(objectUrlA);
+                if (objectUrlB) URL.revokeObjectURL(objectUrlB);
+            });
+        }
+
+        function initDragAndDrop() {
+            ['A', 'B'].forEach(specimen => {
+                const zone = document.getElementById('uploadZone' + specimen);
+                if (!zone) return;
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    zone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        zone.classList.add('drag-over');
+                    });
+                });
+
+                ['dragleave', 'dragend'].forEach(eventName => {
+                    zone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        zone.classList.remove('drag-over');
+                    });
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.remove('drag-over');
+
+                    const files = e.dataTransfer && e.dataTransfer.files;
+                    if (files && files.length > 0) {
+                        const file = files[0];
+                        if (file.type && !file.type.startsWith('image/')) {
+                            if (typeof Toast !== 'undefined' && Toast.warning) {
+                                Toast.warning("Invalid File", "Please select a valid image file (PNG, JPG, TIFF).");
+                            }
+                            return;
+                        }
+                        setSpecimenFile(specimen, file);
+                    }
+                });
+            });
         }
 
         async function runComparison() {

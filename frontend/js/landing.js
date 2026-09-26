@@ -239,39 +239,26 @@
 
       const payload = { name, email, organization, subject, phone, message };
 
-      // Helper function to send request with dual-endpoint fallback (port 5001 Node mail service or port 8000 FastAPI bridge)
+      // Dispatch request strictly through FastAPI backend bridge (/api/contact)
       async function dispatchContactRequest() {
-        // Try direct Node mail service first
-        try {
-          const res1 = await fetch('http://localhost:5001/api/contact', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (res1.ok) return await res1.json();
-          if (res1.status === 429) {
-            const data = await res1.json();
-            throw new Error(data.error || 'Rate limit exceeded. Please wait a few minutes.');
-          }
-        } catch (err1) {
-          // If 429 rate-limit, do not retry
-          if (err1.message.includes('Rate limit')) throw err1;
-          console.warn('[Contact] Node mail service on 5001 unreachable, attempting FastAPI bridge on 8000...', err1);
-        }
-
-        // Fallback to FastAPI endpoint
-        const res2 = await fetch('http://localhost:8000/api/contact', {
+        const apiBase = window.API_BASE || (
+          window.location.port === '8000' || (!window.location.port && window.location.protocol.startsWith('http'))
+            ? `${window.location.origin}/api`
+            : `http://${window.location.hostname || 'localhost'}:8000/api`
+        );
+        const endpoint = `${apiBase.replace(/\/$/, '')}/contact`;
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
-        if (!res2.ok) {
-          const errorData = await res2.json().catch(() => ({}));
-          throw new Error(errorData.detail || errorData.error || 'Unable to send message. Please try again.');
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.detail || errorData.error || `Server responded with status ${res.status}`);
         }
 
-        return await res2.json();
+        return await res.json();
       }
 
       try {

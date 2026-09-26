@@ -10,18 +10,21 @@
   let scene, camera, renderer;
   let cardGroup, scanLine, laserGlowMesh;
   let platformGroup, particlesMesh, connectorLinesGroup;
-  let container;
-  let animationFrameId;
-  let isHovered = false;
+  let container, hero3dContainer;
+  let animationFrameId = null;
   let isTabActive = true;
   let prefersReducedMotion = false;
+  let resizeObserver = null;
+  let debugHud = null;
+  let clock = null;
 
-  // Interaction coordinates
-  let mouseX = 0, mouseY = 0;
-  let targetRotationX = 0.12;
-  let targetRotationY = -0.35;
-  let currentRotationX = 0.12;
-  let currentRotationY = -0.35;
+  // Autonomous cinematic rotation parameters (Requirements 1, 2, 3, 10)
+  const ROTATION_SPEED_Y = 0.12; // radians/second (smooth, continuous, forensic)
+  const NEUTRAL_ROTATION_Y = -0.28;
+  const NEUTRAL_ROTATION_X = 0.10;
+
+  let currentRotationY = NEUTRAL_ROTATION_Y;
+  let currentRotationX = NEUTRAL_ROTATION_X;
   let scrollOffset = 0;
 
   // Check WebGL availability
@@ -423,13 +426,111 @@
     ctx.putImageData(imgData, 0, 0);
   }
 
+  // Cleanup Three.js scene and listeners idempotently (Requirement 14)
+  function cleanupThreeScene() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    window.removeEventListener('resize', onWindowResize);
+    window.removeEventListener('scroll', onScroll);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+
+    if (debugHud && debugHud.parentNode) {
+      debugHud.parentNode.removeChild(debugHud);
+      debugHud = null;
+    }
+
+    if (scene) {
+      scene.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((mat) => {
+              if (mat.map) mat.map.dispose();
+              mat.dispose();
+            });
+          } else {
+            if (obj.material.map) obj.material.map.dispose();
+            obj.material.dispose();
+          }
+        }
+      });
+    }
+
+    if (renderer) {
+      if (renderer.domElement && renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer = null;
+    }
+
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    scene = null;
+    camera = null;
+    cardGroup = null;
+    platformGroup = null;
+    particlesMesh = null;
+    scanLine = null;
+    laserGlowMesh = null;
+    connectorLinesGroup = null;
+  }
+
+  // Diagnostic Debug HUD (Requirement 17)
+  function initDebugHUD() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('debug3d') || params.get('debug3d') === 'false') return null;
+
+    const existing = document.getElementById('sentinel-3d-debug-hud');
+    if (existing) existing.remove();
+
+    const hud = document.createElement('div');
+    hud.id = 'sentinel-3d-debug-hud';
+    hud.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      background: rgba(10, 16, 32, 0.94);
+      border: 1px solid #1DCED8;
+      box-shadow: 0 0 25px rgba(29, 206, 216, 0.35);
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace, Consolas, sans-serif;
+      font-size: 11px;
+      line-height: 1.55;
+      padding: 12px 18px;
+      border-radius: 8px;
+      z-index: 99999;
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+      min-width: 220px;
+    `;
+    document.body.appendChild(hud);
+    return hud;
+  }
+
   // Initialize Three.js Scene
   function initThreeScene() {
+    // Idempotent cleanup before initialization
+    cleanupThreeScene();
+
+    hero3dContainer = document.getElementById('hero-3d-container') || document.querySelector('.hero-3d-container');
     container = document.getElementById('canvas-container');
     if (!container) return;
+    if (!hero3dContainer) hero3dContainer = container;
 
-    const width = container.clientWidth || 600;
-    const height = container.clientHeight || 550;
+    const width = hero3dContainer.clientWidth || container.clientWidth || 600;
+    const height = hero3dContainer.clientHeight || container.clientHeight || 550;
 
     // Scene
     scene = new THREE.Scene();
@@ -438,14 +539,14 @@
     camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
     camera.position.set(0, 0.4, 7.8);
 
-    // Renderer
+    // Renderer (Requirement 10: DPR capped at 2)
     renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
       powerPreference: 'high-performance'
     });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(width, height, false);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
@@ -672,7 +773,7 @@
     scene.add(particlesMesh);
 
     // -------------------------------------------------------------------------
-    // EVENT LISTENERS & INTERACTION
+    // EVENT LISTENERS & POINTER INTERACTION (Requirements 2, 3, 8, 9, 11)
     // -------------------------------------------------------------------------
     // Check reduced motion preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -681,69 +782,80 @@
       prefersReducedMotion = e.matches;
     });
 
-    // Mouse movement
-    window.addEventListener('mousemove', (e) => {
-      const rect = container.getBoundingClientRect();
-      const inHero = (e.clientY >= rect.top && e.clientY <= rect.bottom);
-      if (inHero) {
-        mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-        targetRotationY = mouseX * 0.65;
-        targetRotationX = 0.12 - mouseY * 0.35;
-      }
-    });
+    // Clock for delta-time based autonomous animation (Requirement 10)
+    clock = new THREE.Clock();
 
-    // Touch movement for mobile
-    container.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 0) {
-        const touch = e.touches[0];
-        const rect = container.getBoundingClientRect();
-        mouseX = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseY = -(((touch.clientY - rect.top) / rect.height) * 2 - 1);
-        targetRotationY = mouseX * 0.5;
-        targetRotationX = 0.12 - mouseY * 0.25;
-      }
-    }, { passive: true });
+    // Scroll parallax tracking
+    window.addEventListener('scroll', onScroll, { passive: true });
 
-    // Hover state
-    container.addEventListener('mouseenter', () => { isHovered = true; });
-    container.addEventListener('mouseleave', () => {
-      isHovered = false;
-      targetRotationX = 0.12;
-      targetRotationY = -0.35;
-    });
-
-    // Scroll parallax
-    window.addEventListener('scroll', () => {
-      scrollOffset = window.scrollY;
-    }, { passive: true });
-
-    // Window resize
+    // Resize handling with ResizeObserver (Requirement 9)
+    if (window.ResizeObserver) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            updateDimensions(width, height);
+          }
+        }
+      });
+      resizeObserver.observe(hero3dContainer);
+    }
     window.addEventListener('resize', onWindowResize);
 
-    // Tab visibility change (pause when tab hidden)
-    document.addEventListener('visibilitychange', () => {
-      isTabActive = !document.hidden;
-      if (isTabActive && !animationFrameId) {
-        animate();
-      }
-    });
+    // Tab visibility handling (Requirement 11)
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // Diagnostic HUD (Requirement 17)
+    debugHud = initDebugHUD();
 
     // Start animation loop
     animate();
+
+    // Expose lifecycle for hot-reloading / testing (Requirement 14)
+    window.__SENTINEL_3D__ = {
+      dispose: cleanupThreeScene,
+      init: initThreeScene
+    };
+  }
+
+
+
+  function onScroll() {
+    scrollOffset = window.scrollY || window.pageYOffset || 0;
+  }
+
+  function updateDimensions(width, height) {
+    if (!camera || !renderer) return;
+    if (width <= 0 || height <= 0) return;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
   }
 
   function onWindowResize() {
-    if (!container || !camera || !renderer) return;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    renderer.setSize(width, height);
+    if (!hero3dContainer) return;
+    const w = hero3dContainer.clientWidth || (container ? container.clientWidth : 600);
+    const h = hero3dContainer.clientHeight || (container ? container.clientHeight : 550);
+    updateDimensions(w, h);
   }
 
-  // Animation Loop
-  let clockTime = 0;
+  function onVisibilityChange() {
+    isTabActive = !document.hidden;
+    if (isTabActive) {
+      if (clock) clock.getDelta(); // flush delta so no giant leap after backgrounding
+      if (!animationFrameId) {
+        animate();
+      }
+    } else {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    }
+  }
+
+  // Animation Loop (Requirements 2, 3, 4, 6, 9, 10: Autonomous Cinematic Rotation)
+  let fpsHistory = 60;
   function animate() {
     if (!isTabActive) {
       animationFrameId = null;
@@ -752,45 +864,74 @@
 
     animationFrameId = requestAnimationFrame(animate);
 
-    clockTime += isHovered ? 0.024 : 0.015;
+    if (!clock) clock = new THREE.Clock();
+    const delta = Math.min(clock.getDelta(), 0.1);
+    const elapsedTime = clock.getElapsedTime();
 
-    // 1. Slow rotation & float if not prefersReducedMotion
-    if (!prefersReducedMotion) {
-      // Natural slow drift around Y
-      const autoY = Math.sin(clockTime * 0.5) * 0.18 - 0.25;
-      currentRotationY += ((targetRotationY + autoY) - currentRotationY) * 0.05;
-      currentRotationX += (targetRotationX - currentRotationX) * 0.05;
+    // Rolling FPS approximation
+    const instantFps = delta > 0 ? 1 / delta : 60;
+    fpsHistory = Math.round(fpsHistory * 0.9 + instantFps * 0.1);
 
+    // 1. Autonomous Cinematic Document Motion
+    if (!prefersReducedMotion && cardGroup) {
+      // Slow continuous Y-axis rotation (0.12 rad/sec)
+      currentRotationY += ROTATION_SPEED_Y * delta;
+      if (currentRotationY > Math.PI * 2) {
+        currentRotationY -= Math.PI * 2;
+      }
       cardGroup.rotation.y = currentRotationY;
-      cardGroup.rotation.x = currentRotationX;
+
+      // Subtle breathing / tilt motion on X-axis (Requirement 3)
+      const subtleTiltX = Math.sin(elapsedTime * 0.6) * 0.035;
+      cardGroup.rotation.x = NEUTRAL_ROTATION_X + subtleTiltX;
 
       // Floating altitude oscillation
-      cardGroup.position.y = 0.3 + Math.sin(clockTime * 1.5) * 0.08;
+      cardGroup.position.y = 0.3 + Math.sin(elapsedTime * 1.1) * 0.05;
 
-      // Rotating base platform
-      platformGroup.rotation.y = clockTime * 0.2;
-
-      // Particles gentle drift
-      if (particlesMesh) {
-        particlesMesh.rotation.y = clockTime * 0.04;
+      // Ambient counter-rotation of scanner platform (Requirement 6)
+      if (platformGroup) {
+        platformGroup.rotation.y += 0.06 * delta;
       }
-    } else {
-      // Reduced motion: static gentle orientation
-      cardGroup.rotation.y = -0.3;
-      cardGroup.rotation.x = 0.1;
+
+      // Ambient particle drift
+      if (particlesMesh) {
+        particlesMesh.rotation.y += 0.02 * delta;
+      }
+
+      // Pulse anchor node rings
+      cardGroup.children.forEach((child) => {
+        if (child.userData && typeof child.userData.pulseOffset === 'number' && child.material) {
+          child.material.opacity = 0.45 + Math.sin(elapsedTime * 2.2 + child.userData.pulseOffset) * 0.35;
+        }
+      });
+
+    } else if (cardGroup) {
+      // Reduced motion: stable, static, perfectly readable presentation (Requirement 9)
+      cardGroup.rotation.y = NEUTRAL_ROTATION_Y;
+      cardGroup.rotation.x = NEUTRAL_ROTATION_X;
       cardGroup.position.y = 0.3;
+
+      if (platformGroup) {
+        platformGroup.rotation.y = 0;
+      }
     }
 
-    // 2. Vertical Scan Laser Animation
-    const scanProgress = (Math.sin(clockTime * 2.2) + 1) / 2; // 0 to 1
-    const scanMinY = -1.25;
-    const scanMaxY = 1.25;
-    const currentScanY = scanMinY + scanProgress * (scanMaxY - scanMinY);
+    // 2. Vertical Forensic Scan Laser Animation
+    if (!prefersReducedMotion) {
+      const scanProgress = (Math.sin(elapsedTime * 1.8) + 1) / 2; // 0 to 1
+      const scanMinY = -1.25;
+      const scanMaxY = 1.25;
+      const currentScanY = scanMinY + scanProgress * (scanMaxY - scanMinY);
 
-    if (scanLine && laserGlowMesh) {
-      scanLine.position.y = currentScanY;
-      laserGlowMesh.position.y = currentScanY;
-      laserGlowMesh.material.opacity = isHovered ? 0.45 : 0.25;
+      if (scanLine && laserGlowMesh) {
+        scanLine.position.y = currentScanY;
+        laserGlowMesh.position.y = currentScanY;
+        laserGlowMesh.material.opacity = 0.3 + Math.sin(elapsedTime * 2.4) * 0.08;
+      }
+    } else if (scanLine && laserGlowMesh) {
+      scanLine.position.y = 0;
+      laserGlowMesh.position.y = 0;
+      laserGlowMesh.material.opacity = 0.2;
     }
 
     // 3. Scroll camera parallax
@@ -798,7 +939,30 @@
       camera.position.y = 0.4 - scrollOffset * 0.0012;
     }
 
-    renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+      renderer.render(scene, camera);
+    }
+
+    // 4. Autonomous Diagnostic Debug HUD (Requirement 13)
+    if (debugHud) {
+      const cW = hero3dContainer ? hero3dContainer.clientWidth : 0;
+      const cH = hero3dContainer ? hero3dContainer.clientHeight : 0;
+      const rW = renderer && renderer.domElement ? renderer.domElement.width : 0;
+      const rH = renderer && renderer.domElement ? renderer.domElement.height : 0;
+
+      debugHud.innerHTML = `
+        <div style="color:#1DCED8; font-weight:bold; font-size:12px; margin-bottom:6px; letter-spacing:1px; border-bottom:1px solid rgba(29,206,216,0.3); padding-bottom:4px;">SENTINEL 3D DIAGNOSTICS</div>
+        <div>3D STATUS: <span style="color:#55E07E; font-weight:bold;">READY</span></div>
+        <div>WEBGL: <span style="color:#55E07E; font-weight:bold;">YES</span></div>
+        <div>ANIMATION: <span style="color:${isTabActive ? '#55E07E' : '#FF9D50'}; font-weight:bold;">${isTabActive ? 'ACTIVE' : 'PAUSED'}</span></div>
+        <div>MODE: <span style="color:#1DCED8; font-weight:bold;">AUTONOMOUS</span></div>
+        <div>ROTATION: <span style="color:#1DCED8;">${prefersReducedMotion ? 'STATIC (0.00 RAD/S)' : (ROTATION_SPEED_Y.toFixed(2) + ' RAD/S')}</span></div>
+        <div>MOTION: <span style="color:${prefersReducedMotion ? '#FF9D50' : '#55E07E'}; font-weight:bold;">${prefersReducedMotion ? 'REDUCED' : 'NORMAL'}</span></div>
+        <div>FPS: <span style="color:#55E07E; font-weight:bold;">${fpsHistory}</span></div>
+        <div>CANVAS: ${rW} × ${rH}</div>
+        <div>CONTAINER: ${cW} × ${cH}</div>
+      `;
+    }
   }
 
   // DOM Ready Entrypoint

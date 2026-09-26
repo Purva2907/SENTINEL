@@ -58,7 +58,7 @@ def process_document(file_path: str, case_id: str = None) -> dict:
     q_blur = quality_result.get("blur_score") or quality_result.get("blur_metric") or "Metric unavailable"
     q_bright = quality_result.get("brightness", "Metric unavailable")
     q_dims = quality_result.get("dimensions", "Metric unavailable")
-    q_conf = round(max(50, min(99, 100 - quality_contrib * 4)))
+    q_conf = quality_result.get("confidence")  # None if module does not calculate confidence
     
     evidence.append({
         "id": "EV-001",
@@ -82,7 +82,7 @@ def process_document(file_path: str, case_id: str = None) -> dict:
     raw_ocr_txt = ocr_result.get("extracted_text") or ocr_result.get("raw_text") or ""
     ocr_words = len(raw_ocr_txt.split())
     ocr_conf_raw = ocr_result.get("average_confidence")
-    ocr_conf_pct = round(float(ocr_conf_raw) * 100) if ocr_conf_raw is not None else 85
+    ocr_conf_pct = round(float(ocr_conf_raw) * 100) if (ocr_conf_raw is not None and not str(ocr_conf_raw) == 'nan') else None
     
     evidence.append({
         "id": "EV-002",
@@ -93,7 +93,7 @@ def process_document(file_path: str, case_id: str = None) -> dict:
         "confidence": ocr_conf_pct,
         "observed_metrics": [
             f"Word count isolated: {ocr_words}",
-            f"Mean character confidence: {ocr_conf_pct}%",
+            f"Mean character confidence: {f'{ocr_conf_pct}%' if ocr_conf_pct is not None else 'Metric unavailable'}",
             f"Extraction status: {ocr_result.get('status', 'TEXT_DETECTED')}"
         ],
         "assessment": "Textual fields extracted with high optical certainty." if ocr_contrib == 0 else "Sub-baseline character recognition confidence or low contrast text isolated.",
@@ -103,9 +103,27 @@ def process_document(file_path: str, case_id: str = None) -> dict:
     
     # QR Evidence
     qr_severity = "High" if qr_contrib >= 15 else ("Warning" if qr_contrib > 0 else "Info")
-    qr_title = "QR Code Verification" if qr_result.get("decoded") else ("QR Pattern Detected (Unreadable)" if qr_result.get("detected") else "QR Code Missing")
-    qr_conf = 95 if qr_result.get("decoded") else (80 if qr_result.get("detected") else 90)
+    if qr_result.get("status") == "NOT_APPLICABLE":
+        qr_title = "QR Code Not Applicable"
+    elif qr_result.get("decoded"):
+        qr_title = "QR Code Verification"
+    elif qr_result.get("detected"):
+        qr_title = "QR Pattern Detected (Unreadable)"
+    else:
+        qr_title = "QR Code Missing"
+
+    # Only decoded QR has cryptographic/bitstream certainty (100); otherwise null
+    qr_conf = 100 if qr_result.get("decoded") else qr_result.get("confidence")
     
+    if qr_result.get("status") == "NOT_APPLICABLE":
+        qr_assessment = "QR code expectation not applicable for this document type."
+    elif qr_result.get("decoded"):
+        qr_assessment = "QR payload decoded successfully. Payload authenticity was not cryptographically verified."
+    elif qr_result.get("detected"):
+        qr_assessment = "2D matrix detected but payload could not be decoded. Payload authenticity was not cryptographically verified."
+    else:
+        qr_assessment = "Mandatory 2D machine-readable credential barcode is absent."
+
     evidence.append({
         "id": "EV-003",
         "category": "QR",
@@ -115,17 +133,22 @@ def process_document(file_path: str, case_id: str = None) -> dict:
         "confidence": qr_conf,
         "observed_metrics": [
             f"2D matrix presence: {'Localized' if qr_result.get('detected') else 'Not detected'}",
-            f"Bitstream decode status: {'Successfully decoded' if qr_result.get('decoded') else 'Encrypted / undecodable'}",
+            f"Bitstream decode status: {'Successfully decoded' if qr_result.get('decoded') else ('Detected but undecodable' if qr_result.get('detected') else 'Not detected')}",
             f"Format standard: {qr_result.get('payload_type', '2D Matrix Barcode' if qr_result.get('detected') else 'None')}"
         ],
-        "assessment": "Machine-readable barcode verified." if qr_result.get("decoded") else ("High-density UIDAI biometric QR localized but encrypted." if qr_result.get("detected") else "Mandatory 2D machine-readable credential barcode is absent."),
-        "finding": "; ".join(qr_result.get("findings", ["QR code verified."])),
-        "explanation": "Verifies machine-readable barcode presence, format consistency, and payload integrity."
+        "assessment": qr_assessment,
+        "finding": "; ".join(qr_result.get("findings", ["QR code evaluated."])),
+        "explanation": "Verifies machine-readable barcode presence and decodability. Payload authenticity was not cryptographically verified."
     })
     
     # Typography Evidence
     typo_score = typography_result.get("score", 100)
-    typo_conf = 88
+    typo_conf = typography_result.get("confidence")  # None if module does not calculate confidence
+    h_ratio = typography_result.get("height_ratio")
+    h_metric_str = f"Bounding-box height ratio: {h_ratio}x relative to median line height" if h_ratio is not None else "Bounding-box height variance: Metric unavailable"
+    sat_delta = typography_result.get("saturation_delta")
+    sat_metric_str = f"Ink saturation variance: {sat_delta} saturation units" if sat_delta is not None else "Ink saturation variance: Metric unavailable"
+
     if typography_contrib > 0:
         evidence.append({
             "id": "EV-004",
@@ -137,11 +160,12 @@ def process_document(file_path: str, case_id: str = None) -> dict:
             "observed_metrics": [
                 f"Typography score: {typo_score}/100",
                 f"Risk contribution: +{typography_contrib} pts",
-                "Character spacing / font size variance across text elements"
+                h_metric_str,
+                sat_metric_str
             ],
-            "assessment": "Potential localized text modification or disparate font scaling detected.",
+            "assessment": "Disproportionate text bounding-box heights or chromatic ink variations detected.",
             "finding": "; ".join(typography_result.get("findings", ["Typography inconsistencies detected."])),
-            "explanation": "Identifies inconsistent font sizes, altered line heights, or chromatic text ink discrepancies."
+            "explanation": "Screens for inconsistent text bounding-box heights, altered line heights, or ink saturation discrepancies across detected text."
         })
     else:
         evidence.append({
@@ -153,17 +177,17 @@ def process_document(file_path: str, case_id: str = None) -> dict:
             "confidence": typo_conf,
             "observed_metrics": [
                 f"Typography score: {typo_score}/100",
-                "Font scaling variance: Nominal (within 1.2x baseline)",
-                "Ink chromatic density: Uniform across peer fields"
+                h_metric_str,
+                sat_metric_str
             ],
-            "assessment": "Uniform font family, baseline alignment, and ink saturation across document fields.",
-            "finding": "; ".join(typography_result.get("findings", ["Consistent font sizing and ink appearance across document fields."])),
-            "explanation": "Verified uniform font family, sizing, and ink density across document fields."
+            "assessment": "Uniform text bounding-box heights, baseline spacing, and ink saturation across document fields.",
+            "finding": "; ".join(typography_result.get("findings", ["Consistent bounding-box heights and ink saturation across detected text lines."])),
+            "explanation": "Screens for inconsistent text bounding-box heights, altered line heights, or ink saturation discrepancies across detected text."
         })
         
     # Layout Evidence
     layout_score = layout_result.get("score", 100)
-    layout_conf = 85
+    layout_conf = layout_result.get("confidence")  # None if module does not calculate confidence
     if layout_contrib > 0:
         evidence.append({
             "id": "EV-005",
@@ -175,33 +199,36 @@ def process_document(file_path: str, case_id: str = None) -> dict:
             "observed_metrics": [
                 f"Layout geometry score: {layout_score}/100",
                 f"Risk contribution: +{layout_contrib} pts",
-                "Horizontal margin or vertical inter-field spacing discrepancy detected"
+                "Internal layout consistency: Irregular horizontal margin or vertical line spacing detected"
             ],
-            "assessment": "Spatial displacement relative to standard template alignment grid.",
+            "assessment": "Spatial displacement relative to internal document alignment grid.",
             "finding": "; ".join(layout_result.get("findings", ["Irregular spatial layout detected."])),
-            "explanation": "Screens for misaligned column margins and irregular vertical line spacing between fields."
+            "explanation": "Screens for internal layout consistency, misaligned column margins, and irregular vertical line spacing between fields."
         })
     else:
         evidence.append({
             "id": "EV-005",
             "category": "Layout",
-            "title": "Standard Layout Geometry",
+            "title": "Internal Layout Consistency",
             "severity": "Info",
             "risk_contribution": 0,
             "confidence": layout_conf,
             "observed_metrics": [
                 f"Layout geometry score: {layout_score}/100",
-                "Column margin alignment: Conforms to template baseline",
+                "Internal column margin alignment: Consistent with document baseline",
                 "Inter-field vertical gaps: Nominal"
             ],
-            "assessment": "Document alignment and spatial layout geometry conform to standard template specifications.",
-            "finding": "; ".join(layout_result.get("findings", ["Standard field margins and uniform line spacing."])),
-            "explanation": "Standard document margin alignment and uniform line spacing confirmed."
+            "assessment": "Internal spatial layout consistency observed across margins and line spacing.",
+            "finding": "; ".join(layout_result.get("findings", ["Internal layout consistency observed across margins and line spacing."])),
+            "explanation": "Screens for internal layout consistency, misaligned column margins, and irregular vertical line spacing between fields."
         })
         
     # Image Forensics / ELA Evidence
     ela_anomaly = forensics_result.get("anomaly_detected", False)
-    ela_conf = 92
+    ela_conf = forensics_result.get("confidence")  # None if module does not calculate confidence
+    ela_mean_val = forensics_result.get("ela_mean", "Metric unavailable")
+    ela_std_val = forensics_result.get("ela_std", "Metric unavailable")
+
     if image_forensics_contrib > 0:
         evidence.append({
             "id": "EV-006",
@@ -211,7 +238,8 @@ def process_document(file_path: str, case_id: str = None) -> dict:
             "risk_contribution": image_forensics_contrib,
             "confidence": ela_conf,
             "observed_metrics": [
-                "Quantization error variance: High-frequency divergence detected",
+                f"Quantization error mean: {ela_mean_val}",
+                f"Quantization error std: {ela_std_val}",
                 f"Risk contribution: +{image_forensics_contrib} pts",
                 "Localized compression profile mismatch across pixel tiles"
             ],
@@ -228,13 +256,13 @@ def process_document(file_path: str, case_id: str = None) -> dict:
             "risk_contribution": 0,
             "confidence": ela_conf,
             "observed_metrics": [
-                "Quantization error variance: Uniform across 8x8 blocks",
-                "Copy-move boundaries: Zero detected",
-                "Splicing score: 0 risk points (Clean Pass)"
+                f"Quantization error mean: {ela_mean_val}",
+                f"Quantization error std: {ela_std_val}",
+                "Localized recompression anomaly: None detected"
             ],
-            "assessment": "No localized compression divergence or digital splicing boundaries detected.",
+            "assessment": "No localized compression divergence detected across document canvas.",
             "finding": "; ".join(forensics_result.get("findings", ["Uniform compression artifact distribution across document canvas."])),
-            "explanation": "No localized compression divergence or digital splicing boundaries detected."
+            "explanation": "No localized compression divergence detected across document canvas."
         })
         
     # 6. Generate visual assets
@@ -252,7 +280,7 @@ def process_document(file_path: str, case_id: str = None) -> dict:
         "image_forensics": forensics_result
     }, image_dimensions=quality_result.get("dimensions"))
     
-    # 7. Forensic Recommendation
+    # 8. Forensic Recommendation
     if risk_score < 35:
         recommendation = "Document screening indicates standard consistency with baseline forensic profiles. Standard verification procedures apply."
     elif risk_score < 70:
@@ -260,8 +288,9 @@ def process_document(file_path: str, case_id: str = None) -> dict:
     else:
         recommendation = "High forensic suspicion. Multiple severe indicators flagged (e.g. compression divergence, barcode discrepancies, or typography mismatch). Detailed secondary inspection strongly advised."
 
-    # Top-level aggregate forensic signal confidence
-    mean_confidence = int(round(sum(e.get("confidence", 75) for e in evidence) / max(1, len(evidence)))) if evidence else 80
+    # Top-level aggregate forensic signal confidence from real module confidences
+    valid_confs = [e["confidence"] for e in evidence if e.get("confidence") is not None]
+    mean_confidence = int(round(sum(valid_confs) / len(valid_confs))) if valid_confs else None
 
     return {
         "case_id": case_id,

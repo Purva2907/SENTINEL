@@ -1,3 +1,5 @@
+import os
+import re
 import uuid
 import datetime
 import json
@@ -9,6 +11,13 @@ backend = None # 'mongodb' or 'sqlite'
 async def init_db():
     global backend
     print("Initializing Database...")
+    db_mode = os.getenv("DATABASE_MODE", "sqlite").lower().strip()
+    if db_mode in ("sqlite", "local"):
+        init_sqlite()
+        backend = 'sqlite'
+        print("Database backend: SQLite (configured via DATABASE_MODE).")
+        return
+
     mongo_success = await init_mongodb()
     if mongo_success:
         backend = 'mongodb'
@@ -19,7 +28,7 @@ async def init_db():
         print("MongoDB unavailable.\nDatabase backend: SQLite fallback.")
 
 def get_iso_time():
-    return datetime.datetime.utcnow().isoformat() + "Z"
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def fix_id(doc):
     if doc and "_id" in doc:
@@ -136,6 +145,94 @@ async def update_user_password(user_id: str, password_hash: str):
         conn.close()
     return True
 
+# --- PASSWORD RESET TOKENS ---
+async def create_password_reset_token(user_id: str, token_hash: str, expires_at: str) -> dict:
+    token_record = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "token_hash": token_hash,
+        "expires_at": expires_at,
+        "used": 0 if backend != 'mongodb' else False,
+        "created_at": get_iso_time()
+    }
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        await db.password_reset_tokens.insert_one(dict(token_record))
+    else:
+        conn = get_sqlite_db()
+        conn.execute('''
+            INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, used, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            token_record["id"],
+            token_record["user_id"],
+            token_record["token_hash"],
+            token_record["expires_at"],
+            token_record["used"],
+            token_record["created_at"]
+        ))
+        conn.commit()
+        conn.close()
+    return token_record
+
+async def get_password_reset_token(token_hash: str):
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        doc = await db.password_reset_tokens.find_one({"token_hash": token_hash})
+        record = fix_id(doc) if doc else None
+    else:
+        conn = get_sqlite_db()
+        cursor = conn.execute('SELECT * FROM password_reset_tokens WHERE token_hash = ?', (token_hash,))
+        row = cursor.fetchone()
+        conn.close()
+        record = dict(row) if row else None
+
+    if record:
+        record["used"] = bool(record.get("used"))
+    return record
+
+async def invalidate_user_reset_tokens(user_id: str) -> None:
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        await db.password_reset_tokens.update_many(
+            {"user_id": user_id, "used": False},
+            {"$set": {"used": True}}
+        )
+    else:
+        conn = get_sqlite_db()
+        conn.execute('UPDATE password_reset_tokens SET used = 1 WHERE user_id = ? AND used = 0', (user_id,))
+        conn.commit()
+        conn.close()
+
+async def consume_password_reset_token(token_hash: str) -> None:
+    if backend == 'mongodb':
+        db = get_mongo_db()
+        await db.password_reset_tokens.update_one(
+            {"token_hash": token_hash},
+            {"$set": {"used": True}}
+        )
+    else:
+        conn = get_sqlite_db()
+        conn.execute('UPDATE password_reset_tokens SET used = 1 WHERE token_hash = ?', (token_hash,))
+        conn.commit()
+        conn.close()
+
+def _resolve_stored_filepath(stored_filename: str) -> str:
+    if not stored_filename:
+        return ""
+    candidates = [
+        os.path.join(os.getenv("UPLOAD_DIR", "data/uploads"), stored_filename),
+        os.path.join("backend", os.getenv("UPLOAD_DIR", "data/uploads"), stored_filename),
+        os.path.join("backend", "data", "synthetic", stored_filename),
+        os.path.join("data", "synthetic", stored_filename),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "synthetic", stored_filename),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "uploads", stored_filename),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.abspath(c)
+    return ""
+
 # --- CASES ---
 async def create_case(case_data: dict, analysis_data: dict):
     case_id_val = f"SC-{datetime.datetime.now().year}-{str(uuid.uuid4().hex)[:4].upper()}"
@@ -153,7 +250,13 @@ async def create_case(case_data: dict, analysis_data: dict):
     evidence_id = custody.get("evidence_id") or case_data.get("evidence_id") or f"EVID-{int(datetime.datetime.now().timestamp())}-{uuid.uuid4().hex[:6].upper()}"
     sha256_hash = custody.get("sha256_hash") or case_data.get("sha256_hash") or ""
     file_path = custody.get("file_path") or case_data.get("file_path") or ""
-    file_size = custody.get("file_size") or case_data.get("file_size") or 0
+    stored_filename = custody.get("stored_filename") or case_data.get("stored_filename") or ""
+    if (not file_path or not os.path.exists(file_path)) and stored_filename:
+        resolved = _resolve_stored_filepath(stored_filename)
+        if resolved:
+            file_path = resolved
+
+    file_size = custody.get("file_size") or case_data.get("file_size") or (os.path.getsize(file_path) if file_path and os.path.exists(file_path) else 0)
     mime_type = custody.get("mime_type") or case_data.get("mime_type") or "image/jpeg"
     
     custody_payload = {
@@ -164,7 +267,7 @@ async def create_case(case_data: dict, analysis_data: dict):
         "investigator_name": case_data.get("investigator_name") or "Investigator",
         "analysis_version": "2.1.0",
         "original_filename": custody.get("original_filename") or case_data.get("original_filename") or "document.jpg",
-        "stored_filename": custody.get("stored_filename") or (os.path.basename(file_path) if file_path else "evidence.jpg"),
+        "stored_filename": stored_filename or (os.path.basename(file_path) if file_path else "evidence.jpg"),
         "file_path": file_path,
         "file_size": file_size,
         "mime_type": mime_type,
@@ -179,13 +282,21 @@ async def create_case(case_data: dict, analysis_data: dict):
     fp_vector = fingerprint.get("fingerprint_vector") or []
 
     # 3. Initial Chronological Investigation Timeline
+    ingestion_time = custody_payload["ingestion_timestamp"]
     timeline = [
         {
             "event_type": "EVIDENCE_INGESTED",
-            "timestamp": custody_payload["ingestion_timestamp"],
+            "timestamp": ingestion_time,
             "investigator_id": case_data['user_id'],
             "investigator_name": custody_payload["investigator_name"],
-            "description": f"Evidence ingested. Cryptographic SHA-256 digest ({sha256_hash[:12] if sha256_hash else 'N/A'}...) calculated."
+            "description": f"Evidence specimen '{custody_payload.get('original_filename', 'document.jpg')}' securely ingested into forensic pipeline."
+        },
+        {
+            "event_type": "SHA256_CALCULATED",
+            "timestamp": ingestion_time,
+            "investigator_id": case_data['user_id'],
+            "investigator_name": custody_payload["investigator_name"],
+            "description": f"Cryptographic SHA-256 digest calculated: {sha256_hash}."
         },
         {
             "event_type": "FORENSIC_SCREENING_COMPLETED",
@@ -445,11 +556,17 @@ async def get_case_notes(user_id: str, case_id: str):
         return [{"id": r["id"], "case_id": r["case_id"], "user_id": r["user_id"], "text": r["content"], "created_at": r["created_at"], "investigator_name": r["investigator_name"]} for r in rows]
 
 async def create_case_note(user_id: str, case_id: str, text: str, investigator_name: str):
+    clean_text = (text or "").strip()
+    if not clean_text:
+        raise ValueError("Note text cannot be empty or whitespace only.")
+    if len(clean_text) > 2000:
+        raise ValueError("Note text exceeds maximum allowed length of 2000 characters.")
+
     note = {
         "id": str(uuid.uuid4()),
         "case_id": case_id,
         "user_id": user_id,
-        "content": text,
+        "content": clean_text,
         "investigator_name": investigator_name,
         "created_at": get_iso_time(),
         "updated_at": get_iso_time()
@@ -460,7 +577,7 @@ async def create_case_note(user_id: str, case_id: str, text: str, investigator_n
         await db.notes.insert_one(note)
         # map for frontend
         note["text"] = note["content"]
-        await add_case_timeline_event(user_id, case_id, "NOTE_ADDED", f"Investigator note recorded: '{text[:40]}...'", investigator_name)
+        await add_case_timeline_event(user_id, case_id, "NOTE_ADDED", f"Investigator note recorded: '{clean_text[:40]}...'", investigator_name)
         return fix_id(note)
     else:
         conn = get_sqlite_db()
@@ -471,7 +588,7 @@ async def create_case_note(user_id: str, case_id: str, text: str, investigator_n
         conn.commit()
         conn.close()
         note["text"] = note["content"]
-        await add_case_timeline_event(user_id, case_id, "NOTE_ADDED", f"Investigator note recorded: '{text[:40]}...'", investigator_name)
+        await add_case_timeline_event(user_id, case_id, "NOTE_ADDED", f"Investigator note recorded: '{clean_text[:40]}...'", investigator_name)
         return note
 
 async def add_case_timeline_event(user_id: str, case_id: str, event_type: str, description: str, investigator_name: str = "Investigator"):
@@ -508,6 +625,10 @@ async def add_case_timeline_event(user_id: str, case_id: str, event_type: str, d
 
 async def update_case_status(user_id: str, case_id: str, new_status: str, investigator_name: str = "Investigator"):
     """Updates case status and records timeline event."""
+    allowed_statuses = {"Active", "Under Review", "Closed"}
+    if new_status not in allowed_statuses:
+        raise ValueError(f"Invalid status '{new_status}'. Allowed statuses: {', '.join(allowed_statuses)}")
+
     now = get_iso_time()
     if backend == 'mongodb':
         db = get_mongo_db()
@@ -521,6 +642,7 @@ async def update_case_status(user_id: str, case_id: str, new_status: str, invest
         conn.commit()
         conn.close()
     await add_case_timeline_event(user_id, case_id, "STATUS_CHANGED", f"Case status updated to '{new_status}'", investigator_name)
+    return True
     return True
 
 async def verify_case_custody(user_id: str, case_id: str, investigator_name: str = "Investigator") -> dict:
@@ -540,6 +662,12 @@ async def verify_case_custody(user_id: str, case_id: str, investigator_name: str
     stored_sha = custody.get("sha256_hash") or case.get("sha256_hash") or ""
     evidence_id = custody.get("evidence_id") or case.get("evidence_id") or f"EVID-{case['id'][:8]}"
     file_path = custody.get("file_path") or case.get("file_path") or ""
+    if not file_path or not os.path.exists(file_path):
+        stored_fname = custody.get("stored_filename") or case.get("stored_filename") or ""
+        if stored_fname:
+            resolved = _resolve_stored_filepath(stored_fname)
+            if resolved:
+                file_path = resolved
 
     if not file_path or not os.path.exists(file_path):
         # File is inaccessible or moved; return clear integrity status rather than falsely claiming tampering
@@ -600,7 +728,8 @@ async def verify_case_custody(user_id: str, case_id: str, investigator_name: str
 # --- REPORTS ---
 async def create_report(user_id: str, case_id: str, file_path: str, report_id: str = None):
     if not report_id:
-        report_id = f"RPT-2026-{str(uuid.uuid4().hex)[:4].upper()}"
+        curr_year = datetime.datetime.now(datetime.timezone.utc).year
+        report_id = f"RPT-{curr_year}-{str(uuid.uuid4().hex)[:4].upper()}"
     report_record = {
         "id": str(uuid.uuid4()),
         "report_id": report_id,
@@ -621,6 +750,18 @@ async def create_report(user_id: str, case_id: str, file_path: str, report_id: s
         ''', (report_record['id'], report_record['report_id'], report_record['case_id'], report_record['user_id'], report_record['file_path'], report_record['created_at']))
         conn.commit()
         conn.close()
+
+    try:
+        await add_case_timeline_event(
+            user_id,
+            case_id,
+            "REPORT_GENERATED",
+            f"Forensic investigative report generated with identifier {report_record['report_id']}.",
+            "SENTINEL Reporting Engine"
+        )
+    except Exception:
+        pass
+
     return report_record
 
 async def list_reports(user_id: str):

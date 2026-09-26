@@ -80,7 +80,19 @@ def generate_fallback_response(query: str, ctx: dict, all_cases: list = None, re
     q = query.lower().strip()
     
     # ---------------------------------------------------------
-    # 0. GRATITUDE & POLITE COURTESIES (Like ChatGPT)
+    # 0. DOCKET CASE VALIDATION - DO NOT INVENT CASES
+    # ---------------------------------------------------------
+    explicit_cid_match = re.search(r"\b(SC-\d{4}-[A-Z0-9]+)\b", query, re.IGNORECASE)
+    if explicit_cid_match:
+        target_id = explicit_cid_match.group(1).upper()
+        has_match = (ctx and ctx.get("case_id") == target_id) or (referenced_case and referenced_case.get("case_id") == target_id)
+        if not has_match and all_cases:
+            has_match = any(c.get("case_id") == target_id or c.get("id") == target_id for c in all_cases)
+        if not has_match:
+            return "No matching case was found in your accessible docket."
+
+    # ---------------------------------------------------------
+    # 0.1 GRATITUDE & POLITE COURTESIES (Like ChatGPT)
     # ---------------------------------------------------------
     gratitude_phrases = ["thank you", "thanks", "thx", "thank u", "many thanks", "appreciate it", "great work", "good job", "awesome", "perfect", "helpful", "cheers"]
     if any(p in q for p in gratitude_phrases) and not any(kw in q for kw in ["score", "risk", "flag", "case", "why", "what", "how", "ocr", "ela"]):
@@ -353,10 +365,10 @@ def generate_fallback_response(query: str, ctx: dict, all_cases: list = None, re
         if qr.get("detected"):
             return (
                 f"**QR Verification Summary**:\n"
-                f"• **Status**: Detected ({det_count} Secure QR Code{'s' if det_count > 1 else ''})\n"
+                f"• **Status**: Detected ({det_count} 2D Matrix barcode{'s' if det_count > 1 else ''})\n"
                 f"• **Consistency**: {qr.get('consistency', 'Detected')}\n"
-                f"• **Payload Structure**: Contains high-density, digitally signed biometric XML (UIDAI offline verification standard).\n"
-                f"• **Forensic Note**: The barcodes are valid 2D matrices. Direct optical bitstream decoding requires UIDAI's cryptographic public key or an uncompressed vector scan."
+                f"• **Decoding Note**: 2D matrix detected. Payload authenticity was not cryptographically verified.\n"
+                f"• **Forensic Note**: The barcodes are valid 2D matrices. Official cryptographic signature validation requires authoritative keys."
             )
         return "No valid QR code was detected on this document."
 

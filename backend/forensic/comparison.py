@@ -5,11 +5,56 @@ import os
 from typing import Dict, Any, List, Tuple
 from .heatmap import encode_image_to_base64
 
+def compute_visual_difference_percentage(img_path_a: str, img_path_b: str, diff_threshold: int = 25) -> float:
+    """
+    Computes genuine visual difference percentage between two document specimens.
+    
+    Formula:
+      1. Align Specimen B to Specimen A dimensions (w, h).
+      2. Convert both aligned images to grayscale.
+      3. Compute absolute per-pixel difference matrix: D = |I_A - I_B|.
+      4. Filter out subtle JPEG compression noise by applying grayscale threshold (D > diff_threshold).
+      5. Count significant discrepancy pixels: N_diff = count(D > diff_threshold).
+      6. visual_difference_pct = (N_diff / (w * h)) * 100.0.
+
+    Returns:
+      Float value strictly bounded in [0.0, 100.0].
+      - Identical images: exactly 0.0%
+      - Minor localized differences: > 0.0%
+      - Drastically distinct images: materially higher percentage.
+    """
+    if not img_path_a or not img_path_b or not os.path.exists(img_path_a) or not os.path.exists(img_path_b):
+        return 0.0
+
+    img_a = cv2.imread(img_path_a)
+    img_b = cv2.imread(img_path_b)
+    if img_a is None or img_b is None:
+        return 0.0
+
+    h_a, w_a = img_a.shape[:2]
+    img_b_resized = cv2.resize(img_b, (w_a, h_a), interpolation=cv2.INTER_AREA)
+
+    gray_a = cv2.cvtColor(img_a, cv2.COLOR_BGR2GRAY)
+    gray_b = cv2.cvtColor(img_b_resized, cv2.COLOR_BGR2GRAY)
+
+    abs_diff = cv2.absdiff(gray_a, gray_b)
+    diff_pixels = int(np.count_nonzero(abs_diff > diff_threshold))
+    total_pixels = h_a * w_a
+
+    if total_pixels == 0:
+        return 0.0
+
+    pct = (diff_pixels / float(total_pixels)) * 100.0
+    return round(float(pct), 2)
+
 def generate_visual_diff_heatmap(img_path_a: str, img_path_b: str) -> str:
     """
     Computes OpenCV absolute difference between two document specimens and renders
     a high-contrast thermal difference heatmap.
     """
+    if not img_path_a or not img_path_b or not os.path.exists(img_path_a) or not os.path.exists(img_path_b):
+        return ""
+
     img_a = cv2.imread(img_path_a)
     img_b = cv2.imread(img_path_b)
     
@@ -70,6 +115,7 @@ def compare_ocr_texts(text_a: str, text_b: str) -> Dict[str, Any]:
 def compare_two_documents(analysis_a: Dict[str, Any], analysis_b: Dict[str, Any], file_path_a: str = None, file_path_b: str = None) -> Dict[str, Any]:
     """
     Master comparative analysis function for two document specimens.
+    Calculates genuine pixel difference percentage using the absolute pixel difference matrix.
     Uses neutral, defensible forensic language.
     """
     # 1. Risk score variance
@@ -104,11 +150,13 @@ def compare_two_documents(analysis_a: Dict[str, Any], analysis_b: Dict[str, Any]
             "status": "Signal Difference Detected" if val_a != val_b else "Matching Signal Threshold"
         }
 
-    # 5. Visual Diff Heatmap
+    # 5. Visual Diff Heatmap & Genuine Visual Difference Percentage
     diff_heatmap = ""
+    visual_difference_pct = 0.0
     if file_path_a and file_path_b and os.path.exists(file_path_a) and os.path.exists(file_path_b):
         try:
             diff_heatmap = generate_visual_diff_heatmap(file_path_a, file_path_b)
+            visual_difference_pct = compute_visual_difference_percentage(file_path_a, file_path_b)
         except Exception:
             pass
 
@@ -128,5 +176,6 @@ def compare_two_documents(analysis_a: Dict[str, Any], analysis_b: Dict[str, Any]
         "text_differential": ocr_diff,
         "forensic_signals_differential": pillar_deltas,
         "visual_difference_heatmap": diff_heatmap,
+        "visual_difference_pct": visual_difference_pct,
         "summary": f"Comparative evaluation complete. Specimen A scored {score_a}/100 ({cls_a}) while Specimen B scored {score_b}/100 ({cls_b}) with a risk variance of {risk_diff} points."
     }

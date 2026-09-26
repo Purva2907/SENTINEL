@@ -1,78 +1,99 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from typing import Optional, Any, List
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List
 import json
+
 from auth.jwt import get_current_user
 from database.repository import (
-    create_case, get_case, list_cases, create_case_note,
+    create_case, get_case, list_cases, create_case_note, get_case_notes,
     verify_case_custody, add_case_timeline_event, update_case_status
 )
 from forensic.fingerprint import (
-    extract_document_fingerprint, calculate_cosine_similarity, find_shared_forensic_signals
+    extract_document_fingerprint,
+    calculate_cosine_similarity,
+    find_shared_forensic_signals
 )
+from forensic.evidence import sanitize_custody_for_client
 
 router = APIRouter()
 
-class CaseRequest(BaseModel):
-    title: str
-    description: str = ""
-    status: str = "Active"
-    analysis_data: dict
-    document_type: Optional[str] = None
+def sanitize_case_for_client(case: dict) -> dict:
+    if not case or not isinstance(case, dict):
+        return case
+    c = dict(case)
+    c.pop("file_path", None)
+    if "chain_of_custody" in c and isinstance(c["chain_of_custody"], dict):
+        c["chain_of_custody"] = sanitize_custody_for_client(c["chain_of_custody"])
+    return c
+
+class CaseCreateRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    document_type: Optional[str] = Field(None, max_length=100)
+    status: Optional[str] = Field(default="Active")
     risk_score: Optional[int] = None
     classification: Optional[str] = None
+    analysis: Optional[dict] = None
+    analysis_data: Optional[dict] = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_initial_status(cls, v: Optional[str]) -> str:
+        if not v:
+            return "Active"
+        allowed = {"Active", "Under Review", "Closed"}
+        if v not in allowed:
+            raise ValueError(f"Invalid status '{v}'. Allowed: {', '.join(allowed)}")
+        return v
 
 @router.post("")
 @router.post("/")
-async def save_case(req: CaseRequest, current_user: dict = Depends(get_current_user)):
+async def create_new_case(req: CaseCreateRequest, current_user: dict = Depends(get_current_user)):
     user_id = current_user["id"]
-    analysis_data = req.analysis_data
+    analysis_data = req.analysis or req.analysis_data or {}
     
-    # Priority: top-level explicit field -> analysis_data field -> fallback
-    risk_score_raw = req.risk_score if req.risk_score is not None else analysis_data.get('risk_score')
-    if risk_score_raw is None:
-        risk_score_raw = analysis_data.get('score', 0)
-    try:
-        risk_score = int(risk_score_raw)
-    except (ValueError, TypeError):
-        risk_score = 0
+    risk_score = req.risk_score if req.risk_score is not None else int(analysis_data.get("risk_score", 0))
+    classification = req.classification or analysis_data.get("classification", "Unknown")
+    doc_type = req.document_type or analysis_data.get("document_type", "Unknown")
 
-    document_type = req.document_type or analysis_data.get('document_type') or 'Aadhaar-like'
-    classification = req.classification or analysis_data.get('classification') or 'Likely Authentic'
-    
-    # Ensure fingerprint is present in analysis_data
-    if "fingerprint" not in analysis_data:
-        analysis_data["fingerprint"] = extract_document_fingerprint(analysis_data)
-        
     case_data = {
         "user_id": user_id,
-        "title": req.title,
-        "description": req.description,
+        "title": req.title.strip(),
+        "description": req.description.strip() if req.description else "",
+        "document_type": doc_type,
         "status": req.status or "Active",
-        "document_type": document_type,
         "risk_score": risk_score,
         "classification": classification,
         "investigator_name": current_user.get("name") or "Investigator"
     }
-    
+
     case = await create_case(case_data, analysis_data)
-    return {"message": "Case saved successfully", "case": case}
+    return {"message": "Case created successfully", "case": sanitize_case_for_client(case)}
 
 @router.get("")
 @router.get("/")
 async def get_cases(current_user: dict = Depends(get_current_user)):
     cases = await list_cases(current_user["id"])
-    return {"cases": cases}
+    return {"cases": [sanitize_case_for_client(c) for c in cases]}
 
 @router.get("/{case_id}")
 async def get_single_case(case_id: str, current_user: dict = Depends(get_current_user)):
     case = await get_case(current_user["id"], case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-    return case
+    return sanitize_case_for_client(case)
 
 class StatusUpdateRequest(BaseModel):
     status: str
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        allowed = {"Active", "Under Review", "Closed"}
+        clean = (v or "").strip()
+        if clean not in allowed:
+            raise ValueError(f"Invalid status '{v}'. Allowed statuses: {', '.join(allowed)}")
+        return clean
 
 @router.patch("/{case_id}/status")
 async def change_case_status(case_id: str, req: StatusUpdateRequest, current_user: dict = Depends(get_current_user)):
@@ -80,11 +101,22 @@ async def change_case_status(case_id: str, req: StatusUpdateRequest, current_use
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     inv_name = current_user.get("name") or "Investigator"
-    await update_case_status(current_user["id"], case_id, req.status, inv_name)
+    try:
+        await update_case_status(current_user["id"], case_id, req.status, inv_name)
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err))
     return {"success": True, "message": f"Case status updated to '{req.status}'"}
 
 class NoteRequest(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=2000)
+
+    @field_validator("text")
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        clean = (v or "").strip()
+        if not clean:
+            raise ValueError("Note text cannot be empty or whitespace only.")
+        return clean
 
 @router.post("/{case_id}/notes")
 async def add_note(case_id: str, req: NoteRequest, current_user: dict = Depends(get_current_user)):
@@ -93,7 +125,10 @@ async def add_note(case_id: str, req: NoteRequest, current_user: dict = Depends(
         raise HTTPException(status_code=404, detail="Case not found")
         
     investigator_name = current_user.get("name") or current_user.get("username", "Investigator")
-    note = await create_case_note(current_user["id"], case['id'], req.text, investigator_name)
+    try:
+        note = await create_case_note(current_user["id"], case['id'], req.text, investigator_name)
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err))
     return {"message": "Note added", "note": note}
 
 # --- EVIDENCE CHAIN OF CUSTODY VERIFICATION ---
@@ -116,6 +151,7 @@ async def get_similar_cases(case_id: str, current_user: dict = Depends(get_curre
     """
     Finds archived investigations sharing measurable forensic characteristics with this document.
     Compares normalized fingerprint vectors; excludes the current case; strictly scopes to user's authorized docket.
+    Canonical contract: similarity_score is returned on a 0-100 percentage scale (e.g. 91.0).
     """
     target_case = await get_case(current_user["id"], case_id)
     if not target_case:
@@ -155,16 +191,17 @@ async def get_similar_cases(case_id: str, current_user: dict = Depends(get_curre
 
         if target_vec and other_vec:
             sim = calculate_cosine_similarity(target_vec, other_vec)
-            pct = int(round(sim * 100))
-            if pct >= 40:  # Minimum threshold for similarity report
+            # Canonical representation: 0-100 percentage (e.g. 91.0)
+            score_0_100 = round(float(sim * 100.0), 1)
+            if score_0_100 >= 40.0:  # Minimum threshold for similarity report
                 shared = find_shared_forensic_signals(target_case, other_full)
                 similar_matches.append({
                     "id": other_full.get("id"),
                     "case_id": other_full.get("case_id"),
                     "title": other_full.get("title", "Untitled Case"),
                     "document_type": other_full.get("document_type", "Document"),
-                    "similarity_score": pct,
-                    "similarity_label": f"{pct}% Forensic Similarity",
+                    "similarity_score": score_0_100,
+                    "similarity_label": f"{score_0_100}% Forensic Similarity",
                     "risk_score": other_full.get("risk_score", 0),
                     "classification": other_full.get("classification", "Unknown"),
                     "status": other_full.get("status", "Active"),

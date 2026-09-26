@@ -226,12 +226,12 @@
                 
                 tbody.innerHTML = cases.map(c => `
                     <tr>
-                        <td><strong style="color:var(--cyan)">${c.case_id}</strong></td>
-                        <td>${c.document_type || 'Unknown'}</td>
-                        <td style="font-weight:bold">${typeof c.risk_score === 'number' ? c.risk_score : (c.score !== undefined ? c.score : 0)}</td>
-                        <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${c.classification || 'Unknown'}</span></td>
-                        <td style="color:var(--text-muted)">${new Date(c.created_at).toLocaleDateString()}</td>
-                        <td><a href="case-detail.html?id=${c.id}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a></td>
+                        <td><strong style="color:var(--cyan)">${escapeHtml(c.case_id)}</strong></td>
+                        <td>${escapeHtml(c.document_type || 'Unknown')}</td>
+                        <td style="font-weight:bold">${escapeHtml(typeof c.risk_score === 'number' ? c.risk_score : (c.score !== undefined ? c.score : 0))}</td>
+                        <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${escapeHtml(c.classification || 'Unknown')}</span></td>
+                        <td style="color:var(--text-muted)">${escapeHtml(new Date(c.created_at).toLocaleDateString())}</td>
+                        <td><a href="case-detail.html?id=${encodeURIComponent(c.id)}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a></td>
                     </tr>
                 `).join('');
                 

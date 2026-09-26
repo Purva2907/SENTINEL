@@ -131,7 +131,8 @@ async def generate_and_analyze(req: AnalyzeSampleRequest, current_user: dict = D
         sha256_hash = hashlib.sha256(file_bytes).hexdigest()
 
         investigator_name = current_user.get("name") or "Investigator"
-        analysis_result["chain_of_custody"] = {
+        from forensic.evidence import sanitize_custody_for_client
+        raw_custody = {
             "evidence_id": f"EVID-SYN-{sample['sample_id'][:12]}",
             "sha256_hash": sha256_hash,
             "ingestion_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -145,6 +146,7 @@ async def generate_and_analyze(req: AnalyzeSampleRequest, current_user: dict = D
             "mime_type": "image/jpeg",
             "status": "TAMPER_FREE"
         }
+        analysis_result["chain_of_custody"] = sanitize_custody_for_client(raw_custody)
 
         # Step 3: Compute correlation between injected manipulations and detected signals
         injected = [m.get("manipulation") for m in sample["manipulations_injected"]]
@@ -165,6 +167,7 @@ async def generate_and_analyze(req: AnalyzeSampleRequest, current_user: dict = D
             "success": True,
             "sample_metadata": {
                 "sample_id": sample["sample_id"],
+                "evidence_id": f"EVID-SYN-{sample['sample_id'][:12]}",
                 "document_type": sample["document_type"],
                 "watermark": sample["watermark"],
                 "seed": sample["seed"],
@@ -172,7 +175,7 @@ async def generate_and_analyze(req: AnalyzeSampleRequest, current_user: dict = D
                 "injected_manipulations": sample["manipulations_injected"],
                 "original_image": sample["original_image"],
                 "manipulated_image": sample["manipulated_image"],
-                "file_path": file_path
+                "stored_filename": os.path.basename(file_path)
             },
             "analysis": analysis_result,
             "correlation": {

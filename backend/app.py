@@ -3,16 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from api import analyze, auth, cases, reports, chatbot, analytics, synthetic, compare, contact
 from database.repository import init_db
 
+try:
+    from backend.config import ALLOWED_ORIGINS
+except ImportError:
+    from config import ALLOWED_ORIGINS
+
 app = FastAPI(
     title="SENTINEL API",
     description="AI-Powered Document Forensics API",
     version="2.1.0"
 )
 
-# CORS config
+# CORS config with configurable allowed origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For hackathon demo
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

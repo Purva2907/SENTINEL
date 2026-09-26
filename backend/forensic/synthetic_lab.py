@@ -109,17 +109,26 @@ def create_base_synthetic_document(doc_type: str = "Synthetic ID", seed: int = N
             draw.text((230, cur_y), val, fill=(30, 41, 59), font=f_val)
             cur_y += 28
 
-    # Synthetic 2D QR Code Matrix
-    qr_x, qr_y = w - 170, h - 170
-    draw.rectangle([(qr_x, qr_y), (qr_x + 130, qr_y + 130)], fill=(255, 255, 255), outline=(0, 0, 0), width=2)
-    # Simple synthetic 2D matrix pattern
-    for r in range(13):
-        for c in range(13):
-            # Deterministic pattern
-            if (r in [0, 1, 11, 12] and c in [0, 1, 11, 12]) or ((r + c) % 3 == 0) or ((r * c) % 5 == 0):
-                draw.rectangle([(qr_x + 10 + c * 8, qr_y + 10 + r * 8), (qr_x + 16 + c * 8, qr_y + 16 + r * 8)], fill=(0, 0, 0))
+    # Genuine Synthetic 2D QR Code using qrcode library
+    import qrcode
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=4,
+        border=4,
+    )
+    qr.add_data("SENTINEL-DEMO-001")
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    
+    qr_w, qr_h = 120, 120
+    qr_img_resized = qr_img.resize((qr_w, qr_h), Image.Resampling.NEAREST)
+    qr_x, qr_y = w - 160, h - 165
+
+    draw.rectangle([(qr_x - 3, qr_y - 3), (qr_x + qr_w + 3, qr_y + qr_h + 3)], fill=(255, 255, 255), outline=(100, 116, 139), width=1)
+    img.paste(qr_img_resized, (qr_x, qr_y))
     f_qr = get_font(9)
-    draw.text((qr_x + 15, qr_y + 115), "SECURE 2D MATRIX", fill=(100, 116, 139), font=f_qr)
+    draw.text((qr_x + 6, qr_y + qr_h + 5), "SYNTHETIC QR (DEMO)", fill=(100, 116, 139), font=f_qr)
 
     # Mandatory Visible Synthetic Watermarks
     f_wm = get_font(13, bold=True)
@@ -192,17 +201,18 @@ def apply_manipulation(
         img.paste(patch, (w - splice_w - 60, 110))
         meta["detail"] = f"Injected synthetic graphic patch ({splice_w}x{splice_h}px) with independent quantization profile."
 
-    elif manipulation_type == "qr_corruption":
-        # Corrupt QR matrix zone
-        qr_x, qr_y = w - 170, h - 170
-        noise_size = int(40 + sev_factor * 80)
-        draw.rectangle([(qr_x + 10, qr_y + 10), (qr_x + noise_size, qr_y + noise_size)], fill=(248, 250, 252))
-        # Add random scatter
+    elif manipulation_type in ("qr_corruption", "qr_tamper"):
+        # Corrupt the actual synthetic QR matrix zone (located at w - 160, h - 165, size 120x120)
+        qr_x, qr_y = w - 160, h - 165
+        qr_size = 120
+        corrupt_w = int(30 + sev_factor * 85)
+        corrupt_h = int(30 + sev_factor * 85)
+        draw.rectangle([(qr_x + 5, qr_y + 5), (qr_x + corrupt_w, qr_y + corrupt_h)], fill=(248, 250, 252))
         for _ in range(int(30 + sev_factor * 100)):
-            rx = random.randint(qr_x + 10, qr_x + 120)
-            ry = random.randint(qr_y + 10, qr_y + 120)
+            rx = random.randint(qr_x, qr_x + qr_size)
+            ry = random.randint(qr_y, qr_y + qr_size)
             draw.rectangle([(rx, ry), (rx + 4, ry + 4)], fill=(0, 0, 0))
-        meta["detail"] = f"2D barcode matrix payload corrupted across {noise_size}x{noise_size}px block."
+        meta["detail"] = f"2D barcode matrix payload corrupted across {corrupt_w}x{corrupt_h}px block."
 
     elif manipulation_type == "blur":
         # Apply Gaussian blur
@@ -264,6 +274,8 @@ def generate_synthetic_test_case(
     current_img.save(buf_manip, format="JPEG", quality=90)
     manip_b64 = "data:image/jpeg;base64," + base64.b64encode(buf_manip.getvalue()).decode("utf-8")
 
+    cleanup_old_synthetic_files()
+
     return {
         "sample_id": sample_id,
         "document_type": doc_type,
@@ -277,6 +289,40 @@ def generate_synthetic_test_case(
         "manipulations_injected": manipulations_applied,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
+
+def cleanup_old_synthetic_files(retention_seconds: int = 7200, max_files: int = 40):
+    """
+    Retention policy for synthetic test specimens.
+    Prunes files older than retention_seconds and keeps directory capped at max_files.
+    """
+    try:
+        now = time.time()
+        files = []
+        for fname in os.listdir(SYNTHETIC_DIR):
+            fpath = os.path.join(SYNTHETIC_DIR, fname)
+            if os.path.isfile(fpath):
+                files.append((fpath, os.path.getmtime(fpath)))
+        
+        for fpath, mtime in files:
+            if now - mtime > retention_seconds:
+                try:
+                    os.remove(fpath)
+                except OSError:
+                    pass
+        
+        remaining = [f for f in os.listdir(SYNTHETIC_DIR) if os.path.isfile(os.path.join(SYNTHETIC_DIR, f))]
+        if len(remaining) > max_files:
+            sorted_files = sorted(
+                [(os.path.join(SYNTHETIC_DIR, f), os.path.getmtime(os.path.join(SYNTHETIC_DIR, f))) for f in remaining],
+                key=lambda x: x[1]
+            )
+            for fpath, _ in sorted_files[:len(remaining) - max_files]:
+                try:
+                    os.remove(fpath)
+                except OSError:
+                    pass
+    except Exception:
+        pass
 
 SUPPORTED_MANIPULATIONS = [
     "typography_alteration",

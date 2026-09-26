@@ -1,0 +1,12 @@
+{
+  "name": "sentinel-musa",
+  "version": "1.0.0",
+  "description": "SENTINEL — AI-Powered Document Forensics Platform",
+  "scripts": {
+    "frontend": "npx -y serve frontend -l 3000",
+    "frontend\\": "npx -y serve frontend -l 3000",
+    "serve": "npx -y serve frontend -l 3000",
+    "mail": "cd backend/mail && node mailService.js",
+    "mail:test": "cd backend/mail && npm test"
+  }
+}

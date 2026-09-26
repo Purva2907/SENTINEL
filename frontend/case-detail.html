@@ -949,7 +949,7 @@
                     
                 const contribHtml = `<div class="evidence-score" style="color: ${contrib > 0 ? 'var(--danger)' : 'var(--success)'}; font-size:1.15rem; font-weight:700;">${contrib > 0 ? '+' : ''}${contrib} pts</div>`;
                 
-                const confidenceVal = (typeof ev.confidence === 'number') ? ev.confidence : 75;
+                const confidenceVal = (typeof ev.confidence === 'number') ? ev.confidence : null;
                 const category = ev.category || 'General Forensics';
                 const assessment = ev.assessment || ev.finding || 'Analysis complete.';
                 const observedSignals = ev.observed_metrics || (ev.finding ? [ev.finding] : ['Metric unavailable']);
@@ -970,10 +970,11 @@
                         <!-- Confidence & Tooltip -->
                         <div class="confidence-row">
                             <span style="font-weight:600;">Forensic Signal Confidence:</span>
-                            <span style="color:var(--cyan); font-weight:700;">${confidenceVal}%</span>
+                            <span style="color:${confidenceVal !== null ? 'var(--cyan)' : 'var(--text-muted)'}; font-weight:700;">${confidenceVal !== null ? `${confidenceVal}%` : 'Metric unavailable'}</span>
+                            ${confidenceVal !== null ? `
                             <div class="confidence-bar-bg">
                                 <div class="confidence-bar-fill" style="width: ${confidenceVal}%"></div>
-                            </div>
+                            </div>` : ''}
                             <div class="info-tooltip-wrap">
                                 <i class="fa-solid fa-circle-question" style="color:var(--text-muted); cursor:pointer;"></i>
                                 <span class="tooltip-text">
@@ -1048,7 +1049,7 @@
                     `;
                 } else {
                     list.innerHTML = matches.map(m => {
-                        const simPct = (m.similarity_score !== undefined) ? Math.round(m.similarity_score * 100) : (m.similarity || 0);
+                        const simPct = (m.similarity_score !== undefined) ? Math.round(m.similarity_score) : Math.round(m.similarity || 0);
                         const signals = (m.shared_signals || []).slice(0, 3).join(', ') || 'Shared geometry profile';
                         const docType = (m.document_type || 'DOC').toUpperCase();
 

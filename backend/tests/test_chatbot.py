@@ -15,11 +15,20 @@ def client(tmp_path):
     db_path = tmp_path / "test_chatbot_sentinel.db"
     os.environ["SQLITE_DB_PATH"] = str(db_path)
     with TestClient(app) as test_client:
+        test_client.post("/api/auth/register", json={
+            "email": "testuser@sentinel.org",
+            "password": "Password123!",
+            "name": "Test Investigator"
+        })
         yield test_client
 
 @pytest.fixture
-def auth_token():
-    return create_access_token(data={"sub": "testuser", "id": "user123"})
+def auth_token(client):
+    res = client.post("/api/auth/login", json={
+        "email": "testuser@sentinel.org",
+        "password": "Password123!"
+    })
+    return res.json()["access_token"]
 
 @pytest.fixture
 def auth_headers(auth_token):

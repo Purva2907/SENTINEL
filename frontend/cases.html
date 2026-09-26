@@ -235,19 +235,19 @@
             
             tbody.innerHTML = filtered.map(c => `
                 <tr>
-                    <td><strong style="color:var(--cyan)">${c.case_id}</strong></td>
-                    <td style="font-weight:500;">${c.title}</td>
-                    <td>${c.document_type}</td>
-                    <td style="font-weight:bold;">${c.risk_score}</td>
-                    <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${c.classification}</span></td>
+                    <td><strong style="color:var(--cyan)">${escapeHtml(c.case_id)}</strong></td>
+                    <td style="font-weight:500;">${escapeHtml(c.title)}</td>
+                    <td>${escapeHtml(c.document_type)}</td>
+                    <td style="font-weight:bold;">${escapeHtml(c.risk_score)}</td>
+                    <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${escapeHtml(c.classification)}</span></td>
                     <td>
                         <span style="font-size:0.85rem; padding:4px 8px; border-radius:4px; border:1px solid var(--shell-border); background:rgba(0,0,0,0.2);">
-                            ${c.status}
+                            ${escapeHtml(c.status)}
                         </span>
                     </td>
-                    <td style="color:var(--text-muted)">${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td style="color:var(--text-muted)">${escapeHtml(new Date(c.created_at).toLocaleDateString())}</td>
                     <td>
-                        <a href="case-detail.html?id=${c.id}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a>
+                        <a href="case-detail.html?id=${encodeURIComponent(c.id)}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a>
                     </td>
                 </tr>
             `).join('');

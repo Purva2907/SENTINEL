@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import os
-import shutil
+import uuid
 import time
 
 from auth.jwt import get_current_user
 from database.repository import get_case
 from forensic.pipeline import process_document
 from forensic.comparison import compare_two_documents
+from forensic.evidence import validate_and_decode_image
 
 router = APIRouter()
 
@@ -65,7 +66,7 @@ async def compare_cases_endpoint(req: CompareCasesRequest, current_user: dict = 
         "risk_score_a": score_a,
         "risk_score_b": score_b,
         "risk_score_delta": abs(score_a - score_b),
-        "visual_difference_pct": 12.5 if diff_result.get("visual_difference_heatmap") else 0.0,
+        "visual_difference_pct": diff_result.get("visual_difference_pct", 0.0),
         "ocr_difference": {
             "text_difference_pct": 100.0 - diff_result.get("text_differential", {}).get("word_overlap_percentage", 100.0),
             "words_a": diff_result.get("text_differential", {}).get("word_count_a", 0),
@@ -103,25 +104,31 @@ async def compare_uploaded_files(
     """
     Accepts two uploaded documents, passes each through the SENTINEL forensic pipeline,
     and returns a side-by-side comparative evaluation with difference heatmap.
+    Cleans up temporary comparison files immediately in a finally block.
     """
     if not file_a.filename or not file_b.filename:
         raise HTTPException(status_code=400, detail="Both files must be provided.")
 
-    ts = int(time.time())
-    safe_name_a = "".join(c for c in os.path.basename(file_a.filename) if c.isalnum() or c in "._- ")
-    safe_name_b = "".join(c for c in os.path.basename(file_b.filename) if c.isalnum() or c in "._- ")
-    if not safe_name_a:
-        safe_name_a = "specimen_a.png"
-    if not safe_name_b:
-        safe_name_b = "specimen_b.png"
-    path_a = os.path.join(UPLOAD_DIR, f"cmp_a_{ts}_{safe_name_a}")
-    path_b = os.path.join(UPLOAD_DIR, f"cmp_b_{ts}_{safe_name_b}")
+    try:
+        bytes_a = await file_a.read()
+        bytes_b = await file_b.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read upload streams: {str(e)}")
+
+    # Validate actual image content for both specimens
+    _, ext_a, _ = validate_and_decode_image(bytes_a)
+    _, ext_b, _ = validate_and_decode_image(bytes_b)
+
+    uid_a = uuid.uuid4().hex
+    uid_b = uuid.uuid4().hex
+    path_a = os.path.join(UPLOAD_DIR, f"cmp_temp_{uid_a}{ext_a}")
+    path_b = os.path.join(UPLOAD_DIR, f"cmp_temp_{uid_b}{ext_b}")
 
     try:
         with open(path_a, "wb") as buf_a:
-            shutil.copyfileobj(file_a.file, buf_a)
+            buf_a.write(bytes_a)
         with open(path_b, "wb") as buf_b:
-            shutil.copyfileobj(file_b.file, buf_b)
+            buf_b.write(bytes_b)
 
         # Run both through SENTINEL pipeline
         analysis_a = process_document(path_a)
@@ -131,6 +138,9 @@ async def compare_uploaded_files(
 
         score_a = int(analysis_a.get("risk_score", 0))
         score_b = int(analysis_b.get("risk_score", 0))
+
+        safe_name_a = os.path.basename(file_a.filename)
+        safe_name_b = os.path.basename(file_b.filename)
 
         return {
             "success": True,
@@ -143,7 +153,7 @@ async def compare_uploaded_files(
             "risk_score_a": score_a,
             "risk_score_b": score_b,
             "risk_score_delta": abs(score_a - score_b),
-            "visual_difference_pct": 14.2 if diff_result.get("visual_difference_heatmap") else 0.0,
+            "visual_difference_pct": diff_result.get("visual_difference_pct", 0.0),
             "ocr_difference": {
                 "text_difference_pct": 100.0 - diff_result.get("text_differential", {}).get("word_overlap_percentage", 100.0),
                 "words_a": diff_result.get("text_differential", {}).get("word_count_a", 0),
@@ -152,18 +162,28 @@ async def compare_uploaded_files(
                 "removed_tokens": diff_result.get("text_differential", {}).get("words_unique_to_a", [])
             },
             "specimen_a": {
-                "filename": file_a.filename,
+                "filename": safe_name_a,
                 "risk_score": score_a,
                 "classification": analysis_a.get("classification"),
                 "original_image": analysis_a.get("original_image")
             },
             "specimen_b": {
-                "filename": file_b.filename,
+                "filename": safe_name_b,
                 "risk_score": score_b,
                 "classification": analysis_b.get("classification"),
                 "original_image": analysis_b.get("original_image")
             },
             "comparison": diff_result
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Comparison failed: {str(e)}")
+    finally:
+        # Strict ephemeral cleanup: delete comparison temporary files
+        for p in (path_a, path_b):
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except Exception:
+                pass

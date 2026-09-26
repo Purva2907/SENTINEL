@@ -126,71 +126,74 @@
 
                 <!-- Hero Right: Interactive 3D Synthetic Document Scene -->
                 <div class="hero-right">
-                    <div class="demo-badge-watermark">
-                        <i class="fa-solid fa-circle-dot" style="color: var(--cyan);"></i>
-                        <span>LIVE FORENSIC DEMO</span>
-                    </div>
+                    <div class="hero-3d-container" id="hero-3d-container" role="region" aria-label="Interactive 3D Synthetic Document Visualizer">
+                        <!-- Three.js Canvas Container -->
+                        <div id="canvas-container"></div>
 
-                    <!-- Three.js Canvas Container -->
-                    <div id="canvas-container" role="region" aria-label="Interactive 3D Synthetic Document Visualizer"></div>
-
-                    <!-- Floating Forensic Glass Analysis Cards -->
-                    <div class="floating-panel-layer" aria-hidden="true">
-                        <!-- OCR Analysis Panel -->
-                        <div class="glass-forensic-card panel-ocr">
-                            <div class="card-header-mini">
-                                <span class="card-title-mini">OCR ANALYSIS</span>
-                                <span class="card-status-badge badge-success">92%</span>
-                            </div>
-                            <div class="card-metric-row">
-                                <span class="card-metric-val">TEXT MATCH</span>
-                            </div>
-                            <div class="card-mini-bar">
-                                <div class="card-mini-bar-fill" style="width: 92%; background: var(--green);"></div>
-                            </div>
+                        <!-- Live Demo Watermark Badge -->
+                        <div class="demo-badge-watermark">
+                            <i class="fa-solid fa-circle-dot" style="color: var(--cyan);"></i>
+                            <span>LIVE FORENSIC DEMO</span>
                         </div>
 
-                        <!-- QR Analysis Panel -->
-                        <div class="glass-forensic-card panel-qr">
-                            <div class="card-header-mini">
-                                <span class="card-title-mini">QR ANALYSIS</span>
-                                <span class="card-status-badge badge-danger">ANOMALY</span>
+                        <!-- Floating Forensic Glass Analysis Cards -->
+                        <div class="floating-panel-layer" aria-hidden="true">
+                            <!-- OCR Analysis Panel -->
+                            <div class="glass-forensic-card panel-ocr">
+                                <div class="card-header-mini">
+                                    <span class="card-title-mini">OCR ANALYSIS</span>
+                                    <span class="card-status-badge badge-success">92%</span>
+                                </div>
+                                <div class="card-metric-row">
+                                    <span class="card-metric-val">TEXT MATCH</span>
+                                </div>
+                                <div class="card-mini-bar">
+                                    <div class="card-mini-bar-fill" style="width: 92%; background: var(--green);"></div>
+                                </div>
                             </div>
-                            <div class="card-metric-row">
-                                <span class="card-metric-val" style="color: var(--danger); font-size: 0.95rem;">DETECTED</span>
-                            </div>
-                            <div class="card-metric-sub">DECODE STATUS: SYNTHETIC</div>
-                        </div>
 
-                        <!-- Layout Check Panel -->
-                        <div class="glass-forensic-card panel-layout">
-                            <div class="card-header-mini">
-                                <span class="card-title-mini">LAYOUT CHECK</span>
-                                <span class="card-status-badge badge-warning">DRIFT</span>
+                            <!-- QR Analysis Panel -->
+                            <div class="glass-forensic-card panel-qr">
+                                <div class="card-header-mini">
+                                    <span class="card-title-mini">QR ANALYSIS</span>
+                                    <span class="card-status-badge badge-danger">ANOMALY</span>
+                                </div>
+                                <div class="card-metric-row">
+                                    <span class="card-metric-val" style="color: var(--danger); font-size: 0.95rem;">DETECTED</span>
+                                </div>
+                                <div class="card-metric-sub">DECODE STATUS: SYNTHETIC</div>
                             </div>
-                            <div class="card-metric-row">
-                                <span class="card-metric-val" style="color: var(--orange); font-size: 0.95rem;">ANOMALY SIGNAL</span>
-                            </div>
-                            <div class="card-metric-sub">OFFSET: +4.2mm MARGIN</div>
-                        </div>
 
-                        <!-- ELA Analysis Heatmap Panel -->
-                        <div class="glass-forensic-card panel-ela">
-                            <div class="card-header-mini">
-                                <span class="card-title-mini">ELA ANALYSIS</span>
-                                <span class="card-status-badge badge-warning">HEATMAP</span>
+                            <!-- Layout Check Panel -->
+                            <div class="glass-forensic-card panel-layout">
+                                <div class="card-header-mini">
+                                    <span class="card-title-mini">LAYOUT CHECK</span>
+                                    <span class="card-status-badge badge-warning">DRIFT</span>
+                                </div>
+                                <div class="card-metric-row">
+                                    <span class="card-metric-val" style="color: var(--orange); font-size: 0.95rem;">ANOMALY SIGNAL</span>
+                                </div>
+                                <div class="card-metric-sub">OFFSET: +4.2mm MARGIN</div>
                             </div>
-                            <canvas id="ela-heatmap-canvas" class="ela-preview-canvas"></canvas>
-                        </div>
 
-                        <!-- Typography Analysis Panel -->
-                        <div class="glass-forensic-card panel-typography">
-                            <div class="card-header-mini">
-                                <span class="card-title-mini">TYPOGRAPHY</span>
-                                <span class="card-status-badge badge-warning">ALERT</span>
+                            <!-- ELA Analysis Heatmap Panel -->
+                            <div class="glass-forensic-card panel-ela">
+                                <div class="card-header-mini">
+                                    <span class="card-title-mini">ILLUSTRATIVE ELA VISUAL</span>
+                                    <span class="card-status-badge badge-warning">DEMO</span>
+                                </div>
+                                <canvas id="ela-heatmap-canvas" class="ela-preview-canvas"></canvas>
                             </div>
-                            <div class="card-metric-row">
-                                <span class="card-metric-val" style="font-size: 0.9rem;">BASELINE JITTER</span>
+
+                            <!-- Typography Analysis Panel -->
+                            <div class="glass-forensic-card panel-typography">
+                                <div class="card-header-mini">
+                                    <span class="card-title-mini">TYPOGRAPHY</span>
+                                    <span class="card-status-badge badge-warning">ALERT</span>
+                                </div>
+                                <div class="card-metric-row">
+                                    <span class="card-metric-val" style="font-size: 0.9rem;">BASELINE JITTER</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -349,7 +352,7 @@
                 <h2 class="section-title">THE SENTINEL WORKFLOW</h2>
                 <p class="section-desc">
                     A rigorous 6-stage forensics pipeline that executes deterministic verification routines,
-                    anchors cryptographic chains of custody, and produces court-ready documentation.
+                    anchors cryptographic chains of custody, and produces structured forensic reports.
                 </p>
             </div>
 
@@ -617,23 +620,23 @@
                             <span class="copilot-name">SENTINEL Copilot</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <span class="model-pill-badge">Llama-3.3-70B / Gemini</span>
-                            <span class="model-pill-badge" style="color: var(--green); border-color: rgba(85,224,126,0.4);">ONLINE</span>
+                            <span class="model-pill-badge" style="color: var(--cyan); border-color: rgba(29,206,216,0.4);">ILLUSTRATIVE COPILOT DEMO</span>
+                            <span class="model-pill-badge" style="color: var(--green); border-color: rgba(85,224,126,0.4);">DEMO MODE</span>
                         </div>
                     </div>
 
                     <div class="copilot-chat-body" id="copilotChatBody">
                         <!-- Message 1 -->
                         <div class="chat-bubble chat-bubble-user">
-                            <strong>Investigator:</strong> Why was specimen SENTINEL-DEMO-001 flagged as high suspicion?
+                            <strong>Investigator:</strong> Why was demonstration sample DEMO-SPECIMEN-001 flagged for review?
                         </div>
                         <!-- Message 2 -->
                         <div class="chat-bubble chat-bubble-ai">
-                            <strong>SENTINEL Copilot:</strong> The document was flagged due to two high-severity orthogonal signals:
+                            <strong>SENTINEL Copilot:</strong> In this illustrative scenario, the document was flagged due to two measurable signals:
                             <br><br>
-                            1. <strong>Typography:</strong> Detected +25 risk from baseline curvature anomalies in the name line.
+                            1. <strong>Typography:</strong> Detected +25 risk from font baseline curvature drift in text lines.
                             <br>
-                            2. <strong>QR Payload Mismatch:</strong> The QR matrix decodes to synthetic payload <code>SENTINEL-DEMO-QR</code>, which contradicts the visible demographic identity.
+                            2. <strong>QR Decoding:</strong> 2D barcode payload was detected but could not be decoded. Payload authenticity was not cryptographically verified.
                         </div>
                     </div>
 
@@ -679,7 +682,7 @@
                 <div class="pillar-card-detailed">
                     <div class="pillar-icon-large"><i class="fa-solid fa-code-compare"></i></div>
                     <h3>Comparative Dossier Engine</h3>
-                    <p>Compare suspect documents side-by-side against verified templates or historical cases to uncover batch synthesis patterns.</p>
+                    <p>Compare suspect documents side-by-side against observable document characteristics or historical cases to uncover batch synthesis patterns.</p>
                     <a href="compare.html" class="nav-btn-login" style="margin-top: 10px;">Compare Cases &rarr;</a>
                 </div>
 
@@ -708,7 +711,7 @@
                 <div class="pillar-card-detailed">
                     <div class="pillar-icon-large"><i class="fa-solid fa-lock"></i></div>
                     <h3>Authenticated Access (JWT)</h3>
-                    <p>Strict role-based session isolation. Secure cryptographic JWT tokens govern all investigation actions and case dossier access.</p>
+                    <p>Authenticated case access scoped to the investigator. Secure cryptographic JWT tokens govern all investigation actions and case dossier access.</p>
                 </div>
 
                 <div class="pillar-card-detailed">
@@ -720,7 +723,7 @@
                 <div class="pillar-card-detailed">
                     <div class="pillar-icon-large"><i class="fa-solid fa-link"></i></div>
                     <h3>SHA-256 Chain of Custody</h3>
-                    <p>All ingested documents receive an immutable SHA-256 hash stamp upon receipt, guaranteeing verifiable evidence integrity throughout the audit lifecycle.</p>
+                    <p>All ingested documents receive an immutable SHA-256 hash stamp upon receipt, providing a SHA-256 integrity check throughout the audit lifecycle.</p>
                 </div>
             </div>
         </section>
@@ -887,7 +890,7 @@
                     <a href="login.html">Investigator Login</a>
                     <a href="register.html">Account Registration</a>
                     <a href="#contact">Request Demo</a>
-                    <a href="https://github.com" target="_blank" rel="noopener">GitHub Repository</a>
+                    <a href="https://github.com/Purva2907/SENTINEL" target="_blank" rel="noopener">GitHub Repository</a>
                     <a href="#security">Privacy & Terms</a>
                 </div>
             </div>

@@ -134,8 +134,11 @@ def generate_heatmap(image_path: str, evidence: list = None) -> str:
         std_val = float(np.std(diff_gray))
         
         # 2. Honest visualization scaling
-        # Check if localized anomaly exists in evidence or signal
-        has_anomaly = any(ev.get("category") in ("Image Forensics", "Quality") and ev.get("risk_contribution", 0) > 10 for ev in (evidence or []))
+        # ELA visualization is strictly based on image_forensics / ELA evidence, NOT image quality.
+        has_anomaly = any(
+            ev.get("category") == "Image Forensics" and ev.get("risk_contribution", 0) > 0
+            for ev in (evidence or [])
+        )
         if not has_anomaly:
             # Check directly from diff_gray
             bh, bw = max(1, h // 8), max(1, w // 8)

@@ -497,27 +497,27 @@
             const evidence = data.analysis.evidence || [];
             let evHtml = '';
             evidence.forEach(ev => {
-                const conf = ev.confidence !== undefined ? ev.confidence : 85;
+                const confText = (typeof ev.confidence === 'number') ? `${ev.confidence}%` : 'Metric unavailable';
                 const metricsList = ev.observed_metrics && ev.observed_metrics.length 
-                    ? ev.observed_metrics.map(m => `<li>${m}</li>`).join('') 
-                    : `<li>${ev.finding}</li>`;
+                    ? ev.observed_metrics.map(m => `<li>${escapeHtml(m)}</li>`).join('') 
+                    : `<li>${escapeHtml(ev.finding || '')}</li>`;
                 
                 evHtml += `
                     <div style="background:rgba(0,0,0,0.3); border:1px solid var(--shell-border); border-radius:6px; padding:16px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <strong style="color:var(--cyan); font-size:0.95rem;">${ev.title}</strong>
+                            <strong style="color:var(--cyan); font-size:0.95rem;">${escapeHtml(ev.title || 'Forensic Indicator')}</strong>
                             <span style="font-size:0.8rem; font-weight:700; color:${ev.risk_contribution > 0 ? 'var(--orange)' : 'var(--success)'};">
-                                +${ev.risk_contribution} pts
+                                +${escapeHtml(ev.risk_contribution || 0)} pts
                             </span>
                         </div>
                         <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">
-                            Forensic Signal Confidence: <strong style="color:var(--text-main);">${conf}%</strong>
+                            Forensic Signal Confidence: <strong style="color:var(--text-main);">${escapeHtml(confText)}</strong>
                         </div>
                         <ul style="padding-left:16px; font-size:0.82rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.4;">
                             ${metricsList}
                         </ul>
                         <div style="font-size:0.8rem; background:rgba(29,206,216,0.06); border-left:3px solid var(--cyan); padding:6px 10px; color:var(--text-main); font-style:italic;">
-                            "${ev.assessment || ev.explanation}"
+                            "${escapeHtml(ev.assessment || ev.explanation || '')}"
                         </div>
                     </div>
                 `;

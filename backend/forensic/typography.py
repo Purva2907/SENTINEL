@@ -98,6 +98,9 @@ def analyze_typography(image_path: str, ocr_result: dict = None) -> dict:
             if max_sat > 80 and med_sat < 35:
                 ink_color_flag = True
                 
+        height_ratio = round(max_h / med_h, 2) if (len(heights) >= 3 and med_h > 0) else None
+        sat_delta = round(max_sat - med_sat, 1) if (len(field_color_deviations) >= 2) else None
+
         score = 100
         risk_contrib = 0
         findings = []
@@ -105,27 +108,31 @@ def analyze_typography(image_path: str, ocr_result: dict = None) -> dict:
         if height_variance_flag and ink_color_flag:
             score = 45
             risk_contrib = 18
-            findings.append("Disproportionate font dimensions detected in primary document fields.")
-            findings.append("Significant text ink color discrepancy detected (potential digitally inserted text).")
+            findings.append("Disproportionate text bounding-box heights detected in primary document fields.")
+            findings.append("Significant text ink saturation discrepancy detected (potential digitally inserted text).")
         elif height_variance_flag:
             score = 65
             risk_contrib = 10
-            findings.append("Non-standard font size variation detected between peer fields.")
+            findings.append("Non-standard text bounding-box height variation detected between peer fields.")
         elif ink_color_flag:
             score = 65
             risk_contrib = 10
-            findings.append("Chromatic ink variation observed among printed text elements.")
+            findings.append("Chromatic ink saturation variation observed among printed text elements.")
         else:
-            findings.append("Consistent font family, sizing, and ink density across document fields.")
+            findings.append("Consistent bounding-box heights and ink saturation across detected text lines.")
             
         return {
             "score": score,
             "risk_contribution": risk_contrib,
+            "height_ratio": height_ratio,
+            "saturation_delta": sat_delta,
             "findings": findings
         }
     except Exception as e:
         return {
             "score": 85,
             "risk_contribution": 0,
+            "height_ratio": None,
+            "saturation_delta": None,
             "findings": [f"Typography evaluation completed with baseline profile ({str(e)})."]
         }

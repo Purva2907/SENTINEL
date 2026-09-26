@@ -606,27 +606,36 @@
                     if (badgeEl) badgeEl.style.display = 'none';
                 }
 
-                if (data.qr.decoded) {
-                    decEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> YES';
+                if (data.qr.status === 'NOT_APPLICABLE') {
+                    decEl.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem; font-weight:700;">NOT_APPLICABLE</span>';
+                    if (noticeEl) {
+                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-info" style="color:var(--text-muted); margin-right:4px;"></i> QR barcode verification not applicable for this document type.';
+                    }
+                    if (payloadBox) payloadBox.style.display = 'none';
+                } else if (data.qr.decoded) {
+                    decEl.innerHTML = '<span style="color:var(--success); font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-circle-check"></i> DECODED</span>';
                     if (payloadBox && payloadText && data.qr.payload) {
                         payloadText.innerText = data.qr.payload;
                         payloadBox.style.display = 'block';
                     }
                     if (noticeEl) {
-                        noticeEl.innerHTML = '<i class="fa-solid fa-shield-halved" style="color:var(--cyan); margin-right:4px;"></i> QR barcode successfully decoded and verified against forensic payload standards.';
+                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success); margin-right:4px;"></i> QR payload decoded successfully. Payload authenticity was not cryptographically verified.';
                     }
                 } else if (data.qr.detected) {
-                    decEl.innerHTML = '<span style="color:var(--warning); font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> SECURE (UIDAI)</span>';
+                    decEl.innerHTML = '<span style="color:var(--warning); font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> DETECTED_NOT_DECODED</span>';
                     if (payloadBox && payloadText) {
-                        payloadText.innerHTML = `<span style="color:var(--text-muted); font-size:0.78rem;">High-density 2D matrix detected (${count} barcode${count > 1 ? 's' : ''}). Contains compressed & digitally signed biometric payload (UIDAI offline XML standard). Optical decoding requires original uncompressed vector scan.</span>`;
+                        payloadText.innerHTML = `<span style="color:var(--text-muted); font-size:0.78rem;">2D matrix detected but payload could not be decoded. Payload authenticity was not cryptographically verified.</span>`;
                         payloadBox.style.display = 'block';
                     }
                     if (noticeEl) {
-                        noticeEl.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--warning); margin-right:4px;"></i> ${count} secure QR code${count > 1 ? 's' : ''} detected on document canvas.`;
+                        noticeEl.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--warning); margin-right:4px;"></i> 2D matrix detected (${count} barcode${count > 1 ? 's' : ''}) but payload could not be decoded. Payload authenticity was not cryptographically verified.`;
                     }
                 } else {
-                    decEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i> NO';
+                    decEl.innerHTML = '<span style="color:var(--danger); font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> NOT_DETECTED</span>';
                     if (payloadBox) payloadBox.style.display = 'none';
+                    if (noticeEl) {
+                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--danger); margin-right:4px;"></i> No 2D barcode or QR code detected on canvas.';
+                    }
                 }
             }
 

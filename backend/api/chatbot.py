@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    from openai import OpenAI
+    from openai import AsyncOpenAI
 except ImportError:
-    OpenAI = None
+    AsyncOpenAI = None
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from chatbot.fallback import generate_fallback_response
@@ -39,9 +39,10 @@ You operate with the conversational fluency, politeness, and interactivity of Ch
 Key Behaviors:
 1. Conversational & Polite: If the user says "thank you", "thanks", "good job", or greets you, respond warmly, politely, and proactively suggest relevant forensic next steps or cross-case insights.
 2. Multi-Case Awareness: You have access to the investigator's active cases docket. When the user asks about ANY other case (by title, document type like Passport/PAN/Voter ID, or Case ID like SC-2026-XXXX), summarize, explain, or compare that case against the current active case.
-3. Deep Forensic Explainability: Explain risk scores, ELA splicing heatmaps, typography kerning/disparities, layout margins, OCR confidence, and QR payload cryptography.
+3. Deep Forensic Explainability: Explain risk scores, ELA splicing heatmaps, typography kerning/disparities, layout margins, OCR confidence, and QR payload status.
 4. Summary on Demand: When the user asks for a summary or if token limits are referenced, produce a concise, high-impact executive dossier.
 5. Integrity & Boundaries: Never claim official government authentication, UIDAI backend access, or 100% guaranteed authenticity/fakeness. Use terms like "forensic screening", "risk indicator", "tampering signal", and "manual review".
+6. Docket Scoping: All case references must originate strictly from the investigator's authorized docket provided in context. If the user asks about a case that is not in their docket, state clearly: 'No matching case was found in your accessible docket.' Never invent or fabricate Case IDs or cases.
 
 Format responses cleanly using Markdown bullet points, bold highlights, and tables where appropriate."""
 
@@ -77,8 +78,8 @@ async def call_gemini(api_key: str, system_prompt: str, history: List[ChatMessag
                     parts = candidates[0]["content"].get("parts", [])
                     if parts and "text" in parts[0]:
                         return parts[0]["text"]
-            elif resp.status_code in [429, 403]:
-                # Token or quota exhaustion
+            elif resp.status_code == 429:
+                # Token or quota exhaustion specifically
                 return "TOKEN_LIMIT_EXHAUSTED"
     except Exception:
         pass
@@ -158,14 +159,27 @@ async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends
             if request.target_case_name.lower() in (c.get("title", "") + " " + c.get("case_id", "")).lower():
                 referenced_case = await get_case(current_user["id"], c["id"])
                 break
+        if not referenced_case:
+            # Check if it was asking about active case
+            if not (ctx and request.target_case_name.lower() in (ctx.get("case_title", "") + " " + ctx.get("case_id", "")).lower()):
+                return {
+                    "success": True,
+                    "response": "No matching case was found in your accessible docket.",
+                    "source": "docket_scope"
+                }
 
     # Check query for explicit Case ID (e.g. SC-2026-XXXX)
-    if not referenced_case:
-        case_id_match = re.search(r"\b(SC-\d{4}-[A-Z0-9]+)\b", request.message, re.IGNORECASE)
-        if case_id_match:
-            found_cid = case_id_match.group(1).upper()
-            if found_cid in cases_lookup and (not request.case_id or found_cid != ctx.get('case_id')):
-                referenced_case = await get_case(current_user["id"], cases_lookup[found_cid]["id"])
+    case_id_match = re.search(r"\b(SC-\d{4}-[A-Z0-9]+)\b", request.message, re.IGNORECASE)
+    if case_id_match:
+        found_cid = case_id_match.group(1).upper()
+        if found_cid in cases_lookup and (not request.case_id or found_cid != ctx.get('case_id')):
+            referenced_case = await get_case(current_user["id"], cases_lookup[found_cid]["id"])
+        elif (not ctx or ctx.get('case_id') != found_cid) and found_cid not in cases_lookup:
+            return {
+                "success": True,
+                "response": "No matching case was found in your accessible docket.",
+                "source": "docket_scope"
+            }
 
     # Check query for document types or keywords matching another case
     if not referenced_case:
@@ -231,7 +245,7 @@ async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends
             fallback_text = generate_fallback_response(request.message, ctx, user_cases, referenced_case)
             return {
                 "success": True,
-                "response": f"*(Notice: LLM token limit/quota reached. Generated comprehensive forensic summary below)*\n\n{fallback_text}",
+                "response": f"*(Notice: Token/quota limit reached. Generated comprehensive forensic summary below)*\n\n{fallback_text}",
                 "source": "summary_fallback"
             }
         elif llm_reply:
@@ -248,7 +262,7 @@ async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends
             fallback_text = generate_fallback_response(request.message, ctx, user_cases, referenced_case)
             return {
                 "success": True,
-                "response": f"*(Notice: LLM token limit reached. Generated comprehensive forensic summary below)*\n\n{fallback_text}",
+                "response": f"*(Notice: Token/quota limit reached. Generated comprehensive forensic summary below)*\n\n{fallback_text}",
                 "source": "summary_fallback"
             }
         elif llm_reply:
@@ -258,17 +272,17 @@ async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends
                 "source": "groq"
             }
 
-    # Priority 3: OpenAI (if key provided)
-    if openai_key and OpenAI:
+    # Priority 3: OpenAI Async (if key provided)
+    if openai_key and AsyncOpenAI:
         try:
-            client = OpenAI(api_key=openai_key)
+            client = AsyncOpenAI(api_key=openai_key)
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
             messages.append({"role": "system", "content": f"Forensic Context: {json.dumps(llm_context, default=str)[:8000]}"})
             for msg in request.history[-10:]:
                 messages.append({"role": msg.role, "content": msg.content})
             messages.append({"role": "user", "content": request.message})
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=messages,
                 max_tokens=600,
@@ -280,14 +294,16 @@ async def chat_with_assistant(request: ChatRequest, current_user: dict = Depends
                 "source": "llm"
             }
         except Exception as e:
+            err_status = getattr(e, "status_code", None)
             err_str = str(e).lower()
-            if "quota" in err_str or "rate_limit" in err_str or "429" in err_str:
+            if err_status == 429 or "429" in err_str or "quota" in err_str or "rate_limit" in err_str:
                 fallback_text = generate_fallback_response(request.message, ctx, user_cases, referenced_case)
                 return {
                     "success": True,
-                    "response": f"*(Notice: OpenAI token/quota limit reached. Switched to autonomous forensic summary)*\n\n{fallback_text}",
+                    "response": f"*(Notice: Token/quota limit reached. Switched to autonomous forensic summary)*\n\n{fallback_text}",
                     "source": "summary_fallback"
                 }
+            # Other errors (401, 403, 5xx, timeouts) do not emit quota warning and fall through to local engine
 
     # 5. Local Autonomous Forensic Intelligence Engine (Zero Token / Offline / Instant)
     answer = generate_fallback_response(request.message, ctx, all_cases=user_cases, referenced_case=referenced_case)
