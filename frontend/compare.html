@@ -710,8 +710,8 @@
                             <div class="upload-zone" id="uploadZoneA" onclick="document.getElementById('fileA').click()">
                                 <i class="fa-solid fa-file-arrow-up upload-zone-icon" style="color:var(--cyan);"></i>
                                 <p class="upload-zone-title">Upload Specimen A</p>
-                                <span class="upload-zone-sub text-muted">PNG, JPG, TIFF up to 15MB</span>
-                                <input type="file" id="fileA" accept="image/*" style="display:none;" onchange="handleFileSelect('A', event)">
+                                <span class="upload-zone-sub text-muted">PDF, PNG, JPG, WEBP up to 25MB</span>
+                                <input type="file" id="fileA" accept="image/*,application/pdf,.pdf" style="display:none;" onchange="handleFileSelect('A', event)">
                             </div>
                             <div class="evidence-file-card specimen-a-card" id="evidenceCardA" style="display:none;">
                                 <div class="evidence-card-content">
@@ -756,8 +756,8 @@
                             <div class="upload-zone" id="uploadZoneB" onclick="document.getElementById('fileB').click()">
                                 <i class="fa-solid fa-file-arrow-up upload-zone-icon" style="color:var(--orange);"></i>
                                 <p class="upload-zone-title">Upload Specimen B</p>
-                                <span class="upload-zone-sub text-muted">PNG, JPG, TIFF up to 15MB</span>
-                                <input type="file" id="fileB" accept="image/*" style="display:none;" onchange="handleFileSelect('B', event)">
+                                <span class="upload-zone-sub text-muted">PDF, PNG, JPG, WEBP up to 25MB</span>
+                                <input type="file" id="fileB" accept="image/*,application/pdf,.pdf" style="display:none;" onchange="handleFileSelect('B', event)">
                             </div>
                             <div class="evidence-file-card specimen-b-card" id="evidenceCardB" style="display:none;">
                                 <div class="evidence-card-content">
@@ -984,6 +984,7 @@
             <div class="specimen-modal-viewport">
                 <div class="specimen-modal-canvas">
                     <img id="modalSpecimenImg" src="" alt="Forensic Specimen Preview" class="specimen-modal-image">
+                    <iframe id="modalSpecimenPdf" src="about:blank" style="display:none; width:100%; height:70vh; border:none; border-radius:8px; background:#fff;"></iframe>
                 </div>
             </div>
             <div class="specimen-modal-footer">
@@ -996,6 +997,7 @@
     </div>
 
     <script src="js/brand.js"></script>
+    <script src="js/nav.js"></script>
     <script src="js/theme.js?v=2.2"></script>
     <script src="js/toast.js?v=2.2"></script>
     <script src="js/auth.js?v=2.2"></script>
@@ -1036,6 +1038,9 @@
 
         function getFileType(file) {
             if (!file) return 'FILE';
+            if ((file.name && file.name.toLowerCase().endsWith('.pdf')) || file.type === 'application/pdf') {
+                return 'PDF';
+            }
             if (file.name && file.name.includes('.')) {
                 return file.name.split('.').pop().toUpperCase();
             }
@@ -1227,8 +1232,24 @@
             if (metaEl) {
                 metaEl.textContent = `${getFileType(file)} • ${formatFileSize(file.size)}`;
             }
-            if (imgEl) {
-                imgEl.src = url;
+            const isPdf = (file.name && file.name.toLowerCase().endsWith('.pdf')) || file.type === 'application/pdf';
+            const pdfFrame = document.getElementById('modalSpecimenPdf');
+
+            if (isPdf) {
+                if (imgEl) imgEl.style.display = 'none';
+                if (pdfFrame) {
+                    pdfFrame.style.display = 'block';
+                    pdfFrame.src = url;
+                }
+            } else {
+                if (pdfFrame) {
+                    pdfFrame.style.display = 'none';
+                    pdfFrame.src = 'about:blank';
+                }
+                if (imgEl) {
+                    imgEl.style.display = 'block';
+                    imgEl.src = url;
+                }
             }
 
             if (modal) {
@@ -1246,6 +1267,11 @@
             const imgEl = document.getElementById('modalSpecimenImg');
             if (imgEl) {
                 imgEl.src = '';
+            }
+            const pdfFrame = document.getElementById('modalSpecimenPdf');
+            if (pdfFrame) {
+                pdfFrame.style.display = 'none';
+                pdfFrame.src = 'about:blank';
             }
         }
 

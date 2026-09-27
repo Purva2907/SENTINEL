@@ -169,6 +169,15 @@
         }
       });
 
+      // Standardize Sidebar Navigation if SentinelNav is present, or load nav.js dynamically
+      if (window.SentinelNav && typeof window.SentinelNav.init === 'function') {
+        window.SentinelNav.init();
+      } else if (!document.querySelector('script[src*="nav.js"]')) {
+        const navScript = document.createElement('script');
+        navScript.src = 'js/nav.js';
+        document.head.appendChild(navScript);
+      }
+
       this.updateTheme(currentTheme);
     },
 

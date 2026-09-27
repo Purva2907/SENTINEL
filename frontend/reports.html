@@ -673,7 +673,7 @@
                     </div>
 
                     <form id="reportUploadForm">
-                        <input type="file" id="evidenceFileInput" accept="image/jpeg, image/png, image/webp" style="display:none;">
+                        <input type="file" id="evidenceFileInput" accept="image/jpeg, image/png, image/webp, application/pdf, .pdf" style="display:none;">
 
                         <!-- Drag and Drop Zone -->
                         <div class="dropzone-container" id="reportDropzone" onclick="document.getElementById('evidenceFileInput').click()">
@@ -681,7 +681,7 @@
                             <div class="dropzone-title">Drop Evidence File to Generate Report</div>
                             <div class="dropzone-desc">or click anywhere in this zone to select from your workstation</div>
                             <div class="dropzone-tags">
-                                <span class="tag-pill"><i class="fa-solid fa-image"></i> JPG / PNG / WEBP</span>
+                                <span class="tag-pill"><i class="fa-solid fa-file-shield"></i> PDF / JPG / PNG / WEBP</span>
                                 <span class="tag-pill"><i class="fa-solid fa-microchip"></i> Full Signal Extraction</span>
                                 <span class="tag-pill"><i class="fa-solid fa-file-pdf"></i> Instant PDF Compilation</span>
                             </div>
@@ -691,6 +691,9 @@
                         <div class="preview-box" id="filePreviewBox">
                             <div class="preview-content">
                                 <img id="previewImage" class="preview-thumbnail" src="#" alt="Evidence Preview">
+                                <div id="reportPdfIcon" style="display:none; width:64px; height:64px; border-radius:10px; background:rgba(255,77,77,0.15); border:1px solid rgba(255,77,77,0.3); align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i class="fa-solid fa-file-pdf" style="font-size:1.8rem; color:#ff4d4d;"></i>
+                                </div>
                                 <div class="preview-meta">
                                     <div class="preview-name" id="previewFileName">document.jpg</div>
                                     <div class="preview-details">
@@ -975,26 +978,39 @@
             });
 
             function selectFile(file) {
-                const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-                if(!validTypes.includes(file.type)) {
-                    Toast.warning("Invalid File Format", "Please select a valid image file (JPG, PNG, or WEBP).");
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+                const isPdf = file.type === 'application/pdf' || (file.name && file.name.toLowerCase().endsWith('.pdf'));
+                if(!validTypes.includes(file.type) && !isPdf) {
+                    Toast.warning("Invalid File Format", "Please select a valid document or image file (PDF, JPG, PNG, or WEBP).");
                     return;
                 }
 
                 // Hide banner if previous result was showing
                 document.getElementById('resultBanner').style.display = 'none';
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImage.src = e.target.result;
-                    previewFileName.innerText = file.name;
-                    previewFileSize.innerText = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                previewFileName.innerText = file.name;
+                previewFileSize.innerText = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
 
+                const pdfIcon = document.getElementById('reportPdfIcon');
+                if (isPdf) {
+                    previewImage.style.display = 'none';
+                    previewImage.src = '#';
+                    if (pdfIcon) pdfIcon.style.display = 'flex';
                     dropzone.style.display = 'none';
                     previewBox.style.display = 'block';
                     generateBtn.disabled = false;
-                };
-                reader.readAsDataURL(file);
+                } else {
+                    if (pdfIcon) pdfIcon.style.display = 'none';
+                    previewImage.style.display = 'block';
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        dropzone.style.display = 'none';
+                        previewBox.style.display = 'block';
+                        generateBtn.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                }
             }
 
             clearFileBtn.addEventListener('click', () => {
@@ -1138,7 +1154,13 @@
         function resetUploadForm() {
             const fileInput = document.getElementById('evidenceFileInput');
             fileInput.value = '';
-            document.getElementById('previewImage').src = '#';
+            const previewImg = document.getElementById('previewImage');
+            if (previewImg) {
+                previewImg.src = '#';
+                previewImg.style.display = 'block';
+            }
+            const pdfIcon = document.getElementById('reportPdfIcon');
+            if (pdfIcon) pdfIcon.style.display = 'none';
             document.getElementById('reportDropzone').style.display = 'block';
             document.getElementById('filePreviewBox').style.display = 'none';
             document.getElementById('generateReportBtn').style.display = 'flex';

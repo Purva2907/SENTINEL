@@ -9,7 +9,11 @@
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/lab", "destination": "/lab.html" },
     { "source": "/cases", "destination": "/cases.html" },
+    { "source": "/cases/:caseId", "destination": "/case-detail.html" },
+    { "source": "/cases/*", "destination": "/case-detail.html" },
     { "source": "/case-detail", "destination": "/case-detail.html" },
+    { "source": "/case-detail/:caseId", "destination": "/case-detail.html" },
+    { "source": "/case-detail/*", "destination": "/case-detail.html" },
     { "source": "/profile", "destination": "/profile.html" },
     { "source": "/results", "destination": "/results.html" }
   ]

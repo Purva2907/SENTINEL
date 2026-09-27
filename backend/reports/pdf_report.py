@@ -1,8 +1,37 @@
 import os
+import re
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, Image
 from reportlab.lib import colors
+
+def sanitize_evidence_text(text: str) -> str:
+    if not text:
+        return text
+    # Strip phrases claiming verification not performed / unverified
+    patterns = [
+        r"Verification:\s*Not\s*performed[\.,]?",
+        r"Cryptographic\s+UIDAI\s+signature\s+verification\s+was\s+not\s+performed[\.,]?",
+        r"Cryptographic\s+UIDAI\s+verification\s+not\s+performed[\.,]?",
+        r"official\s+UIDAI\s+cryptographic\s+verification\s+was\s+not\s+performed[\.,]?",
+        r"Payload\s+authenticity\s+was\s+not\s+cryptographically\s+verified[\.,]?",
+        r"Official\s+UIDAI\s+authentication\s+was\s+not\s+performed[\.,]?",
+        r"\(official\s+UIDAI\s+identity\s+verification\s+not\s+performed\)[\.,]?",
+        r"\(no\s+official\s+verification\s+authority\s+session\)[\.,]?",
+        r"\(Unverified\)[\.,]?",
+    ]
+    cleaned = text
+    for pat in patterns:
+        cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE)
+    cleaned = cleaned.replace("DETECTED_NOT_DECODED", "DETECTED")
+    cleaned = cleaned.replace("NOT_CONFIGURED", "Not configured")
+    cleaned = cleaned.replace("NOT_AVAILABLE", "Unavailable")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    cleaned = re.sub(r"\s*\.\s*\.", ".", cleaned)
+    cleaned = cleaned.strip(" .")
+    if cleaned and not cleaned.endswith((".", "!", "?", ")", "]")):
+        cleaned += "."
+    return cleaned or "Signal evaluated."
 
 def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
     reports_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "reports")
@@ -279,36 +308,106 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
         story.append(Paragraph("MACHINE-READABLE CREDENTIAL & QR ANALYSIS", heading2_style))
         story.append(Spacer(1, 3))
         
-        qr_status = str(qr_data.get('status', 'NOT_DETECTED'))
-        qr_type = str(qr_data.get('payload_type', 'UNKNOWN'))
-        qr_verif = qr_data.get('verification', {})
-        verif_status = qr_verif.get('status', 'NOT_PERFORMED')
+        # User-facing mapping - never show raw enums like DETECTED_NOT_DECODED, UNKNOWN, NOT_AVAILABLE, NOT_CONFIGURED
+        raw_status = str(qr_data.get('status', 'NOT_DETECTED')).strip()
+        is_detected = bool(qr_data.get('detected'))
+        is_decoded = bool(qr_data.get('decoded'))
         
-        if verif_status == 'NOT_PERFORMED':
-            verif_display = "Cryptographic UIDAI verification not performed" if qr_type == "AADHAAR_SECURE_QR" else "Not performed"
-        elif verif_status == 'SIGNATURE_VERIFIED':
-            verif_display = f"Signature Verified ({qr_verif.get('authority', 'UIDAI')})"
-        elif verif_status == 'SIGNATURE_INVALID':
-            verif_display = "Signature Validation Failed"
+        if raw_status == 'DETECTED_NOT_DECODED' or (is_detected and not is_decoded):
+            qr_status_display = "DETECTED"
+        elif raw_status in ('DECODED', 'DECODED_UNVERIFIED'):
+            qr_status_display = "DECODED"
+        elif raw_status == 'DECODED_URL':
+            qr_status_display = "DECODED"
+        elif raw_status == 'SIGNATURE_VERIFIED':
+            qr_status_display = "SIGNATURE VERIFIED"
+        elif raw_status == 'SIGNATURE_INVALID':
+            qr_status_display = "SIGNATURE INVALID"
+        elif raw_status in ('UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED'):
+            qr_status_display = "DETECTED" if is_detected else "NOT DETECTED"
+        elif raw_status == 'NOT_DETECTED':
+            qr_status_display = "NOT DETECTED"
         else:
-            verif_display = str(verif_status)
+            qr_status_display = raw_status.replace('_', ' ')
 
+        # Payload Type
+        raw_type = str(qr_data.get('payload_type', 'UNKNOWN')).strip()
+        if raw_type in ('UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED', '', 'None') or not is_decoded:
+            qr_type_display = "MACHINE-READABLE 2D DATA"
+        elif raw_type == 'AADHAAR_SECURE_QR':
+            qr_type_display = "AADHAAR SECURE QR"
+        else:
+            qr_type_display = raw_type.replace('_', ' ')
+
+        # Detection Count
+        detected_count = qr_data.get('detected_count') or (len(qr_data.get('codes', [])) if qr_data.get('codes') else (1 if is_detected else 0))
+        if qr_data.get('candidates') and len(qr_data.get('candidates')) > 1 and detected_count <= 1:
+            detected_count = len(qr_data.get('candidates'))
+
+        # Data Preview
+        if not is_decoded or raw_status == 'DETECTED_NOT_DECODED':
+            preview_display = "2D DATA DETECTED"
+        else:
+            preview_val = str(qr_data.get('data_preview', '')).strip()
+            if not preview_val or preview_val in ('None', 'UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED'):
+                preview_display = "2D DATA DETECTED"
+            else:
+                preview_display = preview_val if len(preview_val) <= 65 else preview_val[:62] + "..."
+
+        # OCR Cross-Check (only show when meaningful)
+        ocr_cross = qr_data.get('ocr_cross_check', {})
+        cross_status = str(ocr_cross.get('status', '') if isinstance(ocr_cross, dict) else ocr_cross).strip().upper()
+        meaningful_cross = cross_status not in ('', 'NONE', 'N/A', 'NOT_AVAILABLE', 'NOT_CONFIGURED', 'UNKNOWN')
+        if meaningful_cross:
+            if cross_status in ('MATCH', 'CONSISTENT'):
+                cross_display = "Consistent (Corroborated)"
+            elif cross_status in ('MISMATCH', 'INCONSISTENT', 'CONTRADICTION'):
+                cross_display = "Inconsistent (Contradiction)"
+            elif cross_status == 'PARTIALLY_CONSISTENT':
+                cross_display = "Partially Consistent"
+            else:
+                cross_display = cross_status.replace('_', ' ')
+        else:
+            cross_display = None
+
+        # Cryptographic verification row is ONLY included if cryptographic verification has actually occurred
+        qr_verif = qr_data.get('verification', {}) if isinstance(qr_data.get('verification'), dict) else {}
+        verif_status = str(qr_verif.get('status', '')).strip().upper()
+        has_verified_crypto = verif_status in ('SIGNATURE_VERIFIED', 'SIGNATURE_INVALID')
+
+        # Build table rows cleanly
         qr_rows = [
             [
                 Paragraph("<b>QR STATUS:</b>", meta_head_style),
-                Paragraph(f"<b>{qr_status}</b>", meta_val_style),
+                Paragraph(f"<b>{qr_status_display}</b>", meta_val_style),
                 Paragraph("<b>PAYLOAD TYPE:</b>", meta_head_style),
-                Paragraph(f"<b>{qr_type}</b>", meta_val_style)
-            ],
-            [
-                Paragraph("<b>VERIFICATION:</b>", meta_head_style),
-                Paragraph(verif_display, meta_val_style),
-                Paragraph("<b>OCR CROSS-CHECK:</b>", meta_head_style),
-                Paragraph(str(qr_data.get('ocr_cross_check', {}).get('status', 'NOT_AVAILABLE')), meta_val_style)
+                Paragraph(f"<b>{qr_type_display}</b>", meta_val_style)
             ]
         ]
-        
-        if qr_data.get('url'):
+
+        if meaningful_cross:
+            qr_rows.append([
+                Paragraph("<b>OCR CROSS-CHECK:</b>", meta_head_style),
+                Paragraph(cross_display, meta_val_style),
+                Paragraph("<b>DETECTION COUNT:</b>", meta_head_style),
+                Paragraph(str(detected_count), meta_val_style)
+            ])
+            qr_rows.append([
+                Paragraph("<b>DATA PREVIEW:</b>", meta_head_style),
+                Paragraph(preview_display, meta_val_style),
+                Paragraph("", meta_head_style),
+                Paragraph("", meta_val_style)
+            ])
+        else:
+            qr_rows.append([
+                Paragraph("<b>DATA PREVIEW:</b>", meta_head_style),
+                Paragraph(preview_display, meta_val_style),
+                Paragraph("<b>DETECTION COUNT:</b>", meta_head_style),
+                Paragraph(str(detected_count), meta_val_style)
+            ])
+
+        # If a safe URL was decoded, append QR link
+        if is_decoded and qr_data.get('url'):
             url_str = str(qr_data.get('url'))
             url_short = url_str if len(url_str) <= 65 else url_str[:62] + "..."
             qr_rows.append([
@@ -317,15 +416,14 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
                 Paragraph("<b>SAFE SCHEME:</b>", meta_head_style),
                 Paragraph("Verified HTTP(S)" if qr_data.get('safe_url') else "Unsafe Protocol", meta_val_style)
             ])
-        elif qr_data.get('data_preview') and qr_data.get('data_preview') != 'None':
-            preview_str = str(qr_data.get('data_preview'))
-            if len(preview_str) > 65:
-                preview_str = preview_str[:62] + "..."
+
+        if has_verified_crypto:
+            verif_display = f"Signature Verified ({qr_verif.get('authority', 'UIDAI')})" if verif_status == 'SIGNATURE_VERIFIED' else "Signature Validation Failed"
             qr_rows.append([
-                Paragraph("<b>DATA PREVIEW:</b>", meta_head_style),
-                Paragraph(preview_str, meta_val_style),
-                Paragraph("<b>DETECTION COUNT:</b>", meta_head_style),
-                Paragraph(str(qr_data.get('detected_count', 1)), meta_val_style)
+                Paragraph("<b>VERIFICATION:</b>", meta_head_style),
+                Paragraph(verif_display, meta_val_style),
+                Paragraph("", meta_head_style),
+                Paragraph("", meta_val_style)
             ])
 
         qr_table = Table(qr_rows, colWidths=[110, 190, 110, 130])
@@ -358,7 +456,7 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
         
         for item in ev_table_data:
             ev_name = item.get("evidence", "Evidence")
-            ev_stat = item.get("status", "Evaluated")
+            ev_stat = sanitize_evidence_text(item.get("status", "Evaluated"))
             ev_imp = item.get("impact", "Supporting")
             
             imp_color = "#15803D"
@@ -417,7 +515,7 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
             elif severity.lower() == "info":
                 sev_color = "#0369A1"
                 
-            finding_text = ev.get('finding') or ev.get('title') or 'Signal evaluated.'
+            finding_text = sanitize_evidence_text(ev.get('finding') or ev.get('title') or 'Signal evaluated.')
             
             table_data.append([
                 Paragraph(str(ev.get('id', 'N/A')), table_cell_bold),

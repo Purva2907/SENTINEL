@@ -8,6 +8,7 @@
         })();
     </script>
     <meta charset="UTF-8">
+    <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENTINEL | Case Details</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -662,41 +663,53 @@
                             </div>
                         </div>
                         
-                        <!-- QUALITY METRICS -->
+                        <!-- QUALITY & EXTRACTION METRICS -->
                         <div class="card" style="margin-bottom:30px;">
                             <div class="card-header">
-                                <h3><i class="fa-solid fa-camera"></i> Quality Metrics</h3>
+                                <h3><i class="fa-solid fa-camera"></i> Quality & Extraction</h3>
                             </div>
                             <div class="metrics-grid">
                                 <div class="metric-item">
-                                    <div class="metric-label">Total Score</div>
-                                    <div class="metric-val" id="mQualScore" style="color:var(--cyan)"></div>
+                                    <div class="metric-label">Quality Score</div>
+                                    <div class="metric-val" id="mQualScore" style="color:var(--cyan)">--</div>
                                 </div>
                                 <div class="metric-item">
+                                    <div class="metric-label">OCR Extraction</div>
+                                    <div class="metric-val" id="mOcr" style="font-size:1rem; margin-top:8px; font-weight:700;">--</div>
+                                </div>
+                                <div class="metric-item" style="grid-column: 1 / -1;">
                                     <div class="metric-label">Findings</div>
-                                    <div id="mQualFind" style="font-size:0.85rem; margin-top:8px; line-height:1.4; color:var(--text-muted);"></div>
+                                    <div id="mQualFind" style="font-size:0.85rem; margin-top:8px; line-height:1.4; color:var(--text-muted);">No significant quality issues.</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- EXTRACTION SIGNALS -->
+                        <!-- MACHINE-READABLE CREDENTIAL & QR ANALYSIS -->
                         <div class="card">
                             <div class="card-header">
-                                <h3><i class="fa-solid fa-qrcode"></i> Extraction Signals</h3>
+                                <h3><i class="fa-solid fa-qrcode" style="color:var(--cyan); margin-right:8px;"></i> MACHINE-READABLE CREDENTIAL & QR ANALYSIS</h3>
                             </div>
                             <div class="metrics-grid">
                                 <div class="metric-item">
-                                    <div class="metric-label">OCR Status</div>
-                                    <div class="metric-val" id="mOcr" style="font-size:1rem; margin-top:10px;"></div>
+                                    <div class="metric-label">QR Status</div>
+                                    <div class="metric-val" id="mQrStatus" style="font-size:1rem; margin-top:8px; font-weight:700;">--</div>
                                 </div>
                                 <div class="metric-item">
-                                    <div class="metric-label">QR Detected</div>
-                                    <div class="metric-val" id="mQr" style="font-size:1rem; margin-top:10px;"></div>
+                                    <div class="metric-label">Payload Type</div>
+                                    <div class="metric-val" id="mQrPayloadType" style="font-size:0.95rem; margin-top:8px; color:var(--cyan); font-weight:700;">--</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Data Preview</div>
+                                    <div class="metric-val" id="mQrDataPreview" style="font-size:0.88rem; margin-top:8px;">--</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Detection Count</div>
+                                    <div class="metric-val" id="mQrDetectCount" style="font-size:1rem; margin-top:8px; font-weight:700;">--</div>
                                 </div>
                             </div>
-                            <div style="margin-top:20px; background:rgba(0,0,0,0.2); padding:15px; border-radius:6px; border:1px solid var(--shell-border);">
-                                <div style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px;">QR Consistency Check</div>
-                                <div id="mQrConsist" style="font-size:0.95rem;"></div>
+                            <div id="mQrConsistRow" style="display:none; margin-top:16px; background:rgba(0,0,0,0.2); padding:12px 15px; border-radius:6px; border:1px solid var(--shell-border);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; font-weight:700;">OCR Cross-Check</div>
+                                <div id="mQrConsist" style="font-size:0.95rem; font-weight:600;"></div>
                             </div>
                         </div>
                     </div>
@@ -711,14 +724,92 @@
     <script src="js/auth.js"></script>
     <script src="js/chatbot.js"></script>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const caseObjId = urlParams.get('id');
+        function getCaseIdentifier() {
+            // 1. Check query parameters (?id=, ?case_id=, ?caseId=)
+            const params = new URLSearchParams(window.location.search);
+            const queryVal = params.get('id') || params.get('case_id') || params.get('caseId');
+            if (queryVal && queryVal.trim()) {
+                const clean = decodeURIComponent(queryVal.trim());
+                sessionStorage.setItem('sentinel_active_case_id', clean);
+                return clean;
+            }
+
+            // 2. Check URL pathname e.g. /cases/SC-2026-4F84 or /case-detail/SC-2026-4F84
+            const pathname = window.location.pathname.replace(/\/+$/, '');
+            const parts = pathname.split('/').filter(Boolean);
+            if (parts.length > 0) {
+                const last = decodeURIComponent(parts[parts.length - 1]).trim();
+                const ignored = ['cases', 'cases.html', 'case-detail', 'case-detail.html', 'index.html'];
+                if (last && !ignored.includes(last.toLowerCase()) && !last.endsWith('.html')) {
+                    sessionStorage.setItem('sentinel_active_case_id', last);
+                    return last;
+                }
+            }
+
+            // 3. Fallback to active case in session storage
+            const stored = sessionStorage.getItem('sentinel_active_case_id');
+            if (stored && stored.trim()) {
+                return stored.trim();
+            }
+
+            return null;
+        }
+
+        let caseObjId = getCaseIdentifier();
         let currentCaseData = null;
+
+        function renderCaseError(title, message) {
+            const loading = document.getElementById('loading');
+            const caseContent = document.getElementById('caseContent');
+            const genReportBtn = document.getElementById('genReportBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const caseHeader = document.getElementById('caseHeader');
+            if (caseHeader) caseHeader.style.display = 'none';
+            if (caseContent) caseContent.style.display = 'none';
+            if (genReportBtn) genReportBtn.style.display = 'none';
+            if (downloadBtn) downloadBtn.style.display = 'none';
+            if (loading) {
+                loading.style.display = 'block';
+                loading.innerHTML = `
+                    <div class="empty-state" style="border:1px solid rgba(255,77,77,0.3); background:rgba(255,77,77,0.06); border-radius:12px; padding:50px 30px; text-align:center; max-width:600px; margin:40px auto;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:3.5rem; color:var(--danger); margin-bottom:18px; display:inline-block;"></i>
+                        <h3 style="font-size:1.4rem; color:var(--text-main); margin-bottom:10px;">${escapeHtml(title)}</h3>
+                        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:24px; line-height:1.6;">${escapeHtml(message)}</p>
+                        <div style="display:flex; justify-content:center; gap:12px;">
+                            <a href="cases.html" class="btn-action" style="display:inline-flex; align-items:center; gap:8px; padding:10px 22px; font-size:0.9rem; text-decoration:none; background:var(--bg-card); border-color:var(--shell-border); color:var(--text-main); font-weight:600;">
+                                <i class="fa-solid fa-arrow-left"></i> Back to Cases
+                            </a>
+                            <button onclick="window.location.reload()" class="btn-action" style="display:inline-flex; align-items:center; gap:8px; padding:10px 22px; font-size:0.9rem; border-color:var(--cyan); color:var(--cyan); font-weight:600; cursor:pointer;">
+                                <i class="fa-solid fa-rotate-right"></i> Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await checkAuth();
-            if(!user || !caseObjId) {
-                window.location.href = 'cases.html';
+            if(!user) return;
+            
+            if(!caseObjId) {
+                // If user directly opened /case-detail without an ID, fallback to most recent case
+                try {
+                    const res = await fetchWithAuth(`${API_BASE}/cases`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const cases = data.cases || [];
+                        if (cases.length > 0) {
+                            caseObjId = cases[0].case_id || cases[0].id;
+                            sessionStorage.setItem('sentinel_active_case_id', caseObjId);
+                            window.history.replaceState(null, '', `/cases/${encodeURIComponent(caseObjId)}`);
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            if(!caseObjId) {
+                renderCaseError("No Case Specified", "No case ID was provided in the request URL.");
                 return;
             }
             if(user.name) {
@@ -729,32 +820,52 @@
         
         async function loadCaseData() {
             try {
-                const res = await fetchWithAuth(`${API_BASE}/cases/${caseObjId}`);
-                if(!res.ok) throw new Error('Case not found');
+                const res = await fetchWithAuth(`${API_BASE}/cases/${encodeURIComponent(caseObjId)}`);
+                if(!res.ok) {
+                    if (res.status === 404) {
+                        throw new Error(`Investigation case "${caseObjId}" was not found or is inaccessible.`);
+                    }
+                    throw new Error(`Failed to retrieve case details (HTTP ${res.status}).`);
+                }
                 
                 const data = await res.json();
                 currentCaseData = data;
                 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('caseContent').style.display = 'block';
-                document.getElementById('genReportBtn').style.display = 'inline-block';
+                const loadingEl = document.getElementById('loading');
+                const caseContentEl = document.getElementById('caseContent');
+                const genReportBtnEl = document.getElementById('genReportBtn');
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (caseContentEl) caseContentEl.style.display = 'block';
+                if (genReportBtnEl) genReportBtnEl.style.display = 'inline-block';
                 
-                document.getElementById('caseHeader').innerHTML = `
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="sentinel-brand-mark" style="width:20px; height:20px; flex-shrink:0;">
-                            <img src="assets/sentinel-mark.png" alt="SENTINEL" class="sentinel-mark-img sentinel-logo-dark" style="width:100%; height:100%; object-fit:contain;">
-                            <img src="assets/sentinel-mark-light.png" alt="SENTINEL" class="sentinel-mark-img sentinel-logo-light" style="width:100%; height:100%; object-fit:contain;">
+                const caseHeaderEl = document.getElementById('caseHeader');
+                if (caseHeaderEl) {
+                    caseHeaderEl.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+                            <a href="cases.html" class="btn-action" style="display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; padding:4px 10px; border-radius:4px; text-decoration:none;">
+                                <i class="fa-solid fa-arrow-left"></i> Back to Cases
+                            </a>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div class="sentinel-brand-mark" style="width:20px; height:20px; flex-shrink:0;">
+                                    <img src="assets/sentinel-mark.png" alt="SENTINEL" class="sentinel-mark-img sentinel-logo-dark" style="width:100%; height:100%; object-fit:contain;">
+                                    <img src="assets/sentinel-mark-light.png" alt="SENTINEL" class="sentinel-mark-img sentinel-logo-light" style="width:100%; height:100%; object-fit:contain;">
+                                </div>
+                                <span style="font-size:0.75rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan);">SENTINEL FORENSIC CASE</span>
+                            </div>
                         </div>
-                        <span style="font-size:0.75rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan);">SENTINEL FORENSIC CASE</span>
-                    </div>
-                    <h2 style="margin:2px 0 0 0; font-family:monospace; font-size:1.3rem;">${data.case_id}</h2>
-                    <p class="text-muted" style="font-family:monospace; margin-top:3px; font-size:0.82rem;">DOC_TYPE: ${data.document_type ? data.document_type.toUpperCase() : 'UNKNOWN'}</p>
-                `;
+                        <h2 style="margin:2px 0 0 0; font-family:monospace; font-size:1.3rem;">${escapeHtml(data.case_id || data.id)}</h2>
+                        <p class="text-muted" style="font-family:monospace; margin-top:3px; font-size:0.82rem;">DOC_TYPE: ${escapeHtml(data.document_type ? data.document_type.toUpperCase() : 'UNKNOWN')}</p>
+                    `;
+                }
                 
-                document.getElementById('cTitle').innerText = data.title;
-                document.getElementById('cDesc').innerText = data.description || 'No description provided.';
-                document.getElementById('cStatus').innerText = data.status;
-                document.getElementById('cCreated').innerText = new Date(data.created_at).toLocaleDateString();
+                const titleEl = document.getElementById('cTitle');
+                if (titleEl) titleEl.innerText = data.title || '';
+                const descEl = document.getElementById('cDesc');
+                if (descEl) descEl.innerText = data.description || 'No description provided.';
+                const statusEl = document.getElementById('cStatus');
+                if (statusEl) statusEl.innerText = data.status || 'Active';
+                const createdEl = document.getElementById('cCreated');
+                if (createdEl) createdEl.innerText = data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A';
                 
                 const scoreCard = document.getElementById('scoreCardContainer');
                 const scoreEl = document.getElementById('cScore');
@@ -770,26 +881,28 @@
                     ? data.risk_score
                     : Math.max(0, 100 - authScore);
 
-                scoreEl.innerHTML = `${authScore} <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span>`;
-                clsEl.innerText = data.classification;
+                if (scoreEl) scoreEl.innerHTML = `${authScore} <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span>`;
+                if (clsEl) clsEl.innerText = data.classification || 'ANALYZED';
                 const subEl = document.getElementById('cClassSubtitle');
                 if (subEl) subEl.innerText = data.classification_display || (data.analysis && data.analysis.classification_display) || '';
                 if (riskLabel) {
                     riskLabel.innerHTML = `Risk Index: <strong style="color: ${riskScore >= 50 ? 'var(--danger)' : (riskScore >= 25 ? 'var(--warning)' : 'var(--success)')};">${riskScore}/100</strong>`;
                 }
                 
-                if(authScore >= 75) {
-                    scoreCard.className = 'score-card low-risk';
-                    clsEl.style.color = 'var(--success)';
-                    scoreEl.style.color = 'var(--success)';
-                } else if(authScore >= 50) {
-                    scoreCard.className = 'score-card med-risk';
-                    clsEl.style.color = 'var(--warning)';
-                    scoreEl.style.color = 'var(--warning)';
-                } else {
-                    scoreCard.className = 'score-card high-risk';
-                    clsEl.style.color = 'var(--danger)';
-                    scoreEl.style.color = 'var(--danger)';
+                if (scoreCard) {
+                    if (authScore >= 75) {
+                        scoreCard.className = 'score-card low-risk';
+                        if (clsEl) clsEl.style.color = 'var(--success)';
+                        if (scoreEl) scoreEl.style.color = 'var(--success)';
+                    } else if (authScore >= 50) {
+                        scoreCard.className = 'score-card med-risk';
+                        if (clsEl) clsEl.style.color = 'var(--warning)';
+                        if (scoreEl) scoreEl.style.color = 'var(--warning)';
+                    } else {
+                        scoreCard.className = 'score-card high-risk';
+                        if (clsEl) clsEl.style.color = 'var(--danger)';
+                        if (scoreEl) scoreEl.style.color = 'var(--danger)';
+                    }
                 }
                 
                 let rawAnalysis = data.analysis || {};
@@ -807,7 +920,8 @@
                     }
                 }
 
-                document.getElementById('cRec').innerText = analysis.recommendation || 'No manual recommendation available.';
+                const recEl = document.getElementById('cRec');
+                if (recEl) recEl.innerText = analysis.recommendation || 'No manual recommendation available.';
                 
                 // Visuals
                 const hm = document.getElementById('cHeatmap');
@@ -815,22 +929,22 @@
                 const fallback = document.getElementById('cHeatmapFallback');
                 const tabs = document.querySelector('.tabs');
                 
-                if (analysis.heatmap) {
+                if (analysis.heatmap && hm) {
                     hm.src = analysis.heatmap;
                 }
-                if (analysis.original_image) {
+                if (analysis.original_image && orig) {
                     orig.src = analysis.original_image;
-                } else if (analysis.heatmap) {
+                } else if (analysis.heatmap && orig) {
                     orig.src = analysis.heatmap;
                 }
                 
                 if (!analysis.heatmap && !analysis.original_image) {
-                    hm.style.display = 'none';
-                    orig.style.display = 'none';
-                    fallback.style.display = 'block';
+                    if (hm) hm.style.display = 'none';
+                    if (orig) orig.style.display = 'none';
+                    if (fallback) fallback.style.display = 'block';
                     if (tabs) tabs.style.display = 'none';
                 } else {
-                    fallback.style.display = 'none';
+                    if (fallback) fallback.style.display = 'none';
                     if (tabs) tabs.style.display = 'flex';
                     switchHeatmapTab('heatmap');
                 }
@@ -845,40 +959,109 @@
                 renderInvestigationTimeline(data.timeline || []);
 
                 // Quality & Extraction
-                if(analysis.quality) {
+                const qualScoreEl = document.getElementById('mQualScore');
+                const qualFindEl = document.getElementById('mQualFind');
+                if (analysis.quality) {
                     const qScore = (typeof analysis.quality.score === 'number') ? `${analysis.quality.score}/100` : 'N/A';
-                    document.getElementById('mQualScore').innerText = qScore;
-                    document.getElementById('mQualFind').innerText = (analysis.quality.findings || []).join(', ') || 'No significant quality issues.';
+                    if (qualScoreEl) qualScoreEl.innerText = qScore;
+                    if (qualFindEl) qualFindEl.innerText = (analysis.quality.findings || []).join(', ') || 'No significant quality issues.';
                 } else {
-                    document.getElementById('mQualScore').innerText = 'N/A';
-                    document.getElementById('mQualFind').innerText = 'No quality data recorded.';
+                    if (qualScoreEl) qualScoreEl.innerText = 'N/A';
+                    if (qualFindEl) qualFindEl.innerText = 'No quality data recorded.';
                 }
                 
-                if(analysis.ocr) {
-                    document.getElementById('mOcr').innerHTML = (analysis.ocr.success && analysis.ocr.status !== 'NO_TEXT_RECOVERED') ? '<span style="color:var(--success)">ACTIVE</span>' : '<span style="color:var(--warning)">NO TEXT / FAILED</span>';
-                } else {
-                    document.getElementById('mOcr').innerText = 'N/A';
+                const ocrEl = document.getElementById('mOcr');
+                if (ocrEl) {
+                    if (analysis.ocr) {
+                        const isNoText = analysis.ocr.status === 'NO_TEXT_RECOVERED' || 
+                            (!analysis.ocr.raw_text && (!analysis.ocr.detections || analysis.ocr.detections.length === 0));
+                        ocrEl.innerHTML = (analysis.ocr.success && !isNoText) 
+                            ? '<span style="color:var(--success)"><i class="fa-solid fa-circle-check"></i> ACTIVE</span>' 
+                            : '<span style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> NO TEXT / FAILED</span>';
+                    } else {
+                        ocrEl.innerText = 'N/A';
+                    }
                 }
                 
-                if(analysis.qr) {
-                    document.getElementById('mQr').innerHTML = analysis.qr.detected ? '<span style="color:var(--success)">YES</span>' : '<span style="color:var(--text-muted)">NO</span>';
-                    document.getElementById('mQrConsist').innerText = analysis.qr.consistency || 'N/A';
+                const qrStatusEl = document.getElementById('mQrStatus');
+                const qrTypeEl = document.getElementById('mQrPayloadType');
+                const qrPrevEl = document.getElementById('mQrDataPreview');
+                const qrCountEl = document.getElementById('mQrDetectCount');
+                const consistRow = document.getElementById('mQrConsistRow');
+                const consistEl = document.getElementById('mQrConsist');
+
+                if (analysis.qr) {
+                    const qr = analysis.qr;
+                    const isDetected = !!qr.detected;
+                    const isDecoded = !!qr.decoded;
+                    const rawStatus = qr.status || (isDecoded ? 'DECODED' : (isDetected ? 'DETECTED' : 'NOT_DETECTED'));
+
+                    let statusText = 'NOT DETECTED';
+                    if (rawStatus === 'DETECTED_NOT_DECODED' || (isDetected && !isDecoded)) {
+                        statusText = 'DETECTED';
+                    } else if (rawStatus === 'SIGNATURE_VERIFIED') {
+                        statusText = 'SIGNATURE VERIFIED';
+                    } else if (rawStatus === 'SIGNATURE_INVALID') {
+                        statusText = 'SIGNATURE INVALID';
+                    } else if (isDecoded) {
+                        statusText = 'DECODED';
+                    } else if (isDetected) {
+                        statusText = 'DETECTED';
+                    }
+                    if (qrStatusEl) qrStatusEl.innerHTML = isDetected ? `<span style="color:var(--success)">${escapeHtml(statusText)}</span>` : `<span style="color:var(--text-muted)">NOT DETECTED</span>`;
+
+                    let cleanType = 'MACHINE-READABLE 2D DATA';
+                    const rawType = (qr.payload_type || '').toUpperCase();
+                    if (isDecoded && rawType && !['UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED', 'NONE'].includes(rawType)) {
+                        cleanType = rawType === 'AADHAAR_SECURE_QR' ? 'AADHAAR SECURE QR' : rawType.replace(/_/g, ' ');
+                    }
+                    if (qrTypeEl) qrTypeEl.innerText = cleanType;
+
+                    let preview = '2D DATA DETECTED';
+                    if (isDecoded) {
+                        const prev = qr.data_preview || qr.payload || '';
+                        if (prev && !['UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED', 'NONE', 'None'].includes(prev)) {
+                            preview = prev.length > 40 ? prev.substring(0, 37) + '...' : prev;
+                        }
+                    }
+                    if (qrPrevEl) qrPrevEl.innerText = preview;
+
+                    const dCount = qr.detected_count || (qr.codes && qr.codes.length) || (isDetected ? 1 : 0);
+                    if (qrCountEl) qrCountEl.innerText = dCount;
+
+                    const crossData = qr.ocr_cross_check || (analysis.consistency && analysis.consistency.status) || qr.consistency;
+                    const crossStatus = (typeof crossData === 'object' ? crossData.status : crossData) || '';
+                    const meaningfulCross = crossStatus && !['NOT_AVAILABLE', 'NOT_CONFIGURED', 'UNKNOWN', 'NONE', 'N/A', ''].includes(crossStatus.toUpperCase());
+                    if (meaningfulCross && consistRow && consistEl) {
+                        consistRow.style.display = 'block';
+                        let crossText = crossStatus.replace(/_/g, ' ');
+                        if (['MATCH', 'CONSISTENT'].includes(crossStatus.toUpperCase())) {
+                            crossText = 'CONSISTENT';
+                            consistEl.style.color = 'var(--success)';
+                        } else if (['MISMATCH', 'INCONSISTENT', 'CONTRADICTION'].includes(crossStatus.toUpperCase())) {
+                            crossText = 'CONTRADICTION DETECTED';
+                            consistEl.style.color = 'var(--danger)';
+                        } else {
+                            consistEl.style.color = 'var(--cyan)';
+                        }
+                        consistEl.innerText = crossText;
+                    } else if (consistRow) {
+                        consistRow.style.display = 'none';
+                    }
                 } else {
-                    document.getElementById('mQr').innerText = 'N/A';
-                    document.getElementById('mQrConsist').innerText = 'N/A';
+                    if (qrStatusEl) qrStatusEl.innerText = 'NOT DETECTED';
+                    if (qrTypeEl) qrTypeEl.innerText = 'MACHINE-READABLE 2D DATA';
+                    if (qrPrevEl) qrPrevEl.innerText = 'None';
+                    if (qrCountEl) qrCountEl.innerText = '0';
+                    if (consistRow) consistRow.style.display = 'none';
                 }
                 
                 renderNotes(data.notes || []);
                 
             } catch(e) {
-                document.getElementById('loading').innerHTML = `
-                    <div class="empty-state" style="border:none; background:transparent; color:var(--danger);">
-                        <i class="fa-solid fa-triangle-exclamation empty-icon" style="font-size:4rem;"></i>
-                        <h4>Error Loading Case</h4>
-                        <p>Could not retrieve case details from the secure server.</p>
-                    </div>
-                `;
-                Toast.error("Error", "Could not retrieve case details.");
+                console.error("Error loading case:", e);
+                renderCaseError("Unable to Load Case", e.message || `Could not retrieve details for case "${caseObjId}".`);
+                Toast.error("Error", e.message || "Could not retrieve case details.");
             }
         }
 
@@ -892,13 +1075,20 @@
             const fileSize = (data.file_size || custody.file_size) ? `${((data.file_size || custody.file_size)/1024).toFixed(1)} KB` : 'Recorded with dossier';
             const mimeType = data.mime_type || custody.mime_type || 'image/jpeg';
 
-            document.getElementById('custodyEvidenceId').innerText = evId;
-            document.getElementById('custodyTimestamp').innerText = timestamp;
-            document.getElementById('custodyInvestigator').innerText = investigator;
-            document.getElementById('custodyVersion').innerText = version;
-            document.getElementById('custodyFileSize').innerText = fileSize;
-            document.getElementById('custodyMimeType').innerText = mimeType;
-            document.getElementById('custodySha256').innerText = sha256;
+            const evEl = document.getElementById('custodyEvidenceId');
+            if (evEl) evEl.innerText = evId;
+            const tsEl = document.getElementById('custodyTimestamp');
+            if (tsEl) tsEl.innerText = timestamp;
+            const invEl = document.getElementById('custodyInvestigator');
+            if (invEl) invEl.innerText = investigator;
+            const verEl = document.getElementById('custodyVersion');
+            if (verEl) verEl.innerText = version;
+            const sizeEl = document.getElementById('custodyFileSize');
+            if (sizeEl) sizeEl.innerText = fileSize;
+            const mimeEl = document.getElementById('custodyMimeType');
+            if (mimeEl) mimeEl.innerText = mimeType;
+            const shaEl = document.getElementById('custodySha256');
+            if (shaEl) shaEl.innerText = sha256;
         }
 
         async function verifyCustodyIntegrity() {
@@ -953,8 +1143,28 @@
             } catch(e) {}
         }
 
+        function sanitizeEvidenceText(str) {
+            if (!str) return '';
+            return str
+                .replace(/Verification:\s*Not\s*performed[\.,]?/gi, '')
+                .replace(/Cryptographic\s+UIDAI\s+signature\s+verification\s+was\s+not\s+performed[\.,]?/gi, '')
+                .replace(/Cryptographic\s+UIDAI\s+verification\s+not\s+performed[\.,]?/gi, '')
+                .replace(/official\s+UIDAI\s+cryptographic\s+verification\s+was\s+not\s+performed[\.,]?/gi, '')
+                .replace(/Payload\s+authenticity\s+was\s+not\s+cryptographically\s+verified[\.,]?/gi, '')
+                .replace(/Official\s+UIDAI\s+authentication\s+was\s+not\s+performed[\.,]?/gi, '')
+                .replace(/\(official\s+UIDAI\s+identity\s+verification\s+not\s+performed\)[\.,]?/gi, '')
+                .replace(/\(no\s+official\s+verification\s+authority\s+session\)[\.,]?/gi, '')
+                .replace(/\(Unverified\)[\.,]?/gi, '')
+                .replace(/DETECTED_NOT_DECODED/g, 'DETECTED')
+                .replace(/NOT_CONFIGURED/g, 'Not Configured')
+                .replace(/NOT_AVAILABLE/g, 'Unavailable')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
         function renderExplainabilityPanel(evList) {
             const container = document.getElementById('cEvidence');
+            if (!container) return;
             if (!evList || evList.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state" style="border:none; background:transparent;">
@@ -975,15 +1185,15 @@
                 
                 const confidenceVal = (typeof ev.confidence === 'number') ? ev.confidence : null;
                 const category = ev.category || 'General Forensics';
-                const assessment = ev.assessment || ev.finding || 'Analysis complete.';
-                const observedSignals = ev.observed_metrics || (ev.finding ? [ev.finding] : ['Metric unavailable']);
+                const assessment = sanitizeEvidenceText(ev.assessment || ev.finding || 'Analysis complete.');
+                const observedSignals = (ev.observed_metrics || (ev.finding ? [ev.finding] : ['Metric unavailable'])).map(s => sanitizeEvidenceText(s));
 
                 return `
                     <div class="evidence-card" style="border-left: 4px solid ${ev.severity === 'High' ? 'var(--danger)' : ev.severity === 'Warning' ? 'var(--warning)' : 'var(--success)'}">
                         <div class="evidence-header">
                             <div>
                                 <span class="evidence-cat-tag">${escapeHtml(category)}</span>
-                                <h4 class="evidence-title">${escapeHtml(ev.title || 'Signal Observation')}</h4>
+                                <h4 class="evidence-title">${escapeHtml(sanitizeEvidenceText(ev.title || 'Signal Observation'))}</h4>
                             </div>
                             <div style="text-align:right;">
                                 <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">Risk Contribution</div>
@@ -1026,6 +1236,7 @@
 
         function renderInvestigationTimeline(timeline) {
             const feed = document.getElementById('timelineFeed');
+            if (!feed) return;
             if (!timeline || timeline.length === 0) {
                 feed.innerHTML = '<p class="text-muted" style="padding:10px 0;">No chronological events recorded yet.</p>';
                 return;
@@ -1129,6 +1340,7 @@
         
         function renderNotes(notes) {
             const list = document.getElementById('notesList');
+            if (!list) return;
             if(!notes || notes.length === 0) {
                 list.innerHTML = `
                     <div class="empty-state" style="border:none; background:transparent; margin:0;">

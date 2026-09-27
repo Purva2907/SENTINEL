@@ -231,7 +231,7 @@
                         <td style="font-weight:bold">${escapeHtml(typeof c.risk_score === 'number' ? c.risk_score : (c.score !== undefined ? c.score : 0))}</td>
                         <td><span class="badge ${c.classification === 'High Suspicion' ? 'badge-high' : c.classification === 'Review Required' ? 'badge-med' : 'badge-low'}">${escapeHtml(c.classification || 'Unknown')}</span></td>
                         <td style="color:var(--text-muted)">${escapeHtml(new Date(c.created_at).toLocaleDateString())}</td>
-                        <td><a href="case-detail.html?id=${encodeURIComponent(c.id)}" class="btn-action"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a></td>
+                        <td><a href="/cases/${encodeURIComponent(c.case_id || c.id)}" class="btn-action" data-case-id="${escapeHtml(c.case_id || c.id)}" onclick="sessionStorage.setItem('sentinel_active_case_id', '${escapeHtml(c.case_id || c.id)}');"><i class="fa-solid fa-eye" style="margin-right:5px"></i> View</a></td>
                     </tr>
                 `).join('');
                 
@@ -368,5 +368,6 @@
         }
     </script>
     <script src="js/brand.js"></script>
+    <script src="js/nav.js"></script>
 </body>
 </html>

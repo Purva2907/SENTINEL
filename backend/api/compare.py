@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 import os
 import uuid
 import time
+import cv2
 
 from auth.jwt import get_current_user
 from database.repository import get_case
@@ -115,9 +116,9 @@ async def compare_uploaded_files(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to read upload streams: {str(e)}")
 
-    # Validate actual image content for both specimens
-    _, ext_a, _ = validate_and_decode_image(bytes_a)
-    _, ext_b, _ = validate_and_decode_image(bytes_b)
+    # Validate actual document/image content for both specimens
+    cv_img_a, ext_a, mime_a = validate_and_decode_image(bytes_a)
+    cv_img_b, ext_b, mime_b = validate_and_decode_image(bytes_b)
 
     uid_a = uuid.uuid4().hex
     uid_b = uuid.uuid4().hex
@@ -125,10 +126,17 @@ async def compare_uploaded_files(
     path_b = os.path.join(UPLOAD_DIR, f"cmp_temp_{uid_b}{ext_b}")
 
     try:
-        with open(path_a, "wb") as buf_a:
-            buf_a.write(bytes_a)
-        with open(path_b, "wb") as buf_b:
-            buf_b.write(bytes_b)
+        if mime_a == "application/pdf":
+            cv2.imwrite(path_a, cv_img_a)
+        else:
+            with open(path_a, "wb") as buf_a:
+                buf_a.write(bytes_a)
+
+        if mime_b == "application/pdf":
+            cv2.imwrite(path_b, cv_img_b)
+        else:
+            with open(path_b, "wb") as buf_b:
+                buf_b.write(bytes_b)
 
         # Run both through SENTINEL pipeline
         analysis_a = process_document(path_a)

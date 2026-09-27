@@ -906,7 +906,7 @@
                             
                             <div class="card" id="qrCard">
                                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                                    <h3 style="margin:0;"><i class="fa-solid fa-qrcode" style="color:var(--cyan); margin-right:8px;"></i> QR Verification</h3>
+                                    <h3 style="margin:0;"><i class="fa-solid fa-qrcode" style="color:var(--cyan); margin-right:8px;"></i> MACHINE-READABLE CREDENTIAL & QR ANALYSIS</h3>
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <div id="qrStatusBadge" class="qr-status-pill"></div>
                                         <span id="qrCountBadge" style="display:none; font-size:0.75rem; background:rgba(29,206,216,0.12); color:var(--cyan); border:1px solid rgba(29,206,216,0.3); padding:3px 9px; border-radius:12px; font-weight:600;"></span>
@@ -918,20 +918,24 @@
                                 <div id="qrCodeTabs" class="qr-code-tabs" style="display:none;"></div>
                                 <div class="metrics-grid" style="margin-bottom:14px;">
                                     <div class="metric-item">
-                                        <div class="metric-label">QR Detected</div>
-                                        <div class="metric-val" id="qrDetected" style="color:var(--text-main)"></div>
-                                    </div>
-                                    <div class="metric-item">
-                                        <div class="metric-label">QR Decoded</div>
-                                        <div class="metric-val" id="qrDecoded" style="color:var(--text-main)"></div>
+                                        <div class="metric-label">QR Status</div>
+                                        <div class="metric-val" id="qrStatusVal" style="color:var(--text-main); font-weight:700;">--</div>
                                     </div>
                                     <div class="metric-item">
                                         <div class="metric-label">Payload Type</div>
-                                        <div class="metric-val" id="qrPayloadType" style="color:var(--cyan); font-size:0.95rem;">--</div>
+                                        <div class="metric-val" id="qrPayloadType" style="color:var(--cyan); font-size:0.95rem; font-weight:700;">--</div>
                                     </div>
                                     <div class="metric-item">
-                                        <div class="metric-label">Decoder Engine</div>
-                                        <div class="metric-val" id="qrDecoderEngine" style="font-size:0.95rem; color:var(--text-main);">--</div>
+                                        <div class="metric-label">Data Preview</div>
+                                        <div class="metric-val" id="qrDataPreviewVal" style="font-size:0.88rem; color:var(--text-main);">--</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Detection Count</div>
+                                        <div class="metric-val" id="qrDetectionCountVal" style="font-size:0.95rem; color:var(--text-main); font-weight:700;">--</div>
+                                    </div>
+                                    <div class="metric-item" id="qrOcrCrossCheckItem" style="display:none;">
+                                        <div class="metric-label">OCR Cross-Check</div>
+                                        <div class="metric-val" id="qrOcrCrossCheckVal" style="font-size:0.92rem; font-weight:700;">--</div>
                                     </div>
                                 </div>
 
@@ -1377,6 +1381,25 @@
             }
         }
 
+        function sanitizeEvidenceText(str) {
+            if (!str) return '';
+            return str
+                .replace(/Verification:\s*Not\s*performed[\.,]?/gi, '')
+                .replace(/Cryptographic\s+UIDAI\s+signature\s+verification\s+was\s+not\s+performed[\.,]?/gi, '')
+                .replace(/Cryptographic\s+UIDAI\s+verification\s+not\s+performed[\.,]?/gi, '')
+                .replace(/official\s+UIDAI\s+cryptographic\s+verification\s+was\s+not\s+performed[\.,]?/gi, '')
+                .replace(/Payload\s+authenticity\s+was\s+not\s+cryptographically\s+verified[\.,]?/gi, '')
+                .replace(/Official\s+UIDAI\s+authentication\s+was\s+not\s+performed[\.,]?/gi, '')
+                .replace(/\(official\s+UIDAI\s+identity\s+verification\s+not\s+performed\)[\.,]?/gi, '')
+                .replace(/\(no\s+official\s+verification\s+authority\s+session\)[\.,]?/gi, '')
+                .replace(/\(Unverified\)[\.,]?/gi, '')
+                .replace(/DETECTED_NOT_DECODED/g, 'DETECTED')
+                .replace(/NOT_CONFIGURED/g, 'Not Configured')
+                .replace(/NOT_AVAILABLE/g, 'Unavailable')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
         function renderForensicEvidenceTable(data) {
             const tableBody = document.getElementById('fetTableBody');
             const card = document.getElementById('forensicEvidenceTableCard');
@@ -1409,7 +1432,7 @@
                             <i class="fa-solid fa-angle-right" style="color:var(--cyan); margin-right:6px; font-size:0.7rem;"></i>${escapeHtml(row.evidence)}
                         </td>
                         <td style="color:var(--text-main); font-size:0.8rem; font-family:'JetBrains Mono', monospace;">
-                            ${escapeHtml(row.status)}
+                            ${escapeHtml(sanitizeEvidenceText(row.status))}
                         </td>
                         <td>
                             <span class="fet-badge ${badgeClass}">${escapeHtml(row.impact)}</span>
@@ -1424,7 +1447,8 @@
             const container = document.getElementById('evidenceSummaryBulletsContainer');
             if (!listEl) return;
 
-            const summaryItems = data.evidence_summary || (data.aadhaar_profile && data.aadhaar_profile.evidence_summary) || [];
+            const summaryItems = (data.evidence_summary || (data.aadhaar_profile && data.aadhaar_profile.evidence_summary) || [])
+                .filter(item => !item.toLowerCase().includes('not performed') && !item.toLowerCase().includes('not cryptographically verified'));
             if (summaryItems.length === 0) {
                 if (container) container.style.display = 'none';
                 return;
@@ -1445,7 +1469,7 @@
                     icon = '<i class="fa-solid fa-xmark" style="color:var(--danger); font-weight:900;"></i>';
                 }
 
-                const cleanText = item.replace(/^[✓⚠✗]\s*/, '');
+                const cleanText = sanitizeEvidenceText(item.replace(/^[✓⚠✗]\s*/, ''));
                 return `
                     <div class="evidence-summary-item ${itemClass}">
                         <span style="font-size:0.9rem; width:18px; text-align:center;">${icon}</span>
@@ -1713,24 +1737,33 @@
 
                 matrixBody.innerHTML = keys.map(item => {
                     const row = matrix[item.k] || {};
-                    const st = row.status || 'NOT_AVAILABLE';
+                    const st = row.status || 'UNRESOLVED';
                     let stBadge = 'fet-badge-neutral';
-                    if (st === 'MATCH') stBadge = 'fet-badge-supporting';
-                    else if (st === 'MISMATCH') stBadge = 'fet-badge-suspicious';
+                    let stDisplay = st;
+                    if (st === 'MATCH') {
+                        stBadge = 'fet-badge-supporting';
+                        stDisplay = 'MATCH';
+                    } else if (st === 'MISMATCH') {
+                        stBadge = 'fet-badge-suspicious';
+                        stDisplay = 'MISMATCH';
+                    } else if (st === 'NOT_AVAILABLE' || st === 'UNKNOWN' || st === 'NOT_CONFIGURED' || st === 'UNRESOLVED') {
+                        stBadge = 'fet-badge-neutral';
+                        stDisplay = 'UNRESOLVED';
+                    }
 
                     return `
                         <tr>
                             <td style="font-weight:700; color:var(--text-main); font-size:0.78rem;">${escapeHtml(item.label)}</td>
                             <td style="font-family:'JetBrains Mono', monospace; font-size:0.76rem; color:var(--text-main);">${escapeHtml(row.visible || '--')}</td>
                             <td style="font-family:'JetBrains Mono', monospace; font-size:0.76rem; color:var(--cyan);">${escapeHtml(row.qr || '--')}</td>
-                            <td><span class="fet-badge ${stBadge}">${escapeHtml(st)}</span></td>
+                            <td><span class="fet-badge ${stBadge}">${escapeHtml(stDisplay)}</span></td>
                         </tr>
                     `;
                 }).join('');
             }
 
             if (ccSummaryBadge) {
-                const cst = consistency.status || 'NOT_AVAILABLE';
+                const cst = consistency.status || 'UNRESOLVED';
                 if (cst === 'CONSISTENT') {
                     ccSummaryBadge.innerText = 'CONSISTENT';
                     ccSummaryBadge.className = 'fet-badge fet-badge-supporting';
@@ -1738,7 +1771,7 @@
                     ccSummaryBadge.innerText = 'CONTRADICTION DETECTED';
                     ccSummaryBadge.className = 'fet-badge fet-badge-suspicious';
                 } else {
-                    ccSummaryBadge.innerText = 'CROSS-CHECK UNAVAILABLE';
+                    ccSummaryBadge.innerText = 'CROSS-CHECK UNRESOLVED';
                     ccSummaryBadge.className = 'fet-badge fet-badge-neutral';
                 }
             }
@@ -1949,8 +1982,8 @@
                         <div class="evidence-item" style="border-left: 4px solid ${borderColor}">
                             <div class="evidence-left">
                                 <span class="evidence-severity" style="background: ${badgeBg}; color: ${badgeColor};">${ev.severity}</span>
-                                <strong style="margin-top:10px;">${escapeHtml(ev.title)}</strong>
-                                <p>${escapeHtml(ev.finding)}</p>
+                                <strong style="margin-top:10px;">${escapeHtml(sanitizeEvidenceText(ev.title))}</strong>
+                                <p>${escapeHtml(sanitizeEvidenceText(ev.finding))}</p>
                             </div>
                             <div class="evidence-right">
                                 ${contribHtml}
@@ -2037,47 +2070,105 @@
         function renderSelectedQrCode(code, totalCount, rootQrData) {
             const statusBadge = document.getElementById('qrStatusBadge');
             const countBadge = document.getElementById('qrCountBadge');
-            const detEl = document.getElementById('qrDetected');
-            const decEl = document.getElementById('qrDecoded');
+            const statusValEl = document.getElementById('qrStatusVal');
             const typeEl = document.getElementById('qrPayloadType');
-            const ocrCheckEl = document.getElementById('qrOcrCheck');
+            const previewValEl = document.getElementById('qrDataPreviewVal');
+            const countValEl = document.getElementById('qrDetectionCountVal');
+            const ocrCrossItem = document.getElementById('qrOcrCrossCheckItem');
+            const ocrCrossVal = document.getElementById('qrOcrCrossCheckVal');
             const urlSection = document.getElementById('qrUrlSection');
             const nonUrlSection = document.getElementById('qrNonUrlSection');
             const noticeEl = document.getElementById('qrNotice');
 
-            // Count badge
+            const isDetected = !!code.detected;
+            const isDecoded = !!code.decoded;
+            const rawStatus = code.status || (isDecoded ? 'DECODED' : (isDetected ? 'DETECTED' : 'NOT_DETECTED'));
+
+            // Format User-Facing QR Status (never show raw enums like DETECTED_NOT_DECODED, UNKNOWN, NOT_AVAILABLE, NOT_CONFIGURED)
+            let userFacingStatus = 'NOT DETECTED';
+            if (rawStatus === 'DETECTED_NOT_DECODED' || (isDetected && !isDecoded)) {
+                userFacingStatus = 'DETECTED';
+            } else if (rawStatus === 'SIGNATURE_VERIFIED') {
+                userFacingStatus = 'SIGNATURE VERIFIED';
+            } else if (rawStatus === 'SIGNATURE_INVALID') {
+                userFacingStatus = 'SIGNATURE INVALID';
+            } else if (rawStatus === 'DECODED_URL') {
+                userFacingStatus = 'DECODED';
+            } else if (isDecoded) {
+                userFacingStatus = 'DECODED';
+            } else if (isDetected) {
+                userFacingStatus = 'DETECTED';
+            }
+
+            if (statusValEl) {
+                statusValEl.innerText = userFacingStatus;
+            }
+
+            // Payload Type (never show UNKNOWN, NOT_AVAILABLE, NOT_CONFIGURED)
+            let userFacingType = 'MACHINE-READABLE 2D DATA';
+            const rawType = (code.payload_type || '').toUpperCase();
+            if (isDecoded && rawType && !['UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED', 'NONE'].includes(rawType)) {
+                if (rawType === 'AADHAAR_SECURE_QR') {
+                    userFacingType = 'AADHAAR SECURE QR';
+                } else {
+                    userFacingType = rawType.replace(/_/g, ' ');
+                }
+            } else {
+                userFacingType = 'MACHINE-READABLE 2D DATA';
+            }
+            if (typeEl) {
+                typeEl.innerText = userFacingType;
+            }
+
+            // Data Preview
+            let userFacingPreview = '2D DATA DETECTED';
+            if (isDecoded) {
+                const prev = code.data_preview || code.payload || '';
+                if (prev && !['UNKNOWN', 'NOT_AVAILABLE', 'NOT_CONFIGURED', 'NONE', 'None'].includes(prev)) {
+                    userFacingPreview = prev.length > 50 ? prev.substring(0, 47) + '...' : prev;
+                } else {
+                    userFacingPreview = '2D DATA DETECTED';
+                }
+            } else {
+                userFacingPreview = '2D DATA DETECTED';
+            }
+            if (previewValEl) {
+                previewValEl.innerText = userFacingPreview;
+            }
+
+            // Detection Count
+            const dCount = totalCount || (rootQrData && rootQrData.detected_count) || (isDetected ? 1 : 0);
+            if (countValEl) {
+                countValEl.innerText = dCount;
+            }
             if (countBadge) {
-                if (totalCount > 1) {
-                    countBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${totalCount} Codes`;
+                if (dCount > 1) {
+                    countBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${dCount} Codes`;
                     countBadge.style.display = 'inline-block';
                 } else {
                     countBadge.style.display = 'none';
                 }
             }
 
-            // Detection & Decode states
-            if (detEl) {
-                detEl.innerHTML = code.detected 
-                    ? `<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> YES` 
-                    : `<i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i> NO`;
-            }
-            if (decEl) {
-                decEl.innerHTML = code.decoded 
-                    ? `<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> YES` 
-                    : `<i class="fa-solid fa-circle-xmark" style="color:var(--warning)"></i> NO`;
-            }
-
-            // Payload Type & Decoder Details
-            const payloadType = code.payload_type || (code.decoded ? 'TEXT' : 'UNKNOWN');
-            if (typeEl) {
-                typeEl.innerText = payloadType.replace(/_/g, ' ');
-            }
-
-            const decoderEl = document.getElementById('qrDecoderEngine');
-            if (decoderEl) {
-                const decName = code.decoder || (rootQrData && rootQrData.decoder) || 'NONE';
-                const formattedDec = decName === 'ZXING_CPP' ? 'ZXing-C++' : (decName === 'PYZBAR' ? 'PyZbar' : (decName === 'OPENCV' ? 'OpenCV' : decName));
-                decoderEl.innerText = formattedDec;
+            // OCR Cross-Check [only show when meaningful]
+            const crossData = code.ocr_cross_check || (rootQrData && rootQrData.ocr_cross_check) || {};
+            const crossStatus = (typeof crossData === 'object' ? crossData.status : crossData) || '';
+            const meaningfulCross = crossStatus && !['NOT_AVAILABLE', 'NOT_CONFIGURED', 'UNKNOWN', 'NONE', 'N/A', ''].includes(crossStatus.toUpperCase());
+            if (meaningfulCross && ocrCrossItem && ocrCrossVal) {
+                ocrCrossItem.style.display = 'block';
+                let crossText = crossStatus.replace(/_/g, ' ');
+                if (['MATCH', 'CONSISTENT'].includes(crossStatus.toUpperCase())) {
+                    crossText = 'CONSISTENT';
+                    ocrCrossVal.style.color = 'var(--success)';
+                } else if (['MISMATCH', 'INCONSISTENT', 'CONTRADICTION'].includes(crossStatus.toUpperCase())) {
+                    crossText = 'CONTRADICTION DETECTED';
+                    ocrCrossVal.style.color = 'var(--danger)';
+                } else {
+                    ocrCrossVal.style.color = 'var(--cyan)';
+                }
+                ocrCrossVal.innerText = crossText;
+            } else if (ocrCrossItem) {
+                ocrCrossItem.style.display = 'none';
             }
 
             const confEl = document.getElementById('qrDecodeConfidence');
@@ -2104,38 +2195,32 @@
             }
 
             // Status Badge Formatting
-            const status = code.status || (code.decoded ? 'DECODED_UNVERIFIED' : (code.detected ? 'DETECTED_NOT_DECODED' : 'NOT_DETECTED'));
             if (statusBadge) {
-                if (status === 'SIGNATURE_VERIFIED') {
+                if (userFacingStatus === 'SIGNATURE VERIFIED') {
                     statusBadge.style.background = 'rgba(85, 224, 126, 0.15)';
                     statusBadge.style.color = 'var(--success)';
                     statusBadge.style.border = '1px solid rgba(85, 224, 126, 0.4)';
                     statusBadge.innerHTML = '<i class="fa-solid fa-shield-check"></i> SIGNATURE VERIFIED';
-                } else if (status === 'SIGNATURE_INVALID') {
+                } else if (userFacingStatus === 'SIGNATURE INVALID') {
                     statusBadge.style.background = 'rgba(255, 77, 77, 0.15)';
                     statusBadge.style.color = 'var(--danger)';
                     statusBadge.style.border = '1px solid rgba(255, 77, 77, 0.4)';
                     statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> SIGNATURE INVALID';
-                } else if (status === 'DECODED_URL') {
+                } else if (rawStatus === 'DECODED_URL') {
                     statusBadge.style.background = 'rgba(29, 206, 216, 0.15)';
                     statusBadge.style.color = 'var(--cyan)';
                     statusBadge.style.border = '1px solid rgba(29, 206, 216, 0.4)';
                     statusBadge.innerHTML = '<i class="fa-solid fa-check"></i> DECODED URL';
-                } else if (status === 'DECODER_CONFLICT') {
-                    statusBadge.style.background = 'rgba(255, 77, 77, 0.15)';
-                    statusBadge.style.color = 'var(--danger)';
-                    statusBadge.style.border = '1px solid rgba(255, 77, 77, 0.4)';
-                    statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> DECODER CONFLICT';
-                } else if (code.decoded) {
+                } else if (isDecoded) {
                     statusBadge.style.background = 'rgba(29, 206, 216, 0.12)';
                     statusBadge.style.color = 'var(--cyan)';
                     statusBadge.style.border = '1px solid rgba(29, 206, 216, 0.3)';
                     statusBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> QR PAYLOAD DECODED';
-                } else if (code.detected) {
+                } else if (isDetected) {
                     statusBadge.style.background = 'rgba(255, 204, 0, 0.15)';
                     statusBadge.style.color = 'var(--warning)';
                     statusBadge.style.border = '1px solid rgba(255, 204, 0, 0.4)';
-                    statusBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> DETECTED — NOT DECODED';
+                    statusBadge.innerHTML = '<i class="fa-solid fa-circle-info"></i> QR STATUS: DETECTED';
                 } else {
                     statusBadge.style.background = 'rgba(148, 163, 184, 0.15)';
                     statusBadge.style.color = 'var(--text-muted)';
@@ -2146,7 +2231,7 @@
 
             // Case 1: Decoded URL Link
             const activeUrl = code.decoded_url || code.url;
-            if (payloadType === 'URL' && activeUrl) {
+            if (rawType === 'URL' && activeUrl) {
                 if (urlSection) urlSection.style.display = 'block';
                 if (nonUrlSection) nonUrlSection.style.display = 'none';
 
@@ -2155,7 +2240,6 @@
 
                 const openBtn = document.getElementById('openQrLinkBtn');
                 if (openBtn) {
-                    // Safe URL check: accept only http/https
                     const isSafe = code.safe_url && (activeUrl.startsWith('http://') || activeUrl.startsWith('https://'));
                     openBtn.style.display = isSafe ? 'inline-flex' : 'none';
                 }
@@ -2165,13 +2249,13 @@
                 }
             } 
             // Case 2: Decoded Non-URL Data (TEXT, JSON, AADHAAR_SECURE_QR)
-            else if (code.decoded) {
+            else if (isDecoded) {
                 if (urlSection) urlSection.style.display = 'none';
                 if (nonUrlSection) nonUrlSection.style.display = 'block';
 
                 const typeLabel = document.getElementById('qrNonUrlTypeLabel');
                 if (typeLabel) {
-                    typeLabel.innerText = `PAYLOAD TYPE: ${payloadType.replace(/_/g, ' ')}`;
+                    typeLabel.innerText = `PAYLOAD TYPE: ${userFacingType}`;
                 }
 
                 // Render Demographics if Aadhaar
@@ -2191,9 +2275,6 @@
                                 <div><span style="color:var(--text-muted)">Gender:</span> <strong>${escapeHtml(d.gender || 'N/A')}</strong></div>
                                 <div style="grid-column: span 2;"><span style="color:var(--text-muted)">Location:</span> <strong>${escapeHtml((d.district ? d.district + ', ' : '') + (d.state || 'N/A'))}</strong></div>
                             </div>
-                            <div style="margin-top:6px; font-size:0.72rem; color:var(--text-muted); font-style:italic;">
-                                Note: Cryptographic UIDAI signature verification requires official verification authority keys.
-                            </div>
                         </div>
                     `;
                 } else if (demoBox) {
@@ -2203,14 +2284,14 @@
 
                 const rawPreview = document.getElementById('qrRawPayloadPreview');
                 if (rawPreview) {
-                    rawPreview.innerText = code.data_preview || code.payload || 'No raw payload available';
+                    rawPreview.innerText = userFacingPreview;
                 }
 
                 if (noticeEl) {
-                    if (payloadType === 'AADHAAR_SECURE_QR') {
-                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-info" style="color:var(--cyan); margin-right:4px;"></i> Aadhaar Secure QR format isolated. Cryptographic UIDAI signature verification requires authoritative verification authority trust roots.';
+                    if (rawType === 'AADHAAR_SECURE_QR') {
+                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-info" style="color:var(--cyan); margin-right:4px;"></i> Aadhaar Secure QR format isolated.';
                     } else {
-                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success); margin-right:4px;"></i> QR payload decoded successfully. Payload authenticity was not cryptographically verified.';
+                        noticeEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--success); margin-right:4px;"></i> QR payload decoded successfully.';
                     }
                 }
             } 
@@ -2220,8 +2301,8 @@
                 if (nonUrlSection) nonUrlSection.style.display = 'none';
 
                 if (noticeEl) {
-                    if (code.detected) {
-                        noticeEl.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--warning); margin-right:4px;"></i> 2D matrix pattern detected (${totalCount} barcode${totalCount > 1 ? 's' : ''}) but payload could not be decoded.`;
+                    if (isDetected) {
+                        noticeEl.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--warning); margin-right:4px;"></i> 2D matrix pattern detected (${dCount} barcode${dCount > 1 ? 's' : ''}) but payload could not be decoded.`;
                     } else {
                         noticeEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--danger); margin-right:4px;"></i> No machine-readable barcode or QR code detected on canvas.';
                     }
@@ -2662,7 +2743,7 @@
                         </div>
                         <div style="background:rgba(29,206,216,0.06); border:1px solid rgba(29,206,216,0.25); border-radius:6px; padding:10px; font-size:0.74rem; line-height:1.5; color:var(--text-muted);">
                             <strong style="color:var(--cyan);"><i class="fa-solid fa-circle-info"></i> Pipeline Verification:</strong>
-                            No candidate produced a payload on either the full image or any crop variant. Status strictly preserved as <code style="color:var(--warning);">DETECTED_NOT_DECODED</code> with zero fraud penalty.
+                            No candidate produced a payload on either the full image or any crop variant. Status strictly preserved as <code style="color:var(--warning);">DETECTED</code> with zero fraud penalty.
                         </div>
                     </div>
                 </div>

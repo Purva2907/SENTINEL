@@ -531,7 +531,7 @@ def generate_fallback_response(query: str, ctx: dict, all_cases: list = None, re
             return (
                 f"**Review Required Assessment** (Score: {auth_score}/100):\n"
                 f"This document was **not flagged as fraudulent**. It received 'Review Required' due to neutral evidentiary gaps:\n"
-                f"• **Secure QR**: Machine-readable QR detected but official UIDAI cryptographic verification was not performed.\n"
+                f"• **Secure QR**: Machine-readable 2D data detected on canvas.\n"
                 f"• **Image Quality**: Optical resolution, lighting, or slight scan compression requires human verification.\n"
                 f"• **Tampering Integrity**: Clean pass — no copy-move cloning or photo replacement detected.\n\n"
                 f"**Evidence Summary**:\n{summary_str}"

@@ -203,14 +203,23 @@
                                 <h3 style="margin-bottom:10px; font-size:1.3rem; color:var(--text-main);">Drop evidence file here</h3>
                                 <p style="color:var(--text-muted); margin-bottom:15px;">or click to browse local filesystem</p>
                                 <span class="badge" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted);">
-                                    <i class="fa-solid fa-file-image"></i> JPG, PNG, WEBP Only
+                                    <i class="fa-solid fa-file-shield"></i> PDF, JPG, PNG, WEBP (Max 25MB)
                                 </span>
                             </div>
                             
-                            <input type="file" id="fileInput" accept="image/jpeg, image/png, image/webp">
+                            <input type="file" id="fileInput" accept="image/jpeg, image/png, image/webp, application/pdf, .pdf">
                             
                             <div class="preview-section" id="previewSection">
                                 <img id="preview" src="#" alt="Document Preview">
+                                <div id="pdfPreviewBox" style="display:none; padding:35px 20px; text-align:center; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.15); border-radius:12px; margin-bottom:15px;">
+                                    <div style="width:68px; height:68px; border-radius:12px; background:rgba(255, 77, 77, 0.12); border:1px solid rgba(255, 77, 77, 0.3); display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">
+                                        <i class="fa-solid fa-file-pdf" style="font-size:2rem; color:#ff4d4d;"></i>
+                                    </div>
+                                    <div style="font-weight:600; font-size:1.1rem; color:var(--text-main);">PDF Evidence Document Ready</div>
+                                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:6px; max-width:400px; margin-left:auto; margin-right:auto;">
+                                        Multi-page rasterization and forensic signal extraction will execute on submission.
+                                    </p>
+                                </div>
                                 <div class="file-info">
                                     <div style="display:flex; align-items:center; gap:15px;">
                                         <i class="fa-solid fa-file-shield" style="font-size:1.5rem; color:var(--cyan);"></i>
@@ -332,29 +341,46 @@
 
         function handleFiles(file) {
             // Validate file type
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if(!validTypes.includes(file.type)) {
-                Toast.warning("Invalid File", "Please upload a JPG, PNG, or WEBP image.");
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+            const isPdf = file.type === 'application/pdf' || (file.name && file.name.toLowerCase().endsWith('.pdf'));
+            if(!validTypes.includes(file.type) && !isPdf) {
+                Toast.warning("Invalid File", "Please upload a PDF, JPG, PNG, or WEBP document.");
                 return;
             }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                fileName.innerText = file.name;
-                fileSize.innerText = `${(file.size / (1024*1024)).toFixed(2)} MB`;
-                
+
+            const pdfBox = document.getElementById('pdfPreviewBox');
+            fileName.innerText = file.name;
+            fileSize.innerText = `${(file.size / (1024*1024)).toFixed(2)} MB`;
+
+            if (isPdf) {
+                preview.style.display = 'none';
+                preview.src = '#';
+                if (pdfBox) pdfBox.style.display = 'block';
                 dropZone.style.display = 'none';
                 previewSection.style.display = 'block';
                 analyzeBtn.style.display = 'flex';
                 analyzeBtn.disabled = false;
+            } else {
+                if (pdfBox) pdfBox.style.display = 'none';
+                preview.style.display = 'block';
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    dropZone.style.display = 'none';
+                    previewSection.style.display = 'block';
+                    analyzeBtn.style.display = 'flex';
+                    analyzeBtn.disabled = false;
+                }
+                reader.readAsDataURL(file);
             }
-            reader.readAsDataURL(file);
         }
 
         removeBtn.addEventListener('click', () => {
             fileInput.value = '';
             preview.src = '#';
+            const pdfBox = document.getElementById('pdfPreviewBox');
+            if (pdfBox) pdfBox.style.display = 'none';
+            preview.style.display = 'block';
             dropZone.style.display = 'block';
             previewSection.style.display = 'none';
             analyzeBtn.style.display = 'none';

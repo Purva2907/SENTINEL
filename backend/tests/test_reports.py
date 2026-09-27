@@ -83,3 +83,85 @@ def test_report_upload_flow(client):
     assert res_download.headers["content-type"] == "application/pdf"
     assert len(res_download.content) > 0
     assert res_download.content[:4] == b"%PDF"
+
+
+def test_pdf_qr_presentation_clean(tmp_path):
+    from reports.pdf_report import generate_pdf
+    
+    # Case with DETECTED_NOT_DECODED and unverified QR
+    mock_case = {
+        "case_id": "TEST-QR-PRES-001",
+        "title": "Aadhaar Card QR Presentation Test",
+        "document_type": "Aadhaar Card",
+        "risk_score": 10,
+        "classification": "Likely Authentic",
+        "created_at": "2026-09-27T10:00:00Z",
+        "analysis": {
+            "qr": {
+                "detected": True,
+                "decoded": False,
+                "status": "DETECTED_NOT_DECODED",
+                "payload_type": "UNKNOWN",
+                "detected_count": 2,
+                "candidates": [{"id": "c1"}, {"id": "c2"}],
+                "data_preview": None,
+                "verification": {
+                    "status": "NOT_PERFORMED",
+                    "authority": "UIDAI"
+                },
+                "ocr_cross_check": {
+                    "status": "NOT_AVAILABLE"
+                }
+            },
+            "evidence": [
+                {
+                    "id": "EV-003",
+                    "category": "QR",
+                    "title": "QR Pattern Detected",
+                    "finding": "2D matrix detected. Cryptographic UIDAI signature verification was not performed.",
+                    "severity": "Info",
+                    "risk_contribution": 0
+                }
+            ]
+        }
+    }
+    mock_user = {"name": "Forensic Auditor", "email": "auditor@sentinel.org"}
+    
+    pdf_path = generate_pdf(mock_case, mock_user, "RPT-QR-CLEAN-TEST")
+    assert os.path.exists(pdf_path)
+    
+    # Read generated PDF bytes and text
+    with open(pdf_path, "rb") as f:
+        pdf_bytes = f.read()
+    assert pdf_bytes[:4] == b"%PDF"
+    
+    # Check that forbidden raw enums and unverified claims do not appear
+    # We can inspect the PDF text
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(pdf_path)
+        full_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        
+        # Must contain new presentation
+        assert "MACHINE-READABLE CREDENTIAL & QR ANALYSIS" in full_text
+        assert "QR STATUS:" in full_text
+        assert "DETECTED" in full_text
+        assert "PAYLOAD TYPE:" in full_text
+        assert "MACHINE-READABLE 2D DATA" in full_text
+        assert "DATA PREVIEW:" in full_text
+        assert "2D DATA DETECTED" in full_text
+        assert "DETECTION COUNT:" in full_text
+        assert "2" in full_text
+        
+        # Must NOT contain forbidden enums or verification claims
+        assert "DETECTED_NOT_DECODED" not in full_text
+        assert "NOT_AVAILABLE" not in full_text
+        assert "NOT_CONFIGURED" not in full_text
+        assert "VERIFICATION:" not in full_text
+        assert "Not performed" not in full_text
+        assert "Verification: Not performed" not in full_text
+        assert "Verification: Unavailable" not in full_text
+        assert "Verification: Failed" not in full_text
+        assert "Not verified" not in full_text
+    except ImportError:
+        pass

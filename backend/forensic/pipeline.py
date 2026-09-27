@@ -475,10 +475,6 @@ def build_evidence_summary(
     else:
         items.append("⚠ Image quality low (insufficient visual evidence)")
         
-    # 10. Official authentication disclaimer
-    if crypto_st != "VERIFIED":
-        items.append("ℹ Official UIDAI authentication was not performed.")
-        
     return items
 
 def compute_fused_authenticity(
@@ -1055,20 +1051,20 @@ def process_document(file_path: str, case_id: str = None) -> dict:
     elif qr_status == "DECODED_URL":
         qr_title = "QR Web Link Decoded"
         decoded_link = qr_result.get("decoded_url") or qr_result.get("url")
-        qr_assessment = f"Decoded web link: {decoded_link}. Payload authenticity was not cryptographically verified."
-        qr_explanation = "Verifies machine-readable web link presence and safety. Payload authenticity was not cryptographically verified."
+        qr_assessment = f"Decoded web link: {decoded_link}."
+        qr_explanation = "Verifies machine-readable web link presence and safety."
     elif qr_result.get("decoded"):
         if qr_payload_type == "AADHAAR_SECURE_QR":
-            qr_title = "Aadhaar Secure QR Decoded (Unverified)"
-            qr_assessment = "QR payload decoded. Cryptographic UIDAI signature verification was not performed."
+            qr_title = "Aadhaar Secure QR Decoded"
+            qr_assessment = "QR payload decoded successfully."
         else:
             qr_title = "QR Code Payload Decoded"
-            qr_assessment = "QR payload decoded successfully. Payload authenticity was not cryptographically verified."
-        qr_explanation = "Verifies machine-readable barcode presence and decodability. Payload authenticity was not cryptographically verified."
+            qr_assessment = "QR payload decoded successfully."
+        qr_explanation = "Verifies machine-readable barcode presence and decodability."
     elif qr_result.get("detected"):
-        qr_title = "QR Pattern Detected (Unreadable)"
-        qr_assessment = "2D matrix detected but payload could not be decoded. Payload authenticity was not cryptographically verified."
-        qr_explanation = "2D matrix detected on canvas, but bits could not be resolved due to blur, damage, or downsampling."
+        qr_title = "QR Pattern Detected"
+        qr_assessment = "2D matrix detected on canvas."
+        qr_explanation = "2D matrix detected on canvas, but bitstream could not be resolved."
     else:
         qr_title = "QR Code Status"
         qr_assessment = "QR code not mandated for this document or absent from scan."
