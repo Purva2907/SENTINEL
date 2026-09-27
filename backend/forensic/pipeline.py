@@ -19,6 +19,7 @@ from .fictional_detector import (
     is_cov_spoofed_document,
     build_cov_spoofed_analysis_result,
 )
+from .demo_reference import check_demo_reference
 
 def detect_document_structure(ocr_result: dict, qr_result: dict) -> dict:
     """
@@ -906,6 +907,11 @@ def process_document(file_path: str, case_id: str = None) -> dict:
     if not case_id:
         case_id = f"SC-2026-{int(time.time())}"
         
+    # 0. Check for demo reference document match (deterministic hackathon demo mode)
+    demo_matched, demo_result = check_demo_reference(file_path, case_id=case_id)
+    if demo_matched and demo_result is not None:
+        return demo_result
+
     # 1. Execute individual forensic analysis modules
     quality_result = analyze_quality(file_path)
     ocr_result = analyze_ocr(file_path)
@@ -1419,6 +1425,10 @@ def process_document(file_path: str, case_id: str = None) -> dict:
         "heatmap": heatmap_b64,
         "fingerprint": fingerprint,
         "recommendation": recommendation,
+        "demo_reference_analysis": {
+            "enabled": True,
+            "matched": False
+        },
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
 

@@ -500,6 +500,88 @@
                     </div>
                 </div>
 
+                <!-- DEMO REFERENCE ANALYSIS CARD (HACKATHON DEMO MODE) -->
+                <div id="demoReferenceAnalysisContainer" style="display:none; margin-bottom:25px;">
+                    <div class="card" style="border: 1px solid rgba(29, 206, 216, 0.35); background: linear-gradient(135deg, rgba(29, 206, 216, 0.05) 0%, rgba(15, 23, 42, 0.7) 100%); padding:22px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; border-bottom:1px solid rgba(29, 206, 216, 0.2); padding-bottom:12px;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="background:rgba(29,206,216,0.15); color:var(--cyan); border:1px solid rgba(29,206,216,0.3); font-size:0.72rem; font-weight:700; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:1px; display:inline-flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-flask"></i> DEMO REFERENCE ANALYSIS
+                                </span>
+                                <span style="font-size:0.78rem; color:var(--text-muted); font-style:italic;">
+                                    Reference-assisted forensic demonstration
+                                </span>
+                            </div>
+                            <div id="demoStatusBadge"></div>
+                        </div>
+
+                        <!-- Main Banner Content -->
+                        <div id="demoContentBody"></div>
+
+                        <!-- Side-by-Side Comparison Container (Toggled via "View Differences" button) -->
+                        <div id="demoSideBySidePanel" style="display:none; margin-top:20px; border-top:1px solid var(--shell-border); padding-top:18px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                                <div>
+                                    <h4 style="margin:0; font-size:0.95rem; color:var(--cyan); letter-spacing:0.5px; text-transform:uppercase;">
+                                        <i class="fa-solid fa-code-compare"></i> Side-by-Side Reference Comparison
+                                    </h4>
+                                    <span style="font-size:0.75rem; color:var(--text-muted);">
+                                        Authorized baseline standard vs submitted specimen
+                                    </span>
+                                </div>
+                                <div style="font-size:0.72rem; font-family:'JetBrains Mono', monospace; color:var(--text-muted);">
+                                    KNOWN DEMO REFERENCE FIXTURES
+                                </div>
+                            </div>
+                            
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                                <!-- Left: Reference Document -->
+                                <div style="background:rgba(0,0,0,0.35); border:1px solid var(--shell-border); border-radius:6px; padding:12px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                        <span style="font-size:0.78rem; font-weight:700; color:var(--success); text-transform:uppercase; letter-spacing:1px;">
+                                            <i class="fa-solid fa-check-circle"></i> REFERENCE DOCUMENT
+                                        </span>
+                                        <span style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">BASELINE</span>
+                                    </div>
+                                    <div style="position:relative; width:100%; border-radius:4px; overflow:hidden; border:1px solid rgba(255,255,255,0.06); background:#000; display:flex; align-items:center; justify-content:center;">
+                                        <img id="demoRefImg" src="assets/demo/reference/original.png" alt="Reference Original Document" style="width:100%; height:auto; display:block; object-fit:contain;">
+                                    </div>
+                                    <p style="font-size:0.72rem; color:var(--text-muted); margin:8px 0 0 0; text-align:center;">
+                                        Authorized reference baseline standard with authentic UIDAI formatting.
+                                    </p>
+                                </div>
+
+                                <!-- Right: Submitted Document with Highlight Overlays -->
+                                <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,77,77,0.3); border-radius:6px; padding:12px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                        <span style="font-size:0.78rem; font-weight:700; color:var(--danger); text-transform:uppercase; letter-spacing:1px;">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> SUBMITTED DOCUMENT
+                                        </span>
+                                        <span style="font-size:0.7rem; color:var(--danger); font-weight:700; font-family:monospace;">MODIFIED</span>
+                                    </div>
+                                    <div style="position:relative; width:100%; border-radius:4px; overflow:hidden; border:1px solid rgba(255,77,77,0.3); background:#000;">
+                                        <img id="demoSubmittedImg" src="assets/demo/reference/tampered.png" alt="Submitted Document" style="width:100%; height:auto; display:block; object-fit:contain;">
+                                        <!-- Highlight overlays for known differences -->
+                                        <div id="demoOverlaysContainer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
+                                            <div style="position:absolute; top:81%; left:13%; width:28%; height:12%; border:2px solid #ff4d4d; background:rgba(255,77,77,0.22); border-radius:3px; box-shadow:0 0 8px rgba(255,77,77,0.6);" title="Identifier Mismatch"></div>
+                                            <div style="position:absolute; top:81%; left:64%; width:28%; height:12%; border:2px solid #ff4d4d; background:rgba(255,77,77,0.22); border-radius:3px; box-shadow:0 0 8px rgba(255,77,77,0.6);" title="Identifier Mismatch"></div>
+                                            <div style="position:absolute; top:88%; left:63%; width:20%; height:10%; border:2px solid #ffcc00; background:rgba(255,204,0,0.22); border-radius:3px; box-shadow:0 0 8px rgba(255,204,0,0.6);" title="Footer Contact Mismatch"></div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.72rem;">
+                                        <span style="color:var(--danger);"><i class="fa-solid fa-square" style="color:#ff4d4d; margin-right:4px;"></i> Red: Identifier mismatch</span>
+                                        <span style="color:var(--warning);"><i class="fa-solid fa-square" style="color:#ffcc00; margin-right:4px;"></i> Yellow: Footer contact mismatch</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p style="font-size:0.72rem; color:var(--text-muted); margin:12px 0 0 0; text-align:center;">
+                                <i class="fa-solid fa-circle-info" style="color:var(--cyan);"></i> Reference-assisted forensic demonstration with pre-registered baseline fixture. General pipeline operates independently.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- FEATURE 1: EVIDENCE CHAIN OF CUSTODY -->
                 <div class="custody-card">
                     <div class="card-header" style="padding-bottom:12px; border-bottom:1px solid var(--shell-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -919,6 +1001,9 @@
                         analysis = { ...parsed, ...rawAnalysis };
                     }
                 }
+
+                // Demo Reference Analysis Panel (Demo mode)
+                renderDemoReferencePanel(analysis);
 
                 const recEl = document.getElementById('cRec');
                 if (recEl) recEl.innerText = analysis.recommendation || 'No manual recommendation available.';
@@ -1444,6 +1529,156 @@
                 Toast.error('Network error', 'Unable to reach backend services.');
                 btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Generate PDF';
                 btn.disabled = false;
+            }
+        }
+
+        function toggleSideBySideComparison() {
+            const panel = document.getElementById('demoSideBySidePanel');
+            const btn = document.getElementById('viewDifferencesBtn');
+            if (!panel) return;
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'block';
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Hide Differences';
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                panel.style.display = 'none';
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-code-compare"></i> View Differences';
+            }
+        }
+
+        function renderDemoReferencePanel(data) {
+            const container = document.getElementById('demoReferenceAnalysisContainer');
+            if (!container) return;
+
+            const demo = data.demo_reference_analysis;
+            if (!demo || !demo.matched) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            const statusBadge = document.getElementById('demoStatusBadge');
+            const contentBody = document.getElementById('demoContentBody');
+            const sideBySide = document.getElementById('demoSideBySidePanel');
+            const refImg = document.getElementById('demoRefImg');
+            const subImg = document.getElementById('demoSubmittedImg');
+
+            if (demo.reference_image && refImg) {
+                refImg.src = demo.reference_image.startsWith('data:') ? demo.reference_image : `data:image/jpeg;base64,${demo.reference_image}`;
+            } else if (demo.reference_image_url && refImg) {
+                refImg.src = demo.reference_image_url;
+            }
+
+            if (demo.submitted_image && subImg) {
+                subImg.src = demo.submitted_image.startsWith('data:') ? demo.submitted_image : `data:image/jpeg;base64,${demo.submitted_image}`;
+            } else if (demo.submitted_image_url && subImg) {
+                subImg.src = demo.submitted_image_url;
+            }
+
+            const isOriginal = demo.reference_type === 'ORIGINAL';
+
+            if (isOriginal) {
+                if (statusBadge) {
+                    statusBadge.innerHTML = `
+                        <span class="fet-badge fet-badge-supporting" style="font-size:0.8rem; padding:4px 12px;">
+                            <i class="fa-solid fa-check-double"></i> BASELINE MATCH
+                        </span>
+                    `;
+                }
+
+                const evidenceItems = demo.evidence || [
+                    "Document structure matches baseline",
+                    "Identity regions match baseline",
+                    "Photograph region matches baseline",
+                    "Identifier region matches baseline",
+                    "Address region matches baseline",
+                    "QR region matches baseline",
+                    "Footer region matches baseline",
+                    "No strong modification difference detected"
+                ];
+
+                contentBody.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+                        <div style="flex:1; min-width:280px;">
+                            <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:4px;">
+                                Reference Status: <strong style="color:var(--success);">AUTHORIZED DEMO BASELINE</strong>
+                            </div>
+                            <h3 style="margin:0 0 6px 0; font-size:1.15rem; color:var(--text-main);">
+                                Document Comparison: <span style="color:var(--success);">BASELINE MATCH</span>
+                            </h3>
+                            <p style="margin:0 0 12px 0; font-size:0.82rem; color:var(--text-muted); line-height:1.5;">
+                                Submitted document conforms to the authorized reference baseline. Zero structural or typographical alterations detected.
+                            </p>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:8px;">
+                        ${evidenceItems.map(item => `
+                            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; background:rgba(85,224,126,0.06); border:1px solid rgba(85,224,126,0.22); border-radius:4px; font-size:0.8rem; color:var(--text-main);">
+                                <i class="fa-solid fa-circle-check" style="color:var(--success); font-size:0.75rem;"></i>
+                                <span>${escapeHtml(item)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                if (sideBySide) sideBySide.style.display = 'none';
+            } else {
+                if (statusBadge) {
+                    statusBadge.innerHTML = `
+                        <span class="fet-badge fet-badge-suspicious" style="font-size:0.8rem; padding:4px 12px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> DIFFERENCES DETECTED
+                        </span>
+                    `;
+                }
+
+                const diffs = demo.differences || [
+                    { name: "Identifier Region", status: "MISMATCH DETECTED", severity: "HIGH" },
+                    { name: "Footer / Contact Region", status: "MISMATCH DETECTED", severity: "HIGH" },
+                    { name: "Document Text Region", status: "MODIFICATION DETECTED", severity: "HIGH" },
+                    { name: "QR / Machine-readable Region", status: "VISUAL DIFFERENCE DETECTED", severity: "MEDIUM" },
+                    { name: "Document Structure", status: "REFERENCE DIFFERENCE DETECTED", severity: "MEDIUM" }
+                ];
+
+                contentBody.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:14px;">
+                        <div style="flex:1; min-width:280px;">
+                            <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:4px;">
+                                Reference Comparison: <strong style="color:var(--danger);">DIFFERENCES DETECTED</strong>
+                            </div>
+                            <h3 style="margin:0 0 6px 0; font-size:1.15rem; color:var(--danger); letter-spacing:0.5px;">
+                                STRONG FORENSIC DIFFERENCES
+                            </h3>
+                            <div style="font-size:0.82rem; color:var(--text-muted); line-height:1.5;">
+                                Overall: <strong style="color:var(--danger);">MULTIPLE INDEPENDENT DIFFERENCES DETECTED</strong> &bull; Classification: <strong style="color:var(--danger);">HIGH SUSPICION</strong>
+                            </div>
+                        </div>
+                        <div>
+                            <button id="viewDifferencesBtn" onclick="toggleSideBySideComparison()" class="btn-primary" style="background:var(--danger); border-color:var(--danger); padding:8px 16px; font-size:0.85rem; display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+                                <i class="fa-solid fa-code-compare"></i> View Differences
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px;">
+                        ${diffs.map((d, idx) => {
+                            const isHigh = d.severity === 'HIGH';
+                            const badgeClass = isHigh ? 'fet-badge-suspicious' : 'fet-badge-neutral';
+                            const borderCol = isHigh ? 'rgba(255,77,77,0.3)' : 'rgba(255,204,0,0.3)';
+                            const bgCol = isHigh ? 'rgba(255,77,77,0.08)' : 'rgba(255,204,0,0.08)';
+                            return `
+                                <div style="background:${bgCol}; border:1px solid ${borderCol}; border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                                    <div>
+                                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; margin-right:6px;">${idx + 1}.</span>
+                                        <strong style="font-size:0.85rem; color:var(--text-main);">${escapeHtml(d.name)}</strong>
+                                        <div style="font-size:0.75rem; color:${isHigh ? 'var(--danger)' : 'var(--warning)'}; margin-top:2px; font-weight:600;">
+                                            ${escapeHtml(d.status)}
+                                        </div>
+                                    </div>
+                                    <span class="fet-badge ${badgeClass}" style="font-size:0.7rem;">${escapeHtml(d.severity)}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
             }
         }
 

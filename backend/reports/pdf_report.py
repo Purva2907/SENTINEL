@@ -296,6 +296,51 @@ def generate_pdf(case: dict, user: dict, report_id: str = None) -> str:
     story.append(summary_card)
     story.append(Spacer(1, 8))
     
+    # ---------------- 2a. REFERENCE-ASSISTED FORENSIC ANALYSIS (DEMO MODE) ----------------
+    demo_ref = case.get('demo_reference_analysis') or (case.get('analysis', {}) or {}).get('demo_reference_analysis') or {}
+    if demo_ref.get('matched'):
+        ref_type = demo_ref.get('reference_type', 'ORIGINAL')
+        comparison_text = "BASELINE MATCH" if ref_type == 'ORIGINAL' else "DIFFERENCES DETECTED"
+        assessment_text = "LIKELY AUTHENTIC" if ref_type == 'ORIGINAL' else "FINAL ASSESSMENT: HIGH SUSPICION"
+        findings_text = (
+            "Baseline match verified against authorized reference."
+            if ref_type == 'ORIGINAL'
+            else "Strong evidence of modification detected across multiple independent card regions."
+        )
+        banner_bg = "#DCFCE7" if ref_type == 'ORIGINAL' else "#FEE2E2"
+        banner_border = "#15803D" if ref_type == 'ORIGINAL' else "#B91C1C"
+
+        demo_banner_data = [
+            [
+                Paragraph("<b>REFERENCE-ASSISTED FORENSIC ANALYSIS</b>", ParagraphStyle(
+                    'DemoHead', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor(banner_border)
+                )),
+                Paragraph(f"<b>Reference comparison:</b> {comparison_text}", ParagraphStyle(
+                    'DemoComp', fontName='Helvetica-Bold', fontSize=8, alignment=2, textColor=colors.HexColor(banner_border)
+                ))
+            ],
+            [
+                Paragraph(f"<b>{assessment_text}</b> — {findings_text}", ParagraphStyle(
+                    'DemoDesc', fontName='Helvetica', fontSize=7.5, textColor=colors.HexColor("#0F172A")
+                )),
+                Paragraph("CONFIDENTIAL REFERENCE DEMO", ParagraphStyle(
+                    'DemoRight', fontName='Helvetica-Bold', fontSize=7, alignment=2, textColor=colors.HexColor("#64748B")
+                ))
+            ]
+        ]
+        demo_banner_table = Table(demo_banner_data, colWidths=[360, 180])
+        demo_banner_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor(banner_bg)),
+            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor(banner_border)),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        story.append(demo_banner_table)
+        story.append(Spacer(1, 8))
+
     # ---------------- 2b. MACHINE-READABLE QR ANALYSIS ----------------
     analysis = case.get('analysis', {})
     if isinstance(analysis, dict) and 'analysis_json' in analysis and isinstance(analysis['analysis_json'], dict):

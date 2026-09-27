@@ -769,6 +769,10 @@ def build_fictional_analysis_result(
         "heatmap": heatmap_b64,
         "fingerprint": fingerprint,
         "recommendation": recommendation,
+        "demo_reference_analysis": {
+            "enabled": True,
+            "matched": False
+        },
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
 
