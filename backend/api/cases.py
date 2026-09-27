@@ -32,6 +32,7 @@ class CaseCreateRequest(BaseModel):
     document_type: Optional[str] = Field(None, max_length=100)
     status: Optional[str] = Field(default="Active")
     risk_score: Optional[int] = None
+    authenticity_score: Optional[int] = None
     classification: Optional[str] = None
     analysis: Optional[dict] = None
     analysis_data: Optional[dict] = None
@@ -53,6 +54,7 @@ async def create_new_case(req: CaseCreateRequest, current_user: dict = Depends(g
     analysis_data = req.analysis or req.analysis_data or {}
     
     risk_score = req.risk_score if req.risk_score is not None else int(analysis_data.get("risk_score", 0))
+    authenticity_score = req.authenticity_score if req.authenticity_score is not None else int(analysis_data.get("authenticity_score", 100 - risk_score))
     classification = req.classification or analysis_data.get("classification", "Unknown")
     doc_type = req.document_type or analysis_data.get("document_type", "Unknown")
 
@@ -63,6 +65,7 @@ async def create_new_case(req: CaseCreateRequest, current_user: dict = Depends(g
         "document_type": doc_type,
         "status": req.status or "Active",
         "risk_score": risk_score,
+        "authenticity_score": authenticity_score,
         "classification": classification,
         "investigator_name": current_user.get("name") or "Investigator"
     }

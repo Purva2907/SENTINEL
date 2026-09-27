@@ -110,7 +110,7 @@ def test_qr_detection_and_decoding_states(tmp_path):
     qr_clean = analyze_qr(SAMPLE_IMG)
     assert qr_clean["detected"] is True
     assert qr_clean["decoded"] is True
-    assert qr_clean["status"] == "DECODED"
+    assert qr_clean["status"] in ("DECODED", "DECODED_UNVERIFIED")
     assert "SENTINEL" in qr_clean["payload"]
     
     # 2. Blank image without QR

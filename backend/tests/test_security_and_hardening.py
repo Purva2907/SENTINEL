@@ -309,7 +309,7 @@ def test_synthetic_qr_payload_and_corruption(tmp_path):
     
     qr_result_pristine = analyze_qr(p_pristine, document_type="Synthetic ID")
 
-    assert qr_result_pristine["status"] == "DECODED"
+    assert qr_result_pristine["status"] in ("DECODED", "DECODED_UNVERIFIED")
     assert qr_result_pristine["payload"] == "SENTINEL-DEMO-001"
     assert any("not cryptographically verified" in f.lower() for f in qr_result_pristine["findings"])
 

@@ -45,49 +45,60 @@ def analyze_layout(image_path: str, ocr_result: dict = None, qr_result: dict = N
         boxes.sort(key=lambda b: b["ymin"])
         
         # 1. Spacing irregularities between consecutive vertical lines
+        # Only flag if there is actual physical overlap/collision between text elements
         vertical_gaps = []
         for i in range(len(boxes) - 1):
             gap = boxes[i+1]["ymin"] - boxes[i]["ymax"]
             vertical_gaps.append(gap)
             
-        spacing_anomaly = False
+        spacing_collision = False
         if len(vertical_gaps) >= 2:
-            # Check for line collision (overlapping boxes) or drastic vertical spacing disparity
-            collision = any(g < 0 for g in vertical_gaps)
-            min_pos_gap = min([g for g in vertical_gaps if g > 0], default=0)
-            max_gap = max(vertical_gaps)
-            extreme_gap_disparity = (min_pos_gap > 0 and min_pos_gap < 15 and max_gap > 45)
-            if collision or extreme_gap_disparity:
-                spacing_anomaly = True
+            # Check for line collision (significant negative gap where text elements overlap)
+            collision_count = sum(1 for g in vertical_gaps if g < -8)
+            if collision_count >= 1:
+                spacing_collision = True
                     
         # 2. Left margin clustering of data fields
+        # Official Indian IDs use multi-column and bilingual layouts (English, Hindi/Regional, Centered ID).
+        # A legitimate document has text clustering along 1, 2, or 3 margin baselines.
         xmins = [b["xmin"] for b in boxes]
-        left_align_anomaly = False
-        if len(xmins) >= 3:
-            med_xmin = float(np.median(xmins))
-            drifts = [abs(x - med_xmin) for x in xmins if abs(x - med_xmin) > 32]
-            if len(drifts) >= 1:
-                left_align_anomaly = True
+        scatter_anomaly = False
+        if len(xmins) >= 4:
+            # Check if coordinates can cluster into 1-3 distinct vertical margin anchors (within 25px tolerance)
+            clusters = []
+            for x in sorted(xmins):
+                matched = False
+                for c in clusters:
+                    if abs(x - (sum(c) / len(c))) <= 28:
+                        c.append(x)
+                        matched = True
+                        break
+                if not matched:
+                    clusters.append([x])
+            # If text is scattered into > 5 disorganized, unaligned random offsets without grouping
+            if len(clusters) > 5 and len(xmins) < 10:
+                scatter_anomaly = True
                 
         score = 100
         risk_contrib = 0
         findings = []
         
-        if spacing_anomaly and left_align_anomaly:
-            score = 55
-            risk_contrib = 14
-            findings.append("Irregular vertical line spacing detected between consecutive data fields.")
-            findings.append("Non-standard left margin offsets observed in content structure.")
-        elif spacing_anomaly:
+        if spacing_collision and scatter_anomaly:
+            score = 50
+            risk_contrib = 15
+            findings.append("Text element collision / overlap detected in document body.")
+            findings.append("Unstructured spatial layout detected with irregular field margins.")
+        elif spacing_collision:
             score = 70
             risk_contrib = 8
-            findings.append("Uneven vertical field spacing detected (possible content repositioning).")
-        elif left_align_anomaly:
+            findings.append("Element collision detected: Overlapping text boxes observed in document fields.")
+        elif scatter_anomaly:
             score = 75
-            risk_contrib = 6
-            findings.append("Minor field alignment drift detected relative to dominant column margins.")
+            risk_contrib = 5
+            findings.append("Non-standard field alignment drift detected relative to column margins.")
         else:
             findings.append("Internal layout consistency observed across margins and line spacing.")
+            findings.append("Spatial alignment and element geometry conform to standard document grid.")
             
         return {
             "score": score,

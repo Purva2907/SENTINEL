@@ -32,7 +32,7 @@ def analyze_ocr(image_path: str) -> dict:
                 "detections": [],
                 "success": False,
                 "status": "OCR_ENGINE_UNAVAILABLE",
-                "risk_contribution": 5,
+                "risk_contribution": 0,
                 "findings": ["OCR engine unavailable for text extraction."]
             }
             
@@ -63,7 +63,7 @@ def analyze_ocr(image_path: str) -> dict:
                 "detections": [],
                 "success": True,
                 "status": "NO_TEXT_RECOVERED",
-                "risk_contribution": 15,
+                "risk_contribution": 0,
                 "findings": ["No text detected on document canvas."]
             }
             
@@ -107,7 +107,7 @@ def analyze_ocr(image_path: str) -> dict:
                 "detections": [],
                 "success": True,
                 "status": "NO_TEXT_RECOVERED",
-                "risk_contribution": 15,
+                "risk_contribution": 0,
                 "findings": ["No readable text extracted."]
             }
             
@@ -119,12 +119,13 @@ def analyze_ocr(image_path: str) -> dict:
         risk_contribution = 0
         findings = []
         if avg_conf < 0.45:
-            risk_contribution = 10
-            findings.append(f"Low OCR text extraction confidence ({avg_conf * 100:.1f}%)")
+            evidence_strength = "LIMITED"
+            findings.append(f"Low OCR text extraction confidence ({avg_conf * 100:.1f}%). Evidence strength is limited; this does not independently indicate document tampering.")
         elif avg_conf < 0.70:
-            risk_contribution = 5
+            evidence_strength = "MODERATE"
             findings.append(f"Moderate OCR recognition confidence ({avg_conf * 100:.1f}%)")
         else:
+            evidence_strength = "STRONG"
             findings.append(f"High OCR recognition clarity ({avg_conf * 100:.1f}%)")
             
         findings.append(f"Extracted {len(texts)} text elements ({len(raw_text)} characters)")
@@ -134,12 +135,13 @@ def analyze_ocr(image_path: str) -> dict:
             "raw_text": raw_text,
             "confidence": round(avg_conf, 2),
             "average_confidence": round(avg_conf, 2),
+            "evidence_strength": evidence_strength,
             "character_count": len(raw_text),
             "detections_count": len(texts),
             "detections": detections,
             "success": True,
             "status": "TEXT_DETECTED",
-            "risk_contribution": risk_contribution,
+            "risk_contribution": 0,
             "findings": findings
         }
     except Exception as e:
@@ -153,7 +155,7 @@ def analyze_ocr(image_path: str) -> dict:
             "detections": [],
             "success": False,
             "status": "OCR_FAILED",
-            "risk_contribution": 8,
+            "risk_contribution": 0,
             "findings": [f"OCR analysis encountered an exception: {str(e)}"],
             "error": str(e)
         }

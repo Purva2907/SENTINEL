@@ -484,8 +484,17 @@
                     </div>
                     
                     <div class="score-card" id="scoreCardContainer">
-                        <div class="classification" id="cClass">ANALYZING...</div>
+                        <div style="font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); margin-bottom:8px;">
+                            <i class="fa-solid fa-shield-halved" style="color:var(--cyan); margin-right:6px;"></i> Authenticity Assessment
+                        </div>
                         <div class="risk-score" id="cScore">-- <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span></div>
+                        <div class="classification" id="cClass">ANALYZING...</div>
+                        <div id="cClassSubtitle" style="font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-top:4px;"></div>
+                        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;" id="cRiskLabel">Risk Index: --/100</div>
+                        <div id="cDisclaimer" style="margin-top:10px; font-size:0.75rem; color:var(--text-muted); background:rgba(0,0,0,0.25); border:1px solid var(--shell-border); border-radius:4px; padding:6px 12px; display:inline-block;">
+                            <i class="fa-solid fa-circle-info" style="color:var(--cyan); margin-right:5px;"></i>
+                            SENTINEL performs forensic screening and does not replace official UIDAI authentication or authorized identity verification.
+                        </div>
                         <p class="text-muted" id="cRec" style="margin-top: 15px; font-size:0.9rem; line-height:1.5;"></p>
                     </div>
                 </div>
@@ -750,22 +759,37 @@
                 const scoreCard = document.getElementById('scoreCardContainer');
                 const scoreEl = document.getElementById('cScore');
                 const clsEl = document.getElementById('cClass');
+                const riskLabel = document.getElementById('cRiskLabel');
                 
-                scoreEl.innerHTML = `${data.risk_score} <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span>`;
+                const authScore = (typeof data.authenticity_score === 'number')
+                    ? data.authenticity_score
+                    : (data.analysis && typeof data.analysis.authenticity_score === 'number'
+                        ? data.analysis.authenticity_score
+                        : Math.max(0, 100 - (data.risk_score || 0)));
+                const riskScore = (typeof data.risk_score === 'number')
+                    ? data.risk_score
+                    : Math.max(0, 100 - authScore);
+
+                scoreEl.innerHTML = `${authScore} <span style="font-size:2.5rem; color:rgba(255,255,255,0.2)">/ 100</span>`;
                 clsEl.innerText = data.classification;
+                const subEl = document.getElementById('cClassSubtitle');
+                if (subEl) subEl.innerText = data.classification_display || (data.analysis && data.analysis.classification_display) || '';
+                if (riskLabel) {
+                    riskLabel.innerHTML = `Risk Index: <strong style="color: ${riskScore >= 50 ? 'var(--danger)' : (riskScore >= 25 ? 'var(--warning)' : 'var(--success)')};">${riskScore}/100</strong>`;
+                }
                 
-                if(data.risk_score >= 70) {
-                    scoreCard.className = 'score-card high-risk';
-                    clsEl.style.color = 'var(--danger)';
-                    scoreEl.style.color = 'var(--danger)';
-                } else if(data.risk_score >= 35) {
+                if(authScore >= 75) {
+                    scoreCard.className = 'score-card low-risk';
+                    clsEl.style.color = 'var(--success)';
+                    scoreEl.style.color = 'var(--success)';
+                } else if(authScore >= 50) {
                     scoreCard.className = 'score-card med-risk';
                     clsEl.style.color = 'var(--warning)';
                     scoreEl.style.color = 'var(--warning)';
                 } else {
-                    scoreCard.className = 'score-card low-risk';
-                    clsEl.style.color = 'var(--success)';
-                    scoreEl.style.color = 'var(--success)';
+                    scoreCard.className = 'score-card high-risk';
+                    clsEl.style.color = 'var(--danger)';
+                    scoreEl.style.color = 'var(--danger)';
                 }
                 
                 let rawAnalysis = data.analysis || {};

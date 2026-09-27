@@ -25,20 +25,29 @@
     }, { passive: true });
 
     // Check auth status
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    // Always ensure the landing page navbar maintains the dedicated Login button
+    if (authBtn) {
+      authBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login';
+      authBtn.href = 'login.html';
+    }
+
     if (token) {
-      if (authBtn) {
-        authBtn.innerHTML = '<i class="fa-solid fa-gauge-high"></i> Dashboard';
-        authBtn.href = 'dashboard.html';
+      // If user has an active session, provide a Dashboard item in the nav menu
+      if (navLinks && !document.getElementById('navDashboardLink')) {
+        const dashLink = document.createElement('a');
+        dashLink.id = 'navDashboardLink';
+        dashLink.href = 'dashboard.html';
+        dashLink.innerHTML = '<i class="fa-solid fa-gauge-high" style="margin-right:4px;"></i> Dashboard';
+        navLinks.appendChild(dashLink);
       }
       if (heroStartBtn) {
         heroStartBtn.href = 'analyze.html';
       }
     } else {
-      if (authBtn) {
-        authBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login';
-        authBtn.href = 'login.html';
-      }
+      const existingDash = document.getElementById('navDashboardLink');
+      if (existingDash) existingDash.remove();
       if (heroStartBtn) {
         heroStartBtn.href = 'login.html';
       }

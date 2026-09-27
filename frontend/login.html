@@ -334,8 +334,34 @@
     <script src="js/toast.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // Redirect if already logged in
-        if(getToken()) window.location.href = 'dashboard.html';
+        // Handle existing session
+        const existingToken = getToken();
+        if (existingToken) {
+            const container = document.querySelector('.auth-form-container');
+            const form = document.getElementById('loginForm');
+            if (container && form) {
+                const notice = document.createElement('div');
+                notice.style.cssText = 'background: rgba(29, 206, 216, 0.08); border: 1px solid rgba(29, 206, 216, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 10px;';
+                notice.innerHTML = `
+                    <span style="color: var(--text-muted); display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-circle-user" style="color:var(--cyan);"></i> Active session detected.
+                    </span>
+                    <div style="display:flex; gap:12px; font-weight:600;">
+                        <a href="dashboard.html" style="color:var(--cyan); text-decoration:none;">Dashboard &rarr;</a>
+                        <a href="#" id="sessionSignOut" style="color:var(--danger); text-decoration:none;">Sign Out</a>
+                    </div>
+                `;
+                container.insertBefore(notice, form);
+                document.getElementById('sessionSignOut')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    removeToken();
+                    notice.remove();
+                    if (typeof Toast !== 'undefined' && Toast.info) {
+                        Toast.info("Signed out", "Session cleared. You can now log in.");
+                    }
+                });
+            }
+        }
 
         let isSubmitting = false;
 

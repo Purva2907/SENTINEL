@@ -59,8 +59,9 @@ async def create_report_from_upload(
 
         # 3. Extract risk metrics
         risk_score = int(result.get("risk_score", 0))
+        authenticity_score = int(result.get("authenticity_score", max(0, 100 - risk_score)))
         classification = result.get("classification", "Likely Authentic")
-        doc_type = document_type or result.get("document_type") or "Aadhaar-like"
+        doc_type = document_type or result.get("document_type") or "Aadhaar Card"
         safe_name = custody.get("original_filename", file.filename)
         case_title = title.strip() if title and title.strip() else f"Direct Intake: {safe_name}"
         case_desc = description.strip() if description and description.strip() else f"Automated forensic report generated from file upload: {safe_name}"
@@ -73,6 +74,7 @@ async def create_report_from_upload(
             "document_type": doc_type,
             "status": "Active",
             "risk_score": risk_score,
+            "authenticity_score": authenticity_score,
             "classification": classification,
             "evidence_id": custody.get("evidence_id"),
             "sha256_hash": custody.get("sha256_hash"),

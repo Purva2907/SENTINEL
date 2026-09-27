@@ -1,3 +1,4 @@
+import re
 import cv2
 import numpy as np
 
@@ -38,22 +39,35 @@ def analyze_typography(image_path: str, ocr_result: dict = None) -> dict:
         if len(body_detections) < 2:
             body_detections = detections
 
-        # 1. Font Heights Analysis
+        # 1. Font Heights Analysis (Distinguish document hierarchy from localized font tampering)
+        # In Aadhaar/PAN, the ID number is officially printed in larger font (~2x body height).
+        # We separate the large ID number / headers from peer body text lines.
+        body_field_heights = []
+        id_field_heights = []
         heights = []
+        
         for d in body_detections:
+            txt = d.get("text", "").strip()
             bbox = d.get("bbox", [])
             if len(bbox) >= 4:
                 ys = [p[1] for p in bbox]
                 h = max(ys) - min(ys)
                 if h > 5:
+                    # Check if this box is likely the prominent Aadhaar/PAN number or emblem title
+                    is_id_num = bool(re.search(r'\d{4}|\b[A-Z]{5}\d{4}[A-Z]\b|XXXX', txt))
+                    if is_id_num:
+                        id_field_heights.append(h)
+                    else:
+                        body_field_heights.append(h)
                     heights.append(h)
                     
         height_variance_flag = False
-        if len(heights) >= 3:
-            med_h = float(np.median(heights))
-            max_h = float(np.max(heights))
-            # If a field height deviates heavily (> 1.55x median height of peer fields)
-            if med_h > 0 and (max_h / med_h) > 1.55 and max_h > 24:
+        # Only flag if peer body fields (excluding prominent ID numbers) have abnormal intra-class variance
+        if len(body_field_heights) >= 3:
+            med_body_h = float(np.median(body_field_heights))
+            max_body_h = float(np.max(body_field_heights))
+            # If peer body text lines deviate heavily (> 1.85x median of peer body fields)
+            if med_body_h > 0 and (max_body_h / med_body_h) > 1.85 and max_body_h > 30:
                 height_variance_flag = True
                 
         # 2. Text Ink Color / Saturation Consistency
@@ -68,15 +82,16 @@ def analyze_typography(image_path: str, ocr_result: dict = None) -> dict:
                 x1, x2 = max(0, min(xs)), min(img_w, max(xs))
                 y1, y2 = max(0, min(ys)), min(img_h, max(ys))
                 
-                if (x2 - x1) > 10 and (y2 - y1) > 8:
+                # Exclude photo / emblem regions on left or right edges
+                if (x2 - x1) > 15 and (y2 - y1) > 8 and x1 > int(img_w * 0.15):
                     box_bgr = img[y1:y2, x1:x2]
                     box_hsv = hsv[y1:y2, x1:x2]
-                    # Select text ink pixels: darkest 30% of pixels in the box
+                    # Select text ink pixels: darkest 25% of pixels in the box
                     gray_box = cv2.cvtColor(box_bgr, cv2.COLOR_BGR2GRAY)
-                    threshold_val = np.percentile(gray_box, 30)
+                    threshold_val = np.percentile(gray_box, 25)
                     mask = gray_box <= threshold_val
                     
-                    if np.sum(mask) > 15:
+                    if np.sum(mask) > 20:
                         ink_saturations = box_hsv[:, :, 1][mask]
                         mean_sat = float(np.mean(ink_saturations))
                         color_deviations.append({
@@ -85,21 +100,22 @@ def analyze_typography(image_path: str, ocr_result: dict = None) -> dict:
                         })
                         
         ink_color_flag = False
-        # Ignore legitimate official colored badges (e.g. "ACTIVE", "VERIFIED", "STATUS")
         field_color_deviations = [
             c for c in color_deviations 
-            if not any(badge in c["text"].upper() for badge in ["VERIF", "ACTIVE", "STATUS", "PASS", "VALID"])
+            if not any(badge in c["text"].upper() for badge in ["VERIF", "ACTIVE", "STATUS", "PASS", "VALID", "INDIA", "GOVT"])
         ]
-        if len(field_color_deviations) >= 2:
+        if len(field_color_deviations) >= 3:
             sats = [c["mean_sat"] for c in field_color_deviations]
             med_sat = float(np.median(sats))
             max_sat = float(np.max(sats))
-            # If an unbadged body text (like Name or ID) has high saturation (> 80) while document median is low (< 35)
-            if max_sat > 80 and med_sat < 35:
+            # True digital text insertion has unnaturally vivid saturation (> 110) while document paper is dull (< 30)
+            if max_sat > 110 and med_sat < 30:
                 ink_color_flag = True
                 
-        height_ratio = round(max_h / med_h, 2) if (len(heights) >= 3 and med_h > 0) else None
-        sat_delta = round(max_sat - med_sat, 1) if (len(field_color_deviations) >= 2) else None
+        med_h = float(np.median(heights)) if heights else 1.0
+        max_h = float(np.max(heights)) if heights else 1.0
+        height_ratio = round(max_h / max(1.0, med_h), 2) if len(heights) >= 3 else 1.0
+        sat_delta = round(max_sat - med_sat, 1) if (len(field_color_deviations) >= 3) else 0.0
 
         score = 100
         risk_contrib = 0
@@ -107,19 +123,20 @@ def analyze_typography(image_path: str, ocr_result: dict = None) -> dict:
         
         if height_variance_flag and ink_color_flag:
             score = 45
-            risk_contrib = 18
+            risk_contrib = 15
             findings.append("Disproportionate text bounding-box heights detected in primary document fields.")
             findings.append("Significant text ink saturation discrepancy detected (potential digitally inserted text).")
         elif height_variance_flag:
-            score = 65
-            risk_contrib = 10
-            findings.append("Non-standard text bounding-box height variation detected between peer fields.")
+            score = 75
+            risk_contrib = 5
+            findings.append("Non-standard text bounding-box height variation detected between peer body fields.")
         elif ink_color_flag:
-            score = 65
-            risk_contrib = 10
+            score = 75
+            risk_contrib = 5
             findings.append("Chromatic ink saturation variation observed among printed text elements.")
         else:
             findings.append("Consistent bounding-box heights and ink saturation across detected text lines.")
+            findings.append("Document typographic hierarchy conforms to standard multi-tier layout.")
             
         return {
             "score": score,

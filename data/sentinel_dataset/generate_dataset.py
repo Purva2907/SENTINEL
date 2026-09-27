@@ -49,7 +49,9 @@ def generate_base_id_card():
         font_med = ImageFont.load_default()
         font_small = ImageFont.load_default()
         
-    draw.text((25, 22), "SYNTHETIC TEST DOCUMENT", fill=(255, 255, 255), font=font_large)
+    draw.text((25, 22), "SYNTHETIC DEMO DOCUMENT", fill=(255, 255, 255), font=font_large)
+    # Clear forensic watermark across footer
+    draw.text((25, 465), "SYNTHETIC DEMO DOCUMENT // FOR TESTING ONLY // NOT AN OFFICIAL CREDENTIAL", fill=(170, 180, 195), font=font_small)
     
     return img, draw, font_large, font_huge, font_med, font_small
 

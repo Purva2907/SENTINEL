@@ -5,6 +5,24 @@ let userDocketCases = [];
 let activeCaseOverride = null;
 
 function initChatbot() {
+    // Only inject on authenticated workspace pages (never on landing or auth pages)
+    const path = (window.location.pathname || '').toLowerCase();
+    if (
+        path === '' ||
+        path === '/' ||
+        path.endsWith('/index.html') ||
+        path.endsWith('index.html') ||
+        path.endsWith('/login.html') ||
+        path.endsWith('/register.html') ||
+        path.endsWith('/forgot-password.html')
+    ) {
+        const existingBtn = document.getElementById('sentinelAiBtn');
+        if (existingBtn) existingBtn.remove();
+        const existingPanel = document.getElementById('sentinelAiPanel');
+        if (existingPanel) existingPanel.remove();
+        return;
+    }
+
     // Only inject if authenticated
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) return;

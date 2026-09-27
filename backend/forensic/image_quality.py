@@ -73,11 +73,18 @@ def analyze_quality(image_path: str) -> dict:
             findings.append("Optimal lighting and contrast")
             
         quality_score = max(0, min(100, int(score)))
-        quality_risk = max(0, min(15, int(risk_contrib)))
+        # Image quality is a substrate quality metric, not a direct fraud indicator.
+        # Slight exposure/blur contributes 0 to fraud risk unless forensic analysis is impossible.
+        interpretation = (
+            "Optimal image clarity and illumination for forensic inspection."
+            if quality_score >= 80 else
+            "Image quality is reduced (exposure, blur, or resolution); this does not by itself indicate document tampering."
+        )
         
         return {
             "score": quality_score,
-            "risk_contribution": quality_risk,
+            "risk_contribution": 0 if quality_score >= 50 else 2,
+            "interpretation": interpretation,
             "findings": findings,
             "blur_score": round(blur_score, 1),
             "blur_metric": round(blur_score, 1),
@@ -88,7 +95,8 @@ def analyze_quality(image_path: str) -> dict:
     except Exception as e:
         return {
             "score": 50,
-            "risk_contribution": 5,
+            "risk_contribution": 0,
+            "interpretation": "Image quality is reduced; this does not by itself indicate document tampering.",
             "findings": [f"Error analyzing quality: {str(e)}"],
             "blur_score": 0.0,
             "blur_metric": 0.0,
