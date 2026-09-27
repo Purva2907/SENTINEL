@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/hero-banner.svg" alt="SENTINEL-MUSA Forensic Defense Platform Banner" width="100%">
+  <img src="assets/hero-banner.svg" alt="SENTINEL Forensic Defense Platform Banner" width="100%">
 </p>
 
 <p align="center">
@@ -17,14 +17,14 @@
 ## ⚡ Live Forensic Pipeline Flow
 
 <p align="center">
-  <img src="assets/animated-flow.svg" alt="SENTINEL-MUSA Animated Forensic Workflow" width="100%">
+  <img src="assets/animated-flow.svg" alt="SENTINEL Animated Forensic Workflow" width="100%">
 </p>
 
 ---
 
 ## 📑 Overview
 
-**SENTINEL-MUSA** is an enterprise-grade document forensics and investigative case management platform designed for security analysts, fraud auditors, and legal investigators. 
+**SENTINEL** is an enterprise-grade document forensics and investigative case management platform designed for security analysts, fraud auditors, and legal investigators. 
 
 Unlike conventional superficial scanners, SENTINEL interrogates documents across **six independent forensic vectors**: physical image quality, deep-learning optical character recognition, multi-stage 2D barcode/QR analysis, microscopic typography consistency, spatial layout geometry, and Error Level Analysis (ELA) digital splicing forensics.
 
@@ -170,7 +170,7 @@ SENTINEL includes a calibrated synthetic benchmark dataset generator (`data/sent
 ```bash
 # Clone repository
 git clone https://github.com/Purva2907/SENTINEL.git
-cd SENTINEL-MUSA
+cd SENTINEL
 
 # Create Python virtual environment
 python -m venv venv
@@ -306,7 +306,7 @@ backend/tests/test_advanced_features.py::test_document_comparison_cases PASSED  
 
 ## 🚀 Advanced Forensic Features Suite (v2.1.0)
 
-SENTINEL-MUSA v2.1.0 introduces an advanced suite of forensic capabilities spanning evidence chain of custody, controlled synthetic document generation, forensic document fingerprinting, similar case intelligence, chronological event timelines, and side-by-side differential analysis.
+SENTINEL v2.1.0 introduces an advanced suite of forensic capabilities spanning evidence chain of custody, controlled synthetic document generation, forensic document fingerprinting, similar case intelligence, chronological event timelines, and side-by-side differential analysis.
 
 ### 🔗 1. Cryptographic Evidence Chain of Custody
 - **SHA-256 Evidence Ingestion Digest:** At the point of document upload, raw bytes are hashed with SHA-256 and persisted alongside the immutable case dossier (`analysis_version: "2.1.0"`).
@@ -357,7 +357,7 @@ SENTINEL-MUSA v2.1.0 introduces an advanced suite of forensic capabilities spann
 
 ## ⚠️ Important Limitations & Forensic Scope
 
-1. **Decision-Support Scope:** SENTINEL-MUSA is an automated forensic screening and decision-support system designed to assist qualified investigators. It does not replace statutory identity verification, legal adjudication, or official government databases.
+1. **Decision-Support Scope:** SENTINEL is an automated forensic screening and decision-support system designed to assist qualified investigators. It does not replace statutory identity verification, legal adjudication, or official government databases.
 2. **Evidence Integrity vs. Document Authenticity:** Cryptographic SHA-256 hashing verifies that stored evidence files have not been tampered with or corrupted after ingestion. It does not establish that a document is legally genuine or officially issued.
 3. **Forensic Similarity vs. Fraud Probability:** Similar Case Detection computes mathematical closeness of observable digital and typographical characteristics. A high similarity score does not indicate a probability of fraud.
 4. **Synthetic Lab Boundaries:** Synthetic documents produced by the lab are strictly demonstration artifacts created for detector testing and evaluation. Fictional names, addresses, and identifiers are used exclusively.
@@ -369,7 +369,7 @@ SENTINEL-MUSA v2.1.0 introduces an advanced suite of forensic capabilities spann
 ## 📁 Repository Directory Map
 
 ```text
-SENTINEL-MUSA/
+SENTINEL/
 ├── backend/
 │   ├── api/
 │   │   ├── analyze.py             # Document intake & SHA-256 custody tracking
